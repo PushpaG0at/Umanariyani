@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details — Umanarayani Ayurveda</title>
+  <link rel="icon" type="image/png" href="images/logo-center.png">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core & Product Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/product.css">
+  <link rel="stylesheet" href="css/ai-consultant.css">
+</head>
+<body class="product-page-body">
+
+  <!-- ==================== TOP ANNOUNCEMENT BAR ==================== -->
+  <div class="top-bar">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+      <div class="top-bar-left">
+        <span class="ayush-badge">
+          <i class="fa-solid fa-certificate" style="color:var(--gold-light);"></i> 100% Classical Ayurveda
+        </span>
+        <div class="live-users-pill">
+          <span class="live-pulse"></span>
+          <span><strong id="liveUsersCount">142</strong> Nature Lovers Active Now</span>
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <a href="https://wa.me/918641033514?text=Hello%20Umanarayani%2C%20I%20have%20a%20query%20about%20this%20product." target="_blank" class="top-whatsapp-link">
+          <i class="fa-brands fa-whatsapp"></i> WhatsApp Help: +91 8641033514
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Quick Back Button -->
+  <a href="index.html#productsSection" class="floating-back-btn" id="floatingBackBtn" onclick="handleSmartBack(event)" title="Return to Products Catalog">
+    <i class="fa-solid fa-arrow-left"></i>
+    <span>Back to Store</span>
+  </a>
+
+  <!-- ==================== MAIN HEADER ==================== -->
+  <header class="main-header">
+    <div class="container nav-wrapper">
+      <a href="index.html" class="brand-link" title="Umanarayani Home">
+        <img src="images/logo-center.png" alt="Umanarayani Logo" class="brand-logo-img">
+        <div class="brand-text-block">
+          <span class="brand-name">UMANARAYANI</span>
+          <span class="brand-tagline">Pure Nature, Pure Care.</span>
+        </div>
+      </a>
+
+      <!-- Center Back Button (Never mixes with Brand Name) -->
+      <a href="index.html#productsSection" class="btn-back-to-store" onclick="handleSmartBack(event)">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>&larr; Back to Products</span>
+      </a>
+
+      <!-- Nav Actions -->
+      <div class="nav-actions">
+        <a href="https://wa.me/918641033514?text=Hello%20Umanarayani%2C%20I%20have%20a%20query%20about%20your%20products." target="_blank" class="top-whatsapp-link" style="color:var(--whatsapp-dark); font-weight:700; background:#E8F8EE; padding:6px 14px; border-radius:999px; border:1px solid rgba(37,211,102,0.3);">
+          <i class="fa-brands fa-whatsapp" style="color:var(--whatsapp-green); font-size:1.1rem;"></i>
+          <span>Help: +91 8641033514</span>
+        </a>
+
+        <a href="signin.html" class="btn-signin" id="headerSignInBtn">
+          <i class="fa-regular fa-user"></i>
+          <span>Sign In</span>
+        </a>
+
+        <a href="cart.html" class="btn-icon" title="View Cart">
+          <i class="fa-solid fa-bag-shopping"></i>
+          <span class="badge-count" id="cartBadgeCount" style="display:none;">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== AMAZON-STYLE BREADCRUMBS WITH BACK BUTTON ==================== -->
+  <div class="amazon-breadcrumbs">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; align-items:center;">
+        <a href="index.html#productsSection" class="breadcrumb-back-pill" onclick="handleSmartBack(event)">
+          <i class="fa-solid fa-arrow-left"></i> Back to Products
+        </a>
+        <ul class="breadcrumb-list">
+          <li><a href="index.html">Home</a></li>
+          <li>&rsaquo;</li>
+          <li><a href="index.html#productsSection" id="breadcrumbCategory">Personal Care</a></li>
+          <li>&rsaquo;</li>
+          <li class="active" id="breadcrumbProduct">Product Details</li>
+        </ul>
+      </div>
+      <div style="font-size:0.8rem; color:#565959; display:flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-circle-check" style="color:#007600;"></i>
+        <span>100% Genuine Ayurvedic Formulation</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AMAZON-STYLE 3-COLUMN PRODUCT STAGE ==================== -->
+  <main class="product-detail-wrapper" id="productDetailContainer">
+    <div class="container product-detail-grid">
+
+      <!-- LEFT COLUMN: IMAGE GALLERY & LOUPE ZOOM -->
+      <div class="product-gallery-container">
+        <!-- Vertical Thumbnails -->
+        <div class="gallery-thumbs-col" id="galleryThumbsCol">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Main Magnifying Stage -->
+        <div style="flex-grow:1; position:relative;">
+          <div class="main-image-stage" id="mainImageStage">
+            <img src="" alt="Product Photo" class="main-stage-img" id="mainStageImg">
+            <div class="zoom-lens" id="zoomLens"></div>
+            <!-- High-Res Zoom Loupe Result -->
+            <div class="zoom-result-window" id="zoomResultWindow"></div>
+          </div>
+          <div class="zoom-hint">
+            <i class="fa-solid fa-magnifying-glass-plus"></i> Roll over image to zoom in
+          </div>
+
+          <!-- Guarantee Badges -->
+          <div class="gallery-guarantee-badges">
+            <div class="guarantee-badge-item">
+              <i class="fa-solid fa-leaf"></i>
+              <span>100% Herbal</span>
+            </div>
+            <div class="guarantee-badge-item">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Ayush Certified</span>
+            </div>
+            <div class="guarantee-badge-item">
+              <i class="fa-solid fa-truck-fast"></i>
+              <span>Fast Shipping</span>
+            </div>
+            <div class="guarantee-badge-item">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span>7-Day Return</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MIDDLE COLUMN: PRODUCT INFO & SPECS -->
+      <div class="product-info-col">
+        <a href="index.html" class="store-brand-link">Visit the Umanarayani Official Store</a>
+        <h1 class="product-main-title" id="productTitle">Loading Product...</h1>
+        <p class="product-sub-title" id="productSubtitle"></p>
+
+        <!-- Ratings & Amazon Choice Badge -->
+        <div class="amazon-rating-bar">
+          <span class="star-rating-val" id="starRatingText">4.8</span>
+          <span class="stars-container" id="starsContainer">★★★★★</span>
+          <a href="#reviewsTab" class="ratings-count-link" id="ratingsCountLink">342 ratings</a>
+          <span class="badge-choice">#1 <span>Bestseller</span> in Ayurvedic Care</span>
+        </div>
+
+        <!-- Price Box -->
+        <div class="amazon-price-box">
+          <span class="deal-flag">Limited Time Deal</span>
+          <div class="price-main-line">
+            <span class="discount-ratio" id="dealDiscount">-30%</span>
+            <span class="deal-price">
+              <span class="currency-sym">₹</span><span id="dealPrice">349</span>
+            </span>
+          </div>
+          <div class="mrp-line">
+            M.R.P.: <span class="mrp-struck" id="mrpPrice">₹499</span>
+          </div>
+          <div class="taxes-text">
+            Inclusive of all taxes &bull; You Save: <span class="savings-highlight" id="savingsAmount">₹150 (30%)</span>
+          </div>
+        </div>
+
+        <!-- Amazon Offers Cards -->
+        <div class="amazon-offers-wrapper">
+          <div class="offers-heading">
+            <i class="fa-solid fa-tags" style="color:var(--gold-deep);"></i> Offers Available
+          </div>
+          <div class="offers-grid">
+            <div class="offer-card">
+              <div class="offer-title">Special Herbal Gift</div>
+              <div class="offer-desc">Free Neem Wood Detangling Comb with this order today.</div>
+            </div>
+            <div class="offer-card">
+              <div class="offer-title">Free Shipping</div>
+              <div class="offer-desc">Free standard delivery on all orders across India.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Specs Table -->
+        <table class="amazon-specs-table">
+          <tr>
+            <td class="spec-key">Brand</td>
+            <td class="spec-val">UMANARAYANI</td>
+          </tr>
+          <tr>
+            <td class="spec-key">Item Form</td>
+            <td class="spec-val">Traditional Herbal Formulation</td>
+          </tr>
+          <tr>
+            <td class="spec-key">Volume</td>
+            <td class="spec-val" id="specVolume">200 ml</td>
+          </tr>
+          <tr>
+            <td class="spec-key">Category</td>
+            <td class="spec-val" id="specCategory">Ayurvedic Personal Care</td>
+          </tr>
+          <tr>
+            <td class="spec-key">ASIN</td>
+            <td class="spec-val" id="specAsin">B09AYURV01</td>
+          </tr>
+        </table>
+
+        <!-- About This Item Bullets -->
+        <div class="about-item-section">
+          <h3 class="about-item-title">About this item</h3>
+          <ul class="bullet-points-list" id="aboutItemBullets">
+            <!-- Populated by JS -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: AMAZON BUY BOX -->
+      <aside class="amazon-buy-box">
+        <div class="buy-box-price" id="buyBoxPrice">₹349.00</div>
+
+        <!-- Pincode Delivery Check -->
+        <div class="delivery-estimate-block">
+          <div id="pincodeResultMsg">
+            <span class="delivery-free">FREE Delivery</span> by <strong>Wednesday, 28 Oct</strong>.
+          </div>
+          <div class="pincode-checker-wrap">
+            <input type="text" id="pincodeInput" class="pincode-input" placeholder="Enter PIN code" maxlength="6">
+            <button class="pincode-btn" id="btnCheckPincode">Check</button>
+          </div>
+        </div>
+
+        <div class="stock-status-line">In Stock</div>
+        <div class="buy-box-seller">
+          Ships from <strong>Umanarayani Official</strong><br>
+          Sold by <strong>UMANARAYANI HERBAL CARE</strong>
+        </div>
+
+        <!-- Quantity Selector -->
+        <div class="qty-selector-wrap">
+          <label for="buyBoxQty">Quantity:</label>
+          <select id="buyBoxQty" class="qty-select">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+
+        <!-- Amazon Buttons -->
+        <button class="btn-amazon-cart" id="btnAddToCart">
+          <i class="fa-solid fa-cart-shopping"></i> Add to Cart
+        </button>
+
+        <button class="btn-amazon-buy" id="btnBuyNow">
+          <i class="fa-solid fa-bolt"></i> Buy Now
+        </button>
+
+        <!-- DEDICATED WHATSAPP CONSULTATION BUTTON IN BUY BOX -->
+        <button class="btn-amazon-whatsapp" id="btnWhatsAppInquiry" title="Chat with Herbal Specialist on WhatsApp">
+          <i class="fa-brands fa-whatsapp" style="font-size:1.2rem;"></i>
+          <span>Ask Questions on WhatsApp</span>
+        </button>
+
+        <!-- ASK AI BUTTON IN BUY BOX -->
+        <button class="btn-amazon-ai" id="btnAskAiAboutProduct" style="width:100%; margin-top:8px; padding:10px; background:#F0F7F2; color:var(--green-primary); border:1.5px solid var(--green-forest); border-radius:8px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--gold-deep);"></i>
+          <span>Ask AI Vaidya about this Item</span>
+        </button>
+
+        <div style="text-align:center; font-size:0.75rem; color:#565959; margin-top:8px; margin-bottom:12px;">
+          Direct Helpline: <strong>+91 8641033514</strong>
+        </div>
+
+        <div class="secure-transaction-badge">
+          <i class="fa-solid fa-lock" style="color:#007600;"></i>
+          <span>Secure transaction &bull; 100% Ayush Certified</span>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- ==================== DETAILED TABS SECTION ==================== -->
+  <section class="container">
+    <div class="product-tabs-wrapper">
+      <nav class="product-nav-tabs">
+        <button class="product-tab-btn active" data-target="tabOverview">Product Description</button>
+        <button class="product-tab-btn" data-target="tabAiConsultant" style="color:var(--gold-deep); font-weight:700;"><i class="fa-solid fa-wand-magic-sparkles"></i> Ask AI Vaidya</button>
+        <button class="product-tab-btn" data-target="tabBenefits">Key Benefits</button>
+        <button class="product-tab-btn" data-target="tabIngredients">Featured Herbal Ingredients</button>
+        <button class="product-tab-btn" data-target="tabUsage">How to Use</button>
+        <button class="product-tab-btn" data-target="tabSuitable">Suitable For & Safety</button>
+        <button class="product-tab-btn" data-target="tabReviews" id="reviewsTab">Customer Reviews</button>
+      </nav>
+
+      <!-- Panel 1: Overview -->
+      <div class="tab-content-panel active" id="tabOverview">
+        <h3 class="panel-title">Classical Ayurvedic Formulation</h3>
+        <p class="panel-body-text" id="tabOverviewText"></p>
+      </div>
+
+      <!-- Panel: AI Vaidya Product Consultant -->
+      <div class="tab-content-panel" id="tabAiConsultant">
+        <div class="product-ai-consultant-card" id="productAiConsultant">
+          <div class="product-ai-topbar">
+            <div class="product-ai-badge">
+              <img src="images/logo-center.png" alt="AI Vaidya" style="width:36px; height:36px; border-radius:50%; object-fit:cover; border:1px solid #C5A059;">
+              <div>
+                <div style="font-size:1.05rem;">Umanarayani AI Vaidya &bull; Product Specialist</div>
+                <div style="font-size:0.78rem; color:#565959; font-weight:normal;">Real-time guidance powered by Google Gemini AI</div>
+              </div>
+            </div>
+            <div>
+              <a href="https://wa.me/918641033514?text=Hello%20Umanarayani!%20I%20have%20a%20question%20about%20this%20product." target="_blank" class="btn-whatsapp-hero" id="tabAiSupportWaBtn" style="padding:6px 14px; font-size:0.8rem; border-radius:18px;">
+                <i class="fa-brands fa-whatsapp"></i> Or Chat on WhatsApp (+91 8641033514)
+              </a>
+            </div>
+          </div>
+
+          <!-- Live Chat Stream -->
+          <div class="product-ai-chat-stream" id="prodAiChatStream">
+            <div class="chat-msg bot">
+              <div class="msg-avatar">🌿</div>
+              <div class="msg-content">
+                <p>Namaste! 🙏 Ask me any question specifically about this Ayurvedic formulation — its classical herbs, ideal application method, or compatibility with your hair or skin type.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Product Query Chips -->
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+            <button class="ai-quick-chip prod-ai-chip" data-query="How often should I use this in a week and how long should I leave it on?">
+              🕒 Usage frequency &amp; duration
+            </button>
+            <button class="ai-quick-chip prod-ai-chip" data-query="What makes this product superior to chemical market alternatives?">
+              🌿 Why choose this over chemicals?
+            </button>
+            <button class="ai-quick-chip prod-ai-chip" data-query="Is this formulation safe for sensitive skin or color-treated hair?">
+              🛡️ Safety &amp; Hair/Skin Suitability
+            </button>
+            <button class="ai-quick-chip prod-ai-chip" data-query="How many days before I start seeing visible results?">
+              ✨ Expected results timeline
+            </button>
+          </div>
+
+          <!-- Input Bar -->
+          <div style="display:flex; gap:10px;">
+            <input type="text" id="prodAiInput" class="ai-input-field" placeholder="Ask AI Vaidya about this specific product...">
+            <button class="ai-send-btn" id="prodAiSendBtn" title="Send Question to AI">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Benefits -->
+      <div class="tab-content-panel" id="tabBenefits">
+        <h3 class="panel-title">Nourishing Botanical Benefits</h3>
+        <ul style="list-style:none; padding:0;" id="tabBenefitsList"></ul>
+      </div>
+
+      <!-- Panel 3: Ingredients -->
+      <div class="tab-content-panel" id="tabIngredients">
+        <h3 class="panel-title">Ancient Ayurvedic Botanicals in this Formulation</h3>
+        <p style="color:#565959; font-size:0.92rem; margin-bottom:16px;">
+          Crafted strictly with pure herbal extracts. Free from parabens, mineral oils, and harmful artificial additives.
+        </p>
+        <div class="ingredients-detail-grid" id="tabIngredientsGrid"></div>
+      </div>
+
+      <!-- Panel 4: How to Use -->
+      <div class="tab-content-panel" id="tabUsage">
+        <h3 class="panel-title">Recommended Application Ritual</h3>
+        <div class="usage-steps-grid" id="tabUsageSteps"></div>
+      </div>
+
+      <!-- Panel 5: Suitable For & Safety -->
+      <div class="tab-content-panel" id="tabSuitable">
+        <h3 class="panel-title">Who Can Use This Formulation?</h3>
+        <p class="panel-body-text" id="tabSuitableFor"></p>
+        <h4 style="font-size:1.1rem; color:var(--green-primary); margin:24px 0 12px;">Quality & Safety Standards</h4>
+        <div style="display:flex; flex-wrap:wrap; gap:12px;" id="tabCertifications"></div>
+      </div>
+
+      <!-- Panel 6: Reviews & Ratings -->
+      <div class="tab-content-panel" id="tabReviews">
+        <h3 class="panel-title">Customer Reviews & Ratings</h3>
+
+        <div class="reviews-breakdown-row">
+          <div class="rating-overview-box">
+            <div class="big-rating-number">4.8</div>
+            <div style="color:#FFA41C; font-size:1.2rem; margin-bottom:4px;">★★★★★</div>
+            <div style="font-size:0.85rem; color:#565959; margin-bottom:16px;">Based on 342 verified purchases</div>
+
+            <!-- Breakdown Bars -->
+            <div class="rating-bar-row">
+              <span>5 star</span>
+              <div class="progress-track"><div class="progress-fill" style="width:85%;"></div></div>
+              <span>85%</span>
+            </div>
+            <div class="rating-bar-row">
+              <span>4 star</span>
+              <div class="progress-track"><div class="progress-fill" style="width:11%;"></div></div>
+              <span>11%</span>
+            </div>
+            <div class="rating-bar-row">
+              <span>3 star</span>
+              <div class="progress-track"><div class="progress-fill" style="width:3%;"></div></div>
+              <span>3%</span>
+            </div>
+            <div class="rating-bar-row">
+              <span>2 star</span>
+              <div class="progress-track"><div class="progress-fill" style="width:1%;"></div></div>
+              <span>1%</span>
+            </div>
+          </div>
+
+          <!-- Customer Reviews Feed -->
+          <div class="customer-reviews-feed" id="customerReviewsContainer">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Write a Review Form -->
+        <div style="background:#F9FAF9; border:1px solid #E0ECE2; border-radius:12px; padding:24px; margin-top:24px;">
+          <h4 style="font-size:1.15rem; color:var(--green-primary); margin-bottom:12px;">Review this Ayurvedic product</h4>
+          <form id="newReviewForm">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:12px;">
+              <input type="text" id="reviewAuthor" placeholder="Your Name" required class="herbal-input">
+              <select id="reviewRating" class="herbal-input">
+                <option value="5">★★★★★ (5 Stars - Outstanding)</option>
+                <option value="4">★★★★☆ (4 Stars - Very Good)</option>
+                <option value="3">★★★☆☆ (3 Stars - Good)</option>
+              </select>
+            </div>
+            <input type="text" id="reviewTitle" placeholder="Headline for your review (e.g. Silky hair in 2 weeks)" class="herbal-input" style="margin-bottom:12px;">
+            <textarea id="reviewBody" placeholder="Write your honest Ayurvedic experience..." rows="3" required class="herbal-input" style="margin-bottom:14px;"></textarea>
+            <button type="submit" class="btn-primary-hero" style="padding:10px 24px; font-size:0.9rem;">Submit Review</button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== MOBILE STICKY BOTTOM ACTION BAR ==================== -->
+  <div class="mobile-sticky-action-bar">
+    <div>
+      <span style="font-size:0.75rem; color:#565959;">Special Price:</span>
+      <div style="font-size:1.25rem; font-weight:800; color:#B12704;" id="mobStickyPrice">₹349</div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-amazon-whatsapp" id="mobStickyWa" style="margin:0; padding:8px 14px; font-size:0.8rem; border-radius:16px;">
+        <i class="fa-brands fa-whatsapp"></i> WhatsApp
+      </button>
+      <button class="btn-amazon-cart" id="mobStickyCart" style="margin:0; padding:8px 14px; font-size:0.8rem; border-radius:16px;">
+        <i class="fa-solid fa-cart-shopping"></i> Add to Cart
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating AI Quick Assistant Button (Bottom Right) -->
+  <button class="ai-floating-assistant-btn" id="floatingAiBtn" title="Ask AI Vaidya or WhatsApp Herbal Support">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span class="ai-floating-badge">AI</span>
+  </button>
+
+  <!-- Floating AI Vaidya Chat Modal Drawer -->
+  <div class="ai-floating-modal" id="aiFloatingModal">
+    <div class="ai-floating-header">
+      <div class="ai-floating-brand">
+        <img src="images/logo-center.png" alt="Umanarayani AI" class="ai-floating-logo">
+        <div>
+          <h4>Umanarayani AI Vaidya</h4>
+          <span class="ai-floating-status">
+            <span class="pulse-dot"></span> Powered by Gemini 3.6 &bull; Online
+          </span>
+        </div>
+      </div>
+      <div class="ai-floating-header-actions">
+        <a href="https://wa.me/918641033514?text=Hello%20Umanarayani!%20I%20want%20to%20connect%20with%20your%20herbal%20care%20team." target="_blank" class="ai-header-wa-pill" title="Chat on WhatsApp">
+          <i class="fa-brands fa-whatsapp"></i> WhatsApp
+        </a>
+        <button class="ai-floating-close-btn" id="btnCloseAiModal" title="Close AI Chat">&times;</button>
+      </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="ai-floating-body" id="aiFloatingChatBody">
+      <div class="chat-msg bot">
+        <div class="msg-avatar">🌿</div>
+        <div class="msg-content">
+          <p><strong>Namaste! 🙏 I am your AI Vaidya.</strong></p>
+          <p>Ask me any query about this Ayurvedic formulation, dosage, how to use, or suitability for your hair &amp; skin type!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Prompt Chips -->
+    <div class="ai-floating-chips">
+      <button class="ai-mini-chip" data-query="How often should I use this in a week?">🕒 Usage frequency</button>
+      <button class="ai-mini-chip" data-query="What makes this formulation superior to chemical alternatives?">🌿 Why this over chemicals?</button>
+      <button class="ai-mini-chip" data-query="Is this safe for sensitive skin or color-treated hair?">🛡️ Safe for my type?</button>
+      <button class="ai-mini-chip" data-query="When can I expect to see visible results?">✨ Results timeline</button>
+    </div>
+
+    <!-- Human Herbal Support Bar -->
+    <div class="ai-floating-support-bar">
+      <span>Need personalized guidance?</span>
+      <a href="https://wa.me/918641033514?text=Hello%20Umanarayani!%20I%20want%20guidance%20on%20this%20product." target="_blank">
+        <i class="fa-brands fa-whatsapp"></i> WhatsApp Herbal Support &rarr;
+      </a>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="ai-floating-footer">
+      <input type="text" id="aiFloatingInput" class="ai-floating-input" placeholder="Ask AI Vaidya about this product...">
+      <button class="ai-floating-send-btn" id="aiFloatingSendBtn" title="Send Question to AI">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/product.js"></script>
+  <script src="js/ai-consultant.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const askAiBtn = document.getElementById('btnAskAiAboutProduct');
+      if (askAiBtn) {
+        askAiBtn.addEventListener('click', () => {
+          // Switch to AI tab
+          const aiTabBtn = document.querySelector('[data-target="tabAiConsultant"]');
+          if (aiTabBtn) {
+            aiTabBtn.click();
+            aiTabBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+              const inp = document.getElementById('prodAiInput');
+              if (inp) inp.focus();
+            }, 500);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
