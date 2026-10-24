@@ -1,0 +1,498 @@
+/* ==========================================================================
+   UMANARAYANI AYURVEDA — REVOLVING HERBS MANDALA SHOWCASE
+   Features 8 Ayurvedic Herbs revolving smoothly around the center brand icon
+   with smooth cursor popping, live upright orientation, and interactive dragging.
+   ========================================================================== */
+
+.hero-showcase-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 30px;
+  user-select: none;
+}
+
+/* Master Orbit Stage */
+.orbit-mandala-stage {
+  position: relative;
+  width: 720px;
+  height: 720px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.orbit-mandala-stage:active {
+  cursor: grabbing;
+}
+
+/* Decorative Background Rings & Halos */
+.mandala-glow-halo {
+  position: absolute;
+  width: 580px;
+  height: 580px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(116, 198, 157, 0.22) 0%, rgba(216, 243, 220, 0.12) 50%, transparent 75%);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.mandala-outer-ring {
+  position: absolute;
+  width: 590px;
+  height: 590px;
+  border-radius: 50%;
+  border: 2px dashed rgba(197, 160, 89, 0.45);
+  box-shadow: 0 0 40px rgba(82, 183, 136, 0.18), inset 0 0 30px rgba(197, 160, 89, 0.08);
+  pointer-events: none;
+  animation: subtleSpin 90s linear infinite reverse;
+}
+
+.mandala-inner-ring {
+  position: absolute;
+  width: 390px;
+  height: 390px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(82, 183, 136, 0.35);
+  pointer-events: none;
+  animation: subtleSpin 60s linear infinite;
+}
+
+@keyframes subtleSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   CENTER BRAND ICON & LOGO EMBLEM
+   The user explicitly requested:
+   "i want all these ingredients to revolve around this icon or brand name"
+   ========================================================================== */
+.center-brand-core {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.center-logo-disc {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFFFFF 65%, #F0F8F2 100%);
+  border: 4px solid var(--gold-primary);
+  box-shadow:
+    0 12px 36px rgba(13, 40, 24, 0.2),
+    0 0 35px rgba(197, 160, 89, 0.4),
+    0 0 0 8px rgba(82, 183, 136, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.center-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.45s ease;
+}
+
+.center-brand-core:hover .center-logo-disc {
+  transform: scale(1.08);
+  border-color: #D4AF37;
+  box-shadow:
+    0 18px 45px rgba(13, 40, 24, 0.3),
+    0 0 45px rgba(197, 160, 89, 0.6),
+    0 0 0 12px rgba(82, 183, 136, 0.28);
+}
+
+.center-brand-core:hover .center-logo-img {
+  transform: scale(1.05);
+}
+
+.center-brand-name-pill {
+  margin-top: 10px;
+  background: linear-gradient(135deg, var(--green-primary), var(--green-forest));
+  color: #FFF;
+  padding: 5px 16px;
+  border-radius: var(--radius-full);
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  box-shadow: 0 4px 14px rgba(27, 67, 50, 0.3);
+  border: 1px solid var(--gold-light);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.center-brand-name-pill i {
+  color: var(--gold-light);
+  font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   ORBITING CONTAINER & INGREDIENT NODES
+   ========================================================================== */
+.orbiting-track {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+/* Individual Revolving Ingredient Node */
+.revolving-herb-node {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 130px;
+  margin-left: -65px;
+  margin-top: -65px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Circular Botanical Badge */
+.herb-badge-ring {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #FFF;
+  border: 3px solid var(--gold-light);
+  box-shadow: 0 8px 24px rgba(27, 67, 50, 0.16);
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+.herb-badge-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+/* Labels below each ingredient badge */
+.herb-label-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 8px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(82, 183, 136, 0.25);
+  box-shadow: 0 4px 12px rgba(27, 67, 50, 0.08);
+  white-space: nowrap;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.herb-name-en {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--green-primary);
+  line-height: 1.2;
+}
+
+.herb-name-hi {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gold-deep);
+  line-height: 1.1;
+}
+
+.herb-benefit-micro {
+  font-size: 0.65rem;
+  color: var(--green-forest);
+  font-weight: 600;
+  margin-top: 2px;
+  letter-spacing: 0.2px;
+}
+
+/* ==========================================================================
+   INTERACTIVE SMOOTH POPPING ON CURSOR HOVER
+   "whenever you put cursor on the item it pops smoothly a little bit in an interactive way"
+   ========================================================================== */
+.revolving-herb-node:hover {
+  z-index: 60;
+}
+
+.revolving-herb-node:hover .herb-badge-ring {
+  transform: scale(1.3) translateY(-10px);
+  border-color: var(--green-sage);
+  box-shadow:
+    0 22px 45px rgba(27, 67, 50, 0.32),
+    0 0 25px rgba(82, 183, 136, 0.4),
+    0 0 0 6px rgba(197, 160, 89, 0.3);
+  background: #FFF;
+}
+
+.revolving-herb-node:hover .herb-badge-img {
+  transform: scale(1.08);
+}
+
+.revolving-herb-node:hover .herb-label-box {
+  transform: translateY(-8px) scale(1.08);
+  border-color: var(--green-mint);
+  background: #FFF;
+  box-shadow: 0 8px 20px rgba(27, 67, 50, 0.18);
+}
+
+/* Herb Rich Hover Card / Popover */
+.herb-popover-card {
+  position: absolute;
+  bottom: calc(100% + 16px);
+  left: 50%;
+  transform: translateX(-50%) translateY(14px) scale(0.92);
+  width: 250px;
+  background: #0D2818;
+  color: #FFF;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--gold-primary);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: left;
+  z-index: 100;
+}
+
+.herb-popover-card::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: #0D2818;
+}
+
+.popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.3);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.popover-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem;
+  color: var(--gold-light);
+  font-weight: 700;
+}
+
+.popover-hindi {
+  font-size: 0.8rem;
+  color: #D8F3DC;
+}
+
+.popover-botanical {
+  font-size: 0.72rem;
+  font-style: italic;
+  color: #A3C2B3;
+  margin-bottom: 6px;
+}
+
+.popover-role {
+  font-size: 0.76rem;
+  color: #E8F5E9;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.popover-products {
+  font-size: 0.7rem;
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.revolving-herb-node:hover .herb-popover-card {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+/* ==========================================================================
+   ORBIT INTERACTIVE CONTROLS BAR
+   ========================================================================== */
+.mandala-control-deck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-card);
+}
+
+.deck-btn {
+  background: var(--bg-surface-alt);
+  color: var(--green-primary);
+  border: 1px solid var(--border-light);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--pop-transition);
+}
+
+.deck-btn:hover {
+  background: var(--green-primary);
+  color: #FFF;
+  border-color: var(--green-primary);
+  transform: translateY(-2px);
+}
+
+.deck-btn.active {
+  background: var(--green-forest);
+  color: #FFF;
+}
+
+.deck-instruction {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   RESPONSIVE SCALING FOR PC, TABLET & MOBILE
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .orbit-mandala-stage {
+    width: 600px;
+    height: 600px;
+  }
+  .mandala-outer-ring {
+    width: 480px;
+    height: 480px;
+  }
+  .mandala-inner-ring {
+    width: 320px;
+    height: 320px;
+  }
+  .center-logo-disc {
+    width: 160px;
+    height: 160px;
+  }
+  .herb-badge-ring {
+    width: 84px;
+    height: 84px;
+  }
+  .revolving-herb-node {
+    width: 110px;
+    margin-left: -55px;
+    margin-top: -55px;
+  }
+  .herb-name-en {
+    font-size: 0.82rem;
+  }
+  .herb-name-hi {
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-showcase-wrapper {
+    padding: 10px 0 20px;
+  }
+  .orbit-mandala-stage {
+    width: 380px;
+    height: 380px;
+  }
+  .mandala-glow-halo {
+    width: 320px;
+    height: 320px;
+  }
+  .mandala-outer-ring {
+    width: 310px;
+    height: 310px;
+  }
+  .mandala-inner-ring {
+    width: 200px;
+    height: 200px;
+  }
+  .center-logo-disc {
+    width: 110px;
+    height: 110px;
+    border-width: 3px;
+  }
+  .center-brand-name-pill {
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    margin-top: 6px;
+  }
+  .herb-badge-ring {
+    width: 58px;
+    height: 58px;
+    border-width: 2px;
+  }
+  .revolving-herb-node {
+    width: 80px;
+    margin-left: -40px;
+    margin-top: -40px;
+  }
+  .herb-label-box {
+    padding: 2px 6px;
+    margin-top: 4px;
+  }
+  .herb-name-en {
+    font-size: 0.68rem;
+  }
+  .herb-name-hi {
+    font-size: 0.58rem;
+  }
+  .herb-benefit-micro {
+    display: none;
+  }
+  .mandala-control-deck {
+    font-size: 0.72rem;
+    padding: 6px 14px;
+  }
+}

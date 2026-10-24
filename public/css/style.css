@@ -1,0 +1,2059 @@
+/* ==========================================================================
+   UMANARAYANI AYURVEDA — MASTER STYLESHEET
+   Pure Nature, Pure Care.
+   Palette: Light Greenish Herbal Aesthetic with Royal Ayurvedic Gold Touches
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,400;1,600&family=Cinzel:wght@600;700;800&display=swap');
+
+:root {
+  /* Color Palette - Light Herbal Green */
+  --bg-primary: #F7FAF7;
+  --bg-surface: #FFFFFF;
+  --bg-surface-alt: #F0F6F1;
+  --bg-herbal-soft: #E9F4EC;
+  --bg-card: #FFFFFF;
+
+  /* Botanical Greens */
+  --green-primary: #1B4332;
+  --green-deep: #0D2818;
+  --green-forest: #2D6A4F;
+  --green-sage: #40916C;
+  --green-mint: #52B788;
+  --green-light: #74C69D;
+  --green-subtle: #D8F3DC;
+  --green-glow: rgba(82, 183, 136, 0.25);
+
+  /* Ayurvedic Gold & Warmth */
+  --gold-primary: #C5A059;
+  --gold-deep: #9E7D3B;
+  --gold-light: #E5C98B;
+  --gold-glow: rgba(197, 160, 89, 0.3);
+  --earth-warm: #4A3E3D;
+
+  /* Typography Colors */
+  --text-main: #1C2826;
+  --text-muted: #556B60;
+  --text-light: #7B8F84;
+  --text-white: #FFFFFF;
+
+  /* Functional & E-commerce */
+  --amazon-deal-red: #B12704;
+  --amazon-gold-btn: #FFD814;
+  --amazon-gold-hover: #F7CA00;
+  --amazon-orange-btn: #FFA41C;
+  --amazon-orange-hover: #FA8900;
+  --amazon-star: #FFA41C;
+  --whatsapp-green: #25D366;
+  --whatsapp-dark: #128C7E;
+
+  /* Shadows & Borders */
+  --border-light: rgba(45, 106, 79, 0.12);
+  --border-gold: rgba(197, 160, 89, 0.3);
+  --shadow-subtle: 0 4px 20px -2px rgba(27, 67, 50, 0.05);
+  --shadow-card: 0 10px 30px -4px rgba(27, 67, 50, 0.08);
+  --shadow-pop: 0 20px 40px -8px rgba(27, 67, 50, 0.18), 0 0 0 1px rgba(82, 183, 136, 0.3);
+  --shadow-gold: 0 12px 32px -4px rgba(197, 160, 89, 0.25);
+
+  /* Spacing & Transitions */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-full: 9999px;
+  --pop-transition: all 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --smooth-transition: all 0.25s ease-out;
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+  color: var(--green-primary);
+  line-height: 1.25;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: var(--smooth-transition);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  outline: none;
+  background: none;
+  transition: var(--pop-transition);
+}
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ==========================================================================
+   TOP ANNOUNCEMENT BAR & LIVE USERS INDICATOR
+   ========================================================================== */
+.top-bar {
+  background: linear-gradient(90deg, var(--green-primary), var(--green-forest), var(--green-primary));
+  color: #E8F5E9;
+  font-size: 0.85rem;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 101;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.3);
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ayush-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(197, 160, 89, 0.2);
+  border: 1px solid var(--gold-light);
+  color: #FFF3D6;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.live-users-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  padding: 3px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid rgba(82, 183, 136, 0.35);
+}
+
+.live-pulse {
+  width: 8px;
+  height: 8px;
+  background-color: #2ECC71;
+  border-radius: 50%;
+  position: relative;
+}
+
+.live-pulse::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 12px;
+  height: 12px;
+  background-color: rgba(46, 204, 113, 0.6);
+  border-radius: 50%;
+  animation: pulseAnim 1.8s infinite;
+}
+
+@keyframes pulseAnim {
+  0% { transform: scale(0.9); opacity: 0.9; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(0.9); opacity: 0; }
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.top-whatsapp-link {
+  color: #A3E4D7;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.top-whatsapp-link:hover {
+  color: #FFFFFF;
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   NAVIGATION HEADER
+   ========================================================================== */
+.main-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: 0 4px 16px rgba(27, 67, 50, 0.04);
+  transition: var(--smooth-transition);
+}
+
+.main-header .container {
+  max-width: 1440px;
+  width: 100%;
+  padding: 0 20px;
+}
+
+.nav-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 76px;
+  gap: 14px;
+  position: relative;
+}
+
+/* Brand Logo */
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.brand-logo-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold-primary);
+  box-shadow: 0 4px 12px rgba(197, 160, 89, 0.25);
+  transition: var(--pop-transition);
+  flex-shrink: 0;
+}
+
+.brand-link:hover .brand-logo-img {
+  transform: rotate(5deg) scale(1.06);
+  box-shadow: 0 6px 18px rgba(197, 160, 89, 0.4);
+}
+
+.brand-text-block {
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-family: 'Cinzel', serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  color: var(--green-primary);
+  background: linear-gradient(135deg, var(--green-deep) 20%, var(--green-forest) 70%, var(--gold-deep) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-tagline {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  white-space: nowrap;
+}
+
+/* Nav Menu */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  list-style: none;
+  flex-shrink: 1;
+  white-space: nowrap;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item a {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  padding: 6px 2px;
+  position: relative;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.nav-item a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, var(--green-sage), var(--gold-primary));
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.nav-item a:hover::after,
+.nav-item.active a::after {
+  width: 100%;
+}
+
+.nav-item a:hover {
+  color: var(--green-forest);
+}
+
+/* Nav Actions (Always visible, never truncated) */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.search-bar-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  padding: 6px 14px 6px 32px;
+  font-size: 0.82rem;
+  width: 125px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  width: 175px;
+  background: #FFF;
+  border-color: var(--green-mint);
+  box-shadow: 0 0 0 3px var(--green-glow);
+  outline: none;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  pointer-events: none;
+}
+
+.btn-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface-alt);
+  color: var(--green-primary);
+  position: relative;
+  border: 1px solid rgba(45, 106, 79, 0.15);
+  flex-shrink: 0;
+  transition: var(--pop-transition);
+}
+
+.btn-icon:hover {
+  background: var(--bg-herbal-soft);
+  color: var(--green-forest);
+  transform: translateY(-2px) scale(1.08);
+  border-color: var(--green-mint);
+}
+
+.badge-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--amazon-deal-red);
+  color: #FFF;
+  font-size: 0.68rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #FFF;
+}
+
+.btn-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--green-forest), var(--green-primary));
+  color: #FFF;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(45, 106, 79, 0.2);
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  transition: var(--pop-transition);
+}
+
+.btn-signin .user-btn-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.btn-signin:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 18px rgba(45, 106, 79, 0.3);
+  background: linear-gradient(135deg, var(--green-sage), var(--green-forest));
+}
+
+.btn-add-product {
+  background: rgba(197, 160, 89, 0.15);
+  color: var(--gold-deep);
+  border: 1px dashed var(--gold-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: var(--pop-transition);
+}
+
+.btn-add-product:hover {
+  background: var(--gold-primary);
+  color: #FFF;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 1280px) {
+  .nav-links {
+    gap: 10px;
+  }
+  .nav-item a {
+    font-size: 0.82rem;
+  }
+  .search-input {
+    width: 105px;
+  }
+  .search-input:focus {
+    width: 150px;
+  }
+  .btn-add-product .add-prod-text {
+    display: none;
+  }
+  .btn-add-product {
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .nav-links {
+    gap: 8px;
+  }
+  .nav-item a {
+    font-size: 0.8rem;
+  }
+  .search-bar-wrap {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   DEDICATED BACK-TO-STORE & RETURN BUTTONS
+   ========================================================================== */
+.btn-back-to-store {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #E8F5EC;
+  color: var(--green-primary);
+  border: 1.5px solid rgba(82, 183, 136, 0.4);
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  font-size: 0.88rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.08);
+  transition: var(--pop-transition);
+  flex-shrink: 0;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-back-to-store:hover {
+  background: var(--green-primary);
+  color: #FFF;
+  border-color: var(--green-primary);
+  transform: translateX(-3px);
+  box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
+}
+
+.breadcrumb-back-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #E8F5EC;
+  color: var(--green-forest);
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid rgba(82, 183, 136, 0.35);
+  margin-right: 14px;
+  transition: var(--pop-transition);
+  cursor: pointer;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.breadcrumb-back-pill:hover {
+  background: var(--green-forest);
+  color: #FFF;
+  border-color: var(--green-forest);
+  transform: translateX(-2px);
+}
+
+.floating-back-btn {
+  position: fixed;
+  top: 96px;
+  left: 20px;
+  z-index: 95;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  color: var(--green-primary);
+  border: 1.5px solid rgba(82, 183, 136, 0.4);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 700;
+  box-shadow: 0 6px 20px rgba(27, 67, 50, 0.14);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--pop-transition);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.floating-back-btn:hover {
+  background: var(--green-primary);
+  color: #FFF;
+  transform: translateX(-3px);
+  box-shadow: 0 8px 24px rgba(27, 67, 50, 0.28);
+}
+
+.mobile-menu-toggle {
+  display: none;
+  font-size: 1.5rem;
+  color: var(--green-primary);
+  background: none;
+  border: none;
+}
+
+/* ==========================================================================
+   HERO SECTION & REVOLVING HERBS SHOWCASE
+   ========================================================================== */
+.hero-section {
+  position: relative;
+  background: radial-gradient(circle at 50% 30%, #FFFFFF 0%, #F1F8F3 60%, #E6F3EA 100%);
+  padding: 56px 0 72px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.hero-pattern-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.04;
+  background-image: radial-gradient(#2D6A4F 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  align-items: center;
+  gap: 48px;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFF;
+  border: 1px solid rgba(82, 183, 136, 0.4);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  width: fit-content;
+  box-shadow: 0 4px 12px rgba(82, 183, 136, 0.15);
+}
+
+.hero-badge span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--green-forest);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hero-title {
+  font-size: 3.3rem;
+  font-weight: 800;
+  color: var(--green-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.12;
+}
+
+.hero-title .highlight {
+  color: var(--green-sage);
+  position: relative;
+  display: inline-block;
+}
+
+.hero-title .highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: rgba(197, 160, 89, 0.25);
+  border-radius: 4px;
+  z-index: -1;
+}
+
+.hero-subtitle {
+  font-size: 1.12rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+  max-width: 520px;
+}
+
+.hero-trust-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.trust-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--border-light);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--green-primary);
+}
+
+.hero-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-primary-hero {
+  background: linear-gradient(135deg, var(--green-forest), var(--green-primary));
+  color: #FFF;
+  padding: 14px 28px;
+  border-radius: var(--radius-full);
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(45, 106, 79, 0.28);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: var(--pop-transition);
+}
+
+.btn-primary-hero:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 16px 32px rgba(45, 106, 79, 0.4);
+  background: linear-gradient(135deg, var(--green-sage), var(--green-forest));
+}
+
+.btn-whatsapp-hero {
+  background: #FFF;
+  color: var(--whatsapp-dark);
+  border: 2px solid var(--whatsapp-green);
+  padding: 12px 24px;
+  border-radius: var(--radius-full);
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.15);
+  transition: var(--pop-transition);
+}
+
+.btn-whatsapp-hero:hover {
+  background: var(--whatsapp-green);
+  color: #FFF;
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(37, 211, 102, 0.35);
+}
+
+/* ==========================================================================
+   DYNAMIC 3D ORBITAL REVOLVING HERBS VISUALIZER
+   Key Herbal Ingredients visibly revolving in 3D perspective
+   Smooth pop on cursor hover
+   ========================================================================== */
+.revolving-showcase-container {
+  position: relative;
+  width: 100%;
+  height: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1000px;
+}
+
+.orbit-glow-disc {
+  position: absolute;
+  width: 440px;
+  height: 440px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(116, 198, 157, 0.2) 0%, rgba(216, 243, 220, 0.05) 70%, transparent 100%);
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+/* Orbital Rings */
+.orbit-ring-track {
+  position: absolute;
+  width: 430px;
+  height: 430px;
+  border-radius: 50%;
+  border: 2px dashed rgba(82, 183, 136, 0.38);
+  box-shadow: 0 0 35px rgba(82, 183, 136, 0.15), inset 0 0 25px rgba(197, 160, 89, 0.1);
+  pointer-events: none;
+}
+
+.orbit-ring-inner {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  pointer-events: none;
+}
+
+/* Central Emblem / Core */
+.orbit-center-core {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFFFFF 60%, #EBF6EE 100%);
+  border: 3px solid var(--gold-primary);
+  box-shadow: 0 8px 30px rgba(197, 160, 89, 0.35), 0 0 0 6px rgba(82, 183, 136, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+  transition: var(--pop-transition);
+}
+
+.orbit-center-core:hover {
+  transform: scale(1.08);
+  box-shadow: 0 12px 40px rgba(197, 160, 89, 0.5), 0 0 0 10px rgba(82, 183, 136, 0.25);
+}
+
+.core-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.core-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--green-primary);
+  margin-top: 4px;
+}
+
+/* Orbit Revolving Track (Rotating Parent) */
+.orbit-rotator {
+  position: absolute;
+  width: 430px;
+  height: 430px;
+  border-radius: 50%;
+  animation: orbitSpin 36s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.orbit-rotator.paused {
+  animation-play-state: paused;
+}
+
+@keyframes orbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Individual Revolving Herb Capsule */
+.herb-orbit-node {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 76px;
+  height: 76px;
+  margin-top: -38px;
+  margin-left: -38px;
+  transform-origin: center center;
+  cursor: pointer;
+  z-index: 15;
+}
+
+/* Counter-rotate each herb node so it stays upright as it orbits */
+.herb-capsule {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #FFF;
+  border: 2.5px solid var(--gold-light);
+  box-shadow: 0 8px 20px rgba(27, 67, 50, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: visible;
+  animation: counterSpin 36s linear infinite;
+  transition: var(--pop-transition);
+}
+
+.orbit-rotator.paused .herb-capsule {
+  animation-play-state: paused;
+}
+
+@keyframes counterSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.herb-node-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+/* POPPING INTERACTION ON HOVER */
+.herb-orbit-node:hover {
+  z-index: 50;
+}
+
+.herb-orbit-node:hover .herb-capsule {
+  transform: scale(1.32) translateY(-6px);
+  border-color: var(--green-sage);
+  box-shadow: 0 20px 35px rgba(27, 67, 50, 0.28), 0 0 0 6px rgba(82, 183, 136, 0.35);
+  background: #FFF;
+}
+
+/* Herb Mini Tooltip */
+.herb-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--green-deep);
+  color: #FFF;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--gold-primary);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 60;
+  text-align: center;
+}
+
+.herb-tooltip strong {
+  display: block;
+  font-size: 0.86rem;
+  color: var(--gold-light);
+  font-family: 'Playfair Display', serif;
+}
+
+.herb-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--green-deep);
+}
+
+.herb-orbit-node:hover .herb-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Herb Orbit Controls */
+.orbit-controls-bar {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-light);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-subtle);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--green-forest);
+}
+
+.orbit-control-btn {
+  background: var(--bg-surface-alt);
+  color: var(--green-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: var(--smooth-transition);
+}
+
+.orbit-control-btn:hover {
+  background: var(--green-mint);
+  color: #FFF;
+}
+
+/* ==========================================================================
+   PRODUCT CATALOG SECTION (INTERACTIVE SMOOTH POPPING CARDS)
+   ========================================================================== */
+.section-products {
+  padding: 80px 0;
+  background: var(--bg-primary);
+}
+
+.section-header-wrap {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 48px;
+}
+
+.section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--green-sage);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--green-primary);
+  margin-bottom: 12px;
+}
+
+.section-desc {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+}
+
+/* Category Filter Tabs */
+.category-filter-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 38px;
+}
+
+.cat-tab-btn {
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: #FFF;
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  transition: var(--pop-transition);
+}
+
+.cat-tab-btn:hover {
+  color: var(--green-primary);
+  border-color: var(--green-mint);
+  transform: translateY(-2px);
+}
+
+.cat-tab-btn.active {
+  background: linear-gradient(135deg, var(--green-forest), var(--green-primary));
+  color: #FFF;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
+}
+
+/* Product Grid */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 32px;
+}
+
+/* PRODUCT CARD — SMOOTH POP ON CURSOR HOVER */
+.product-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: var(--pop-transition);
+  cursor: pointer;
+}
+
+/* THE POP EFFECT */
+.product-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: var(--shadow-pop);
+  border-color: rgba(82, 183, 136, 0.45);
+}
+
+.product-badge-flag {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 5;
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold-primary));
+  color: #FFF;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 10px rgba(158, 125, 59, 0.3);
+}
+
+.product-wishlist-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transition: var(--pop-transition);
+}
+
+.product-wishlist-btn:hover {
+  background: #FFF;
+  color: #E74C3C;
+  transform: scale(1.15);
+}
+
+.product-card-img-wrap {
+  width: 100%;
+  height: 310px;
+  background: radial-gradient(circle, #FFFFFF 65%, #F4FAF5 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(45, 106, 79, 0.06);
+}
+
+.product-card-img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.product-card:hover .product-card-img {
+  transform: scale(1.08) translateY(-4px);
+}
+
+.quick-view-overlay {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 40, 24, 0.9);
+  color: #FFF;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.product-card:hover .quick-view-overlay {
+  bottom: 16px;
+  opacity: 1;
+}
+
+.product-card-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.product-category-sub {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--green-sage);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.product-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--green-primary);
+  margin-bottom: 6px;
+  line-height: 1.35;
+  transition: color 0.2s ease;
+}
+
+.product-card:hover .product-card-title {
+  color: var(--green-forest);
+}
+
+.product-card-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+/* Amazon-Style Rating */
+.product-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stars-group {
+  color: var(--amazon-star);
+  font-size: 0.95rem;
+  display: flex;
+  gap: 2px;
+}
+
+.rating-score {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.rating-count {
+  font-size: 0.78rem;
+  color: #007185;
+}
+
+/* Featured Herb Badges */
+.featured-herbs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.herb-chip {
+  background: var(--bg-herbal-soft);
+  color: var(--green-forest);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(82, 183, 136, 0.2);
+}
+
+/* Price Row (Amazon Style) */
+.product-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: auto;
+  margin-bottom: 18px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(45, 106, 79, 0.1);
+}
+
+.discount-badge {
+  background: var(--amazon-deal-red);
+  color: #FFF;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.price-current {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.price-current .currency {
+  font-size: 0.95rem;
+  font-weight: 600;
+  vertical-align: top;
+}
+
+.price-mrp {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  text-decoration: line-through;
+}
+
+/* Card Action Buttons */
+.product-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-card-details {
+  background: var(--bg-surface-alt);
+  color: var(--green-primary);
+  border: 1px solid var(--border-light);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: var(--pop-transition);
+}
+
+.btn-card-details:hover {
+  background: var(--green-primary);
+  color: #FFF;
+  border-color: var(--green-primary);
+}
+
+.btn-card-whatsapp {
+  background: #E8F8EE;
+  color: #128C7E;
+  border: 1px solid rgba(37, 211, 102, 0.35);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: var(--pop-transition);
+}
+
+.btn-card-whatsapp:hover {
+  background: var(--whatsapp-green);
+  color: #FFF;
+  border-color: var(--whatsapp-green);
+}
+
+/* ==========================================================================
+   PHILOSOPHY & BOTANICAL INGREDIENT HIGHLIGHT SECTION
+   ========================================================================== */
+.section-botanical-showcase {
+  background: #FFF;
+  padding: 80px 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.botanical-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 48px;
+}
+
+.botanical-artwork-wrap {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(27, 67, 50, 0.12);
+  border: 3px solid var(--gold-light);
+}
+
+.botanical-artwork-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.botanical-artwork-wrap:hover .botanical-artwork-img {
+  transform: scale(1.04);
+}
+
+.botanical-content-block {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.herb-feature-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.herb-feature-card {
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transition: var(--pop-transition);
+}
+
+.herb-feature-card:hover {
+  transform: translateY(-4px);
+  background: #FFF;
+  border-color: var(--green-mint);
+  box-shadow: var(--shadow-subtle);
+}
+
+.herb-feature-icon {
+  font-size: 1.4rem;
+}
+
+.herb-feature-info h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--green-primary);
+  margin-bottom: 2px;
+}
+
+.herb-feature-info p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   WHATSAPP FLOATING WIDGET & CONSULTATION DRAWER
+   Direct WhatsApp integration: +918641033514
+   ========================================================================== */
+.whatsapp-floating-bubble {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.whatsapp-popup-teaser {
+  background: #FFF;
+  border-radius: var(--radius-lg);
+  padding: 10px 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: var(--pop-transition);
+  animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bounceIn {
+  from { opacity: 0; transform: translateX(20px) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.whatsapp-popup-teaser:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 35px rgba(37, 211, 102, 0.25);
+}
+
+.teaser-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--whatsapp-green);
+  object-fit: cover;
+}
+
+.teaser-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.teaser-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--green-primary);
+}
+
+.teaser-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.whatsapp-main-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #25D366, #128C7E);
+  color: #FFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+  position: relative;
+  transition: var(--pop-transition);
+}
+
+.whatsapp-main-btn:hover {
+  transform: scale(1.12) rotate(8deg);
+  box-shadow: 0 12px 32px rgba(37, 211, 102, 0.6);
+}
+
+.whatsapp-online-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  background-color: #2ECC71;
+  border: 2px solid #FFF;
+  border-radius: 50%;
+}
+
+/* WhatsApp Chat Drawer / Modal */
+.whatsapp-modal {
+  position: fixed;
+  bottom: 96px;
+  right: 28px;
+  width: 350px;
+  background: #FFF;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.whatsapp-modal.active {
+  display: flex;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.whatsapp-modal-header {
+  background: linear-gradient(135deg, var(--green-primary), var(--whatsapp-dark));
+  color: #FFF;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-consultant-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-consultant-info h4 {
+  color: #FFF;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.header-consultant-info p {
+  font-size: 0.72rem;
+  color: #A3E4D7;
+}
+
+.close-modal-btn {
+  color: #FFF;
+  font-size: 1.2rem;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.close-modal-btn:hover {
+  opacity: 1;
+}
+
+.whatsapp-modal-body {
+  padding: 16px;
+  background: #ECE5DD;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.chat-bubble-received {
+  background: #FFF;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border-top-left-radius: 2px;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  line-height: 1.45;
+}
+
+.quick-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-q-btn {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--whatsapp-green);
+  color: var(--green-primary);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+  transition: var(--smooth-transition);
+}
+
+.quick-q-btn:hover {
+  background: var(--whatsapp-green);
+  color: #FFF;
+}
+
+.whatsapp-modal-footer {
+  padding: 12px 16px;
+  background: #FFF;
+  display: flex;
+  gap: 8px;
+}
+
+.wa-input {
+  flex-grow: 1;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.wa-input:focus {
+  border-color: var(--whatsapp-green);
+}
+
+.wa-send-btn {
+  background: var(--whatsapp-green);
+  color: #FFF;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: var(--pop-transition);
+}
+
+.wa-send-btn:hover {
+  transform: scale(1.1);
+  background: var(--whatsapp-dark);
+}
+
+/* ==========================================================================
+   HERB DETAILS MODAL (WHEN REVOLVING HERB IS CLICKED)
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(13, 40, 24, 0.65);
+  backdrop-filter: blur(8px);
+  z-index: 1050;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-backdrop.active {
+  display: flex;
+}
+
+.herb-detail-card-modal {
+  background: #FFF;
+  width: 100%;
+  max-width: 580px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--gold-light);
+  animation: modalScale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+@keyframes modalScale {
+  from { transform: scale(0.9) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.modal-close-icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: var(--pop-transition);
+}
+
+.modal-close-icon:hover {
+  background: var(--green-primary);
+  color: #FFF;
+  transform: scale(1.1);
+}
+
+.herb-modal-header {
+  background: radial-gradient(circle at center, #FFFFFF 0%, var(--bg-herbal-soft) 100%);
+  padding: 32px 24px 20px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.herb-modal-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  border: 3px solid var(--gold-primary);
+  box-shadow: 0 8px 24px rgba(197, 160, 89, 0.3);
+  object-fit: cover;
+}
+
+.herb-modal-title {
+  font-size: 1.8rem;
+  color: var(--green-primary);
+}
+
+.herb-modal-hindi {
+  font-size: 1.1rem;
+  color: var(--gold-deep);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.herb-modal-botanical {
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.herb-modal-body {
+  padding: 24px;
+}
+
+.herb-modal-role {
+  font-size: 0.95rem;
+  color: var(--green-forest);
+  font-weight: 600;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.herb-modal-benefits-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.herb-modal-benefits-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.herb-modal-benefits-list li i {
+  color: var(--green-mint);
+  margin-top: 3px;
+}
+
+.herb-modal-footer {
+  background: var(--bg-surface-alt);
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
+.main-footer {
+  background: linear-gradient(180deg, #133324 0%, #0D2218 100%);
+  color: #D1E5DB;
+  padding: 64px 0 24px;
+  border-top: 2px solid var(--gold-primary);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+.footer-brand-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.footer-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-logo-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-primary);
+}
+
+.footer-brand-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.3rem;
+  color: #FFF;
+  letter-spacing: 1px;
+}
+
+.footer-desc {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #A3C2B3;
+}
+
+.footer-col-title {
+  color: var(--gold-light);
+  font-family: 'Playfair Display', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.footer-links-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-links-list a {
+  font-size: 0.88rem;
+  color: #B4D3C5;
+  transition: var(--smooth-transition);
+}
+
+.footer-links-list a:hover {
+  color: #FFF;
+  padding-left: 4px;
+}
+
+.footer-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  margin-bottom: 12px;
+  color: #B4D3C5;
+}
+
+.footer-contact-item i {
+  color: var(--gold-light);
+  margin-top: 4px;
+}
+
+.footer-bottom-bar {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #84A998;
+}
+
+/* ==========================================================================
+   RESPONSIVE OPTIMIZATIONS (PC & MOBILE)
+   ========================================================================== */
+@media (max-width: 1150px) {
+  .nav-wrapper {
+    gap: 12px;
+  }
+  .brand-logo-img {
+    width: 50px;
+    height: 50px;
+  }
+  .brand-name {
+    font-size: 1.25rem;
+  }
+  .nav-links {
+    gap: 14px;
+  }
+  .nav-item a {
+    font-size: 0.85rem;
+    padding: 6px 2px;
+  }
+  .search-input {
+    width: 120px;
+  }
+  .search-input:focus {
+    width: 160px;
+  }
+}
+
+@media (max-width: 960px) {
+  .nav-links, .search-bar-wrap, .btn-add-product {
+    display: none;
+  }
+  .mobile-menu-toggle {
+    display: block;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    text-align: center;
+  }
+  .hero-content {
+    align-items: center;
+  }
+  .hero-title {
+    font-size: 2.8rem;
+  }
+  .hero-trust-chips {
+    justify-content: center;
+  }
+  .hero-cta-group {
+    justify-content: center;
+  }
+  .botanical-grid {
+    grid-template-columns: 1fr;
+  }
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-bar-left .ayush-badge {
+    display: none;
+  }
+  .nav-links, .search-bar-wrap {
+    display: none;
+  }
+  .mobile-menu-toggle {
+    display: block;
+  }
+  .hero-title {
+    font-size: 2.2rem;
+  }
+  .revolving-showcase-container {
+    height: 400px;
+  }
+  .orbit-glow-disc,
+  .orbit-ring-track,
+  .orbit-rotator {
+    width: 320px;
+    height: 320px;
+  }
+  .orbit-ring-inner {
+    width: 200px;
+    height: 200px;
+  }
+  .orbit-center-core {
+    width: 100px;
+    height: 100px;
+  }
+  .core-logo {
+    width: 44px;
+    height: 44px;
+  }
+  .herb-orbit-node {
+    width: 58px;
+    height: 58px;
+    margin-top: -29px;
+    margin-left: -29px;
+  }
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .whatsapp-popup-teaser {
+    display: none;
+  }
+  .whatsapp-floating-bubble {
+    bottom: 20px;
+    right: 20px;
+  }
+  .whatsapp-modal {
+    right: 16px;
+    left: 16px;
+    width: auto;
+    bottom: 84px;
+  }
+}
