@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add New Product — Umanarayani Ayurveda Catalog Manager</title>
+  <link rel="icon" type="image/jpeg" href="images/logo.jpg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .admin-container {
+      max-width: 800px;
+      margin: 40px auto 80px;
+      background: #FFF;
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      border: 2px solid var(--gold-light);
+      box-shadow: var(--shadow-card);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 650px) {
+      .form-row { grid-template-columns: 1fr; }
+      .admin-container { padding: 24px; }
+    }
+  </style>
+</head>
+<body style="background: var(--bg-primary);">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>🌿 Umanarayani Catalog Management System</span>
+      <a href="index.html" style="color:#A3E4D7; text-decoration:underline;">&larr; Return to Store</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="admin-container">
+      <div style="text-align: center; margin-bottom: 32px;">
+        <img src="images/logo-center.png" alt="Logo" style="width: 68px; height: 68px; border-radius: 50%; border: 2px solid var(--gold-primary); margin: 0 auto 12px;">
+        <h2 style="font-size: 2rem; color: var(--green-primary); font-family: 'Playfair Display', serif;">Add New Ayurvedic Product</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Expand the Umanarayani catalog. New formulations will be stored in the backend and immediately visible on the homepage and searchable.
+        </p>
+      </div>
+
+      <div id="adminAlertBox" style="display:none; padding:12px; border-radius:8px; margin-bottom:20px;"></div>
+
+      <form id="addProductForm">
+        <div class="form-row">
+          <div>
+            <label class="form-label">Product Name *</label>
+            <input type="text" id="pName" class="herbal-input" placeholder="e.g. UMANARAYANI BHRINGRAJ SCALP SERUM" required>
+          </div>
+          <div>
+            <label class="form-label">Subtitle / Sub-headline</label>
+            <input type="text" id="pSubtitle" class="herbal-input" placeholder="e.g. Deep Follicle Revival & Anti-Thinning Care">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">Category *</label>
+            <select id="pCategory" class="herbal-input" required>
+              <option value="Hair Care">Hair Care (Oil, Shampoo, Serum)</option>
+              <option value="Skin Care">Skin Care (Face Wash, Pack, Moisturizer)</option>
+              <option value="Body Care">Body Care (Body Wash, Scrub, Lotion)</option>
+              <option value="Cosmetics">Ayurvedic Cosmetics (Lip Butter, Kajal)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Volume / Weight</label>
+            <input type="text" id="pVolume" class="herbal-input" placeholder="e.g. 200 ml or 100 g" value="200 ml">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">Special Offer Price (₹) *</label>
+            <input type="number" id="pPrice" class="herbal-input" placeholder="e.g. 349" required min="1">
+          </div>
+          <div>
+            <label class="form-label">M.R.P. (₹)</label>
+            <input type="number" id="pMrp" class="herbal-input" placeholder="e.g. 499">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Product Image Path</label>
+          <select id="pImage" class="herbal-input">
+            <option value="images/hair-oil.png">Hair Oil Bottle (images/hair-oil.png)</option>
+            <option value="images/shampoo.png">Shampoo Bottle (images/shampoo.png)</option>
+            <option value="images/face-wash.png">Orange Face Wash Bottle (images/face-wash.png)</option>
+            <option value="images/ayurvedic_herbs_circle.jpg">Ayurvedic Botanical Circle (images/ayurvedic_herbs_circle.jpg)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Short Description</label>
+          <textarea id="pShortDesc" class="herbal-input" rows="2" placeholder="Brief summary displayed on cards..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Full Classical Description</label>
+          <textarea id="pDescription" class="herbal-input" rows="4" placeholder="Detailed Ayurvedic philosophy, formulation story, and benefits..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Key Benefits (One benefit per line)</label>
+          <textarea id="pBenefits" class="herbal-input" rows="3" placeholder="Helps nourish and condition the scalp.&#10;Supports smooth, shiny-looking hair.&#10;Helps reduce dryness-related breakage."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Featured Herbal Ingredients (Comma separated)</label>
+          <input type="text" id="pIngredients" class="herbal-input" placeholder="Brahmi, Nagarmotha, Bhringraj, Shikakai, Amla, Amarbel, Kalonji">
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">How to Use Ritual</label>
+            <input type="text" id="pHowToUse" class="herbal-input" placeholder="e.g. Massage gently into scalp for 30-60 mins...">
+          </div>
+          <div>
+            <label class="form-label">Suitable For</label>
+            <input type="text" id="pSuitableFor" class="herbal-input" placeholder="e.g. All hair types seeking deep nourishment.">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary-hero" style="width: 100%; justify-content: center; padding: 15px; margin-top: 16px;">
+          <i class="fa-solid fa-plus-circle"></i> Save & Launch Product to Store
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById('adminAlertBox');
+
+      const payload = {
+        name: document.getElementById('pName').value.trim(),
+        subtitle: document.getElementById('pSubtitle').value.trim(),
+        category: document.getElementById('pCategory').value,
+        volume: document.getElementById('pVolume').value.trim(),
+        price: Number(document.getElementById('pPrice').value),
+        mrp: document.getElementById('pMrp').value ? Number(document.getElementById('pMrp').value) : null,
+        image: document.getElementById('pImage').value,
+        shortDescription: document.getElementById('pShortDesc').value.trim(),
+        description: document.getElementById('pDescription').value.trim(),
+        keyBenefits: document.getElementById('pBenefits').value.split('\n').filter(Boolean),
+        featuredIngredients: document.getElementById('pIngredients').value.split(',').map(s => s.trim()).filter(Boolean),
+        howToUse: document.getElementById('pHowToUse').value.trim(),
+        suitableFor: document.getElementById('pSuitableFor').value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          alertBox.style.cssText = "display:block; background:#D4EDDA; color:#155724; border:1px solid #C3E6CB;";
+          alertBox.innerHTML = `<strong>Success!</strong> "${payload.name}" has been added to Umanarayani catalog! Redirecting to product page...`;
+          setTimeout(() => {
+            window.location.href = `product.html?id=${data.product.id}`;
+          }, 1500);
+        } else {
+          alertBox.style.cssText = "display:block; background:#F8D7DA; color:#721C24; border:1px solid #F5C6CB;";
+          alertBox.textContent = data.message || "Failed to add product";
+        }
+      } catch (err) {
+        alertBox.style.cssText = "display:block; background:#F8D7DA; color:#721C24; border:1px solid #F5C6CB;";
+        alertBox.textContent = "Error communicating with server.";
+      }
+    });
+  </script>
+</body>
+</html>
