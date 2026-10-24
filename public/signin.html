@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayurvedic Sign In & Dosha Profile — UMANARAYANI</title>
+  <link rel="icon" type="image/png" href="images/logo-center.png">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core & Sign-in Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/signin.css">
+</head>
+<body class="signin-page-body">
+
+  <!-- Floating Botanical Leaves Background -->
+  <div class="leaves-container" id="leavesContainer"></div>
+
+  <!-- Top Navigation Bar -->
+  <div class="signin-top-bar">
+    <a href="index.html" class="back-link">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Back to Herbal Store</span>
+    </a>
+
+    <div class="ayush-badge">
+      <i class="fa-solid fa-leaf"></i> 100% Herbal Purity
+    </div>
+  </div>
+
+  <!-- Main Centered Herbal Card -->
+  <div class="signin-card-container">
+    <div class="herbal-auth-card" id="herbalAuthCard">
+
+      <!-- Card Header -->
+      <div class="auth-card-header">
+        <img src="images/logo-center.png" alt="Umanarayani Logo" class="auth-logo-img">
+        <h2 class="auth-card-title">Ayurvedic Sanctuary</h2>
+        <span class="auth-card-tagline">Pure Nature, Pure Care.</span>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="auth-tabs-toggle" id="authTabsWrap">
+        <button class="auth-tab-btn active" data-mode="login">Sign In</button>
+        <button class="auth-tab-btn" data-mode="register">Create Account</button>
+      </div>
+
+      <!-- Forms Container -->
+      <div class="auth-form-wrap" id="authFormsContainer">
+
+        <!-- 1. Sign In Form -->
+        <form id="loginForm">
+          <div class="form-group">
+            <label class="form-label" for="loginEmail">Email Address</label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-envelope"></i>
+              <input type="email" id="loginEmail" class="herbal-input" placeholder="name@domain.com" required value="pushpendra@example.com">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="loginPassword" class="herbal-input" placeholder="••••••••" required value="ayurveda_pass">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-herbal-submit">
+            <i class="fa-solid fa-spa"></i>
+            <span>Enter Sanctuary</span>
+          </button>
+
+          <!-- 1-Click Demo Sign-in for immediate convenience -->
+          <div class="demo-login-box">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Test / Demo Credentials:</span><br>
+            <button type="button" class="demo-login-btn" id="btnDemoLogin">
+              <i class="fa-solid fa-bolt" style="color:var(--gold-deep);"></i> 1-Click Sign In as Pushpendra Singh
+            </button>
+          </div>
+        </form>
+
+        <!-- 2. Register Form -->
+        <form id="registerForm" style="display:none;">
+          <div class="form-group">
+            <label class="form-label" for="regName">Full Name</label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-user"></i>
+              <input type="text" id="regName" class="herbal-input" placeholder="Your Full Name" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="regEmail">Email Address</label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-envelope"></i>
+              <input type="email" id="regEmail" class="herbal-input" placeholder="your@email.com" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="regPassword">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="regPassword" class="herbal-input" placeholder="Create strong password" required>
+            </div>
+          </div>
+
+          <!-- Dosha Profile Selector -->
+          <div class="form-group">
+            <label class="form-label">Select Your Ayurvedic Dosha</label>
+            <div class="dosha-picker-grid">
+              <div class="dosha-choice-pill" data-dosha="Vata (Dry/Frizz)">
+                <span class="dosha-icon">💨</span>
+                <span class="dosha-name">Vata</span>
+                <span class="dosha-trait">Dry / Brittle</span>
+              </div>
+              <div class="dosha-choice-pill active" data-dosha="Pitta (Sensitive/Warm)">
+                <span class="dosha-icon">🔥</span>
+                <span class="dosha-name">Pitta</span>
+                <span class="dosha-trait">Warm / Thinning</span>
+              </div>
+              <div class="dosha-choice-pill" data-dosha="Kapha (Oily/Dense)">
+                <span class="dosha-icon">🌿</span>
+                <span class="dosha-name">Kapha</span>
+                <span class="dosha-trait">Oily / Heavy</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="regHairType">Hair & Scalp Goal</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-leaf"></i>
+              <select id="regHairType" class="herbal-input" style="padding-left:42px;">
+                <option value="Hair Fall Reduction & Scalp Nourishment">Hair Fall Reduction & Deep Nourishment</option>
+                <option value="Dandruff & Itch Control">Dandruff & Itchiness Relief</option>
+                <option value="Anti-Tanning & Glowing Skin">Anti-Tanning & Facial Glow</option>
+                <option value="Silky Smooth Length Retention">Silky Smooth Hair Growth</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-herbal-submit">
+            <i class="fa-solid fa-seedling"></i>
+            <span>Begin Botanical Journey</span>
+          </button>
+        </form>
+
+      </div>
+
+      <!-- ==================== POST-LOGIN SUCCESS & LIVE USERS SHOWCASE ==================== -->
+      <!-- Requirement: "after logging in also show how many users are using the website" -->
+      <div class="login-success-card" id="loginSuccessSection">
+        <span class="success-ayur-avatar" id="successAvatar">🌿</span>
+        <h3 class="success-welcome-title">Namaste, <span id="successUserName">Seeker</span>!</h3>
+        <div class="success-user-dosha" id="successUserDosha">Ayurvedic Constitution: Pitta-Vata</div>
+
+        <!-- PROMINENT ACTIVE USERS FEATURED BANNER -->
+        <div class="active-users-featured-banner">
+          <div class="banner-pulse-halo"></div>
+          <span class="active-banner-label">
+            <i class="fa-solid fa-circle-nodes" style="color:var(--gold-light);"></i> LIVE COMMUNITY ACTIVITY
+          </span>
+
+          <div class="active-count-huge">
+            <span class="live-dot"></span>
+            <span id="liveUsersNumber">142</span>
+          </div>
+
+          <p class="active-banner-sub">
+            Nature Lovers across India are currently exploring Umanarayani Ayurvedic personal care formulations right now!
+          </p>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
+          <a href="index.html#productsSection" class="btn-continue-shopping">
+            <i class="fa-solid fa-bag-shopping"></i> Explore Hair & Skin Formulations
+          </a>
+
+          <button onclick="handleUserLogout()" style="font-size:0.85rem; color:var(--text-muted); text-decoration:underline; cursor:pointer;">
+            Log out from this session
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/auth.js"></script>
+</body>
+</html>
