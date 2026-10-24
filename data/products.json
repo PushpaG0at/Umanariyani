@@ -1,0 +1,337 @@
+
+[
+  {
+    "id": "ayurvedic-hair-oil",
+    "name": "UMANARAYANI AYURVEDIC HAIR OIL",
+    "subtitle": "Traditional Herbal Care for Beautiful Hair",
+    "tagline": "Pure Nature, Pure Care.",
+    "category": "Hair Care",
+    "categorySlug": "hair-care",
+    "price": 349,
+    "mrp": 499,
+    "discountPercent": 30,
+    "rating": 4.8,
+    "ratingCount": 342,
+    "badge": "Bestseller",
+    "volume": "200 ml / 6.76 fl oz",
+    "image": "images/hair-oil.png",
+    "gallery": [
+      "images/hair-oil.png",
+      "images/ayurvedic_herbs_circle.jpg"
+    ],
+    "inStock": true,
+    "stockCount": 48,
+    "asin": "B09AYURV01",
+    "shortDescription": "Discover the goodness of traditional Indian hair care with Umanarayani Ayurvedic Hair Oil. Inspired by time-honoured herbal ingredients, this hair oil is designed to nourish the scalp, condition the hair, and help maintain soft, smooth, and naturally shiny-looking hair.",
+    "description": "Discover the goodness of traditional Indian hair care with Umanarayani Ayurvedic Hair Oil. Inspired by time-honoured herbal ingredients, this hair oil is designed to nourish the scalp, condition the hair, and help maintain soft, smooth, and naturally shiny-looking hair.\n\nCrafted according to classical Ayurvedic Kshirapak / herbal infusion principles, this oil deeply penetrates the scalp layers to deliver essential botanical nutrients right to the roots without heavy synthetic greasiness. It transforms dull, damaged, and brittle hair into strong, vibrant, and silky locks with consistent ritualistic care.",
+    "keyBenefits": [
+      "Helps nourish and condition the scalp.",
+      "Helps improve hair softness and manageability.",
+      "Supports smooth, shiny-looking hair.",
+      "Helps reduce dryness-related hair breakage.",
+      "Makes scalp massage and regular hair care more enjoyable."
+    ],
+    "featuredIngredients": [
+      "Brahmi",
+      "Nagarmotha",
+      "Curry leaves",
+      "Hibiscus",
+      "Bhringraj",
+      "Shikakai",
+      "Amla",
+      "Amarbel",
+      "Methi dana"
+    ],
+    "ingredientsDetails": [
+      {
+        "name": "Brahmi",
+        "role": "Scalp Calmer & Root Rejuvenator",
+        "description": "Cools the crown, reduces stress-induced shedding, and revitalizes follicles."
+      },
+      {
+        "name": "Nagarmotha",
+        "role": "Dandruff Defender & Root Strengthener",
+        "description": "Deeply cleanses scalp microbiome and anchors hair shafts."
+      },
+      {
+        "name": "Bhringraj",
+        "role": "Keshraj (King of Hair)",
+        "description": "Legendary Ayurvedic herb renowned for stimulating dormant hair follicles."
+      },
+      {
+        "name": "Amla & Amarbel",
+        "role": "Antioxidant & Length Enhancer",
+        "description": "Rich in natural Vitamin C; supports length retention and deep natural pigmentation."
+      },
+      {
+        "name": "Shikakai & Methi Dana",
+        "role": "Silkiness & Protein Nourishment",
+        "description": "Provides natural gloss, detangles knots, and replenishes hair keratin vitality."
+      }
+    ],
+    "howToUse": "Apply a suitable amount to the scalp and hair. Massage gently with your fingertips. Leave on for 30–60 minutes, then wash thoroughly with shampoo.",
+    "usageSteps": [
+      { "step": 1, "title": "Dispense", "text": "Take 5–10 ml of oil into palms or warm slightly for a relaxing champi." },
+      { "step": 2, "title": "Scalp Massage", "text": "Part hair into sections and massage gently into scalp using circular finger motions." },
+      { "step": 3, "title": "Nourish", "text": "Leave on for 30–60 minutes (or overnight for intense hydration)." },
+      { "step": 4, "title": "Rinse Clean", "text": "Wash thoroughly with Umanarayani Herbal Shampoo for radiant results." }
+    ],
+    "suitableFor": "People looking to maintain nourished, soft, and manageable hair.",
+    "certifications": [
+      "100% Ayurvedic Formula",
+      "Paraben & Mineral Oil Free",
+      "Cruelty Free",
+      "Traditional Cold Infusion"
+    ],
+    "faqs": [
+      {
+        "q": "Can I leave this oil overnight?",
+        "a": "Yes! While leaving it on for 30–60 minutes gives great results, leaving it overnight provides intense deep-conditioning for dry or stressed scalps."
+      },
+      {
+        "q": "Is this suitable for both men and women?",
+        "a": "Absolutely. Umanarayani Ayurvedic Hair Oil is formulated for all genders and hair textures."
+      },
+      {
+        "q": "How often should I use it?",
+        "a": "For best results, use 2 to 3 times a week followed by Umanarayani Herbal Shampoo."
+      }
+    ]
+  },
+  {
+    "id": "herbal-shampoo",
+    "name": "UMANARAYANI HERBAL SHAMPOO",
+    "subtitle": "Nature's Care for Beautiful, Healthy-Looking Hair",
+    "tagline": "Pure Nature, Pure Care.",
+    "category": "Hair Care",
+    "categorySlug": "hair-care",
+    "price": 329,
+    "mrp": 449,
+    "discountPercent": 27,
+    "rating": 4.9,
+    "ratingCount": 289,
+    "badge": "Amazon's Choice",
+    "volume": "250 ml / 8.45 fl oz",
+    "image": "images/shampoo.png",
+    "gallery": [
+      "images/shampoo.png",
+      "images/ayurvedic_herbs_circle.jpg"
+    ],
+    "inStock": true,
+    "stockCount": 35,
+    "asin": "B09AYURV02",
+    "shortDescription": "Give your hair a refreshing herbal cleansing experience with Umanarayani Herbal Shampoo. Inspired by traditional Indian hair-care practices, our shampoo is designed to cleanse the scalp, remove excess oil and everyday impurities, and leave your hair feeling soft, smooth, and manageable.",
+    "description": "Give your hair a refreshing herbal cleansing experience with Umanarayani Herbal Shampoo. Inspired by traditional Indian hair-care practices, our shampoo is designed to cleanse the scalp, remove excess oil and everyday impurities, and leave your hair feeling soft, smooth, and manageable.\n\nCreated for people who value herbal-inspired personal care, Umanarayani Herbal Shampoo brings together the tradition of botanical hair care and the convenience of a modern hair-care routine.\n\nUmanarayani Herbal Products combines inspiration from traditional Indian botanical care with a commitment to everyday personal care. Our aim is to help customers enjoy a simple, refreshing hair-care routine.",
+    "keyBenefits": [
+      "Gentle Cleansing: Helps remove dirt, excess oil, and everyday impurities from the scalp and hair.",
+      "Soft & Smooth Hair: Helps improve hair texture and manageability.",
+      "Natural-Looking Shine: Helps hair look smooth and shiny.",
+      "Hair Breakage Care: Suitable conditioning can help reduce breakage associated with dryness and combing.",
+      "Fresh Scalp Feel: Helps leave the scalp feeling clean and refreshed.",
+      "Regular Hair Care: Makes a convenient addition to your hair-care routine."
+    ],
+    "featuredIngredients": [
+      "Shikakai",
+      "Reetha",
+      "Amla",
+      "Hibiscus",
+      "Aloe Vera",
+      "Brahmi"
+    ],
+    "ingredientsDetails": [
+      {
+        "name": "Shikakai",
+        "role": "Natural Gentle Cleanser",
+        "description": "Traditionally used in Indian hair cleansing; cleanses without stripping natural oils."
+      },
+      {
+        "name": "Reetha",
+        "role": "Rich Natural Saponins",
+        "description": "Contains natural saponins that produce a rich, mild botanical lather."
+      },
+      {
+        "name": "Amla",
+        "role": "Nutrient & Luster Infusion",
+        "description": "A traditional botanical used in hair-care preparations for healthy shine."
+      },
+      {
+        "name": "Hibiscus",
+        "role": "Herbal Conditioner",
+        "description": "Commonly used in hair-conditioning products for velvet smoothness."
+      },
+      {
+        "name": "Aloe Vera",
+        "role": "Moisture & Hydration",
+        "description": "Helps condition the hair and support a moisturised scalp feel."
+      },
+      {
+        "name": "Brahmi",
+        "role": "Root Fortification",
+        "description": "Traditionally used in herbal hair-care formulations to soothe follicles."
+      }
+    ],
+    "howToUse": "1. Wet your hair and scalp thoroughly.\n2. Apply an appropriate amount of shampoo.\n3. Massage gently into the scalp using your fingertips.\n4. Rinse thoroughly with clean water.\n5. Repeat if needed.",
+    "usageSteps": [
+      { "step": 1, "title": "Wet Thoroughly", "text": "Wet your hair and scalp thoroughly with lukewarm or cool water." },
+      { "step": 2, "title": "Apply Shampoo", "text": "Apply an appropriate amount of Umanarayani Herbal Shampoo." },
+      { "step": 3, "title": "Scalp Massage", "text": "Massage gently into the scalp using your fingertips to work up botanical lather." },
+      { "step": 4, "title": "Rinse Clean", "text": "Rinse thoroughly with clean water. Repeat if needed for heavily oiled hair." }
+    ],
+    "suitableFor": "Suitable for customers seeking a regular hair-cleansing routine. Suitability for specific scalp conditions depends on the finished formulation.",
+    "certifications": [
+      "Sulphate & Paraben Free",
+      "Natural Herbal Saponins",
+      "pH Balanced Scalp Care",
+      "Dermatologically Tested"
+    ],
+    "faqs": [
+      {
+        "q": "Does this shampoo foam well without sulphates?",
+        "a": "Yes! We harness natural Reetha (soapnut) saponins which produce a soft, creamy lather that cleanses without harsh detergent stripping."
+      },
+      {
+        "q": "Can I use this daily?",
+        "a": "Yes, its mild botanical formulation is gentle enough for frequent or daily use."
+      }
+    ]
+  },
+  {
+    "id": "orange-face-wash",
+    "name": "UMANARAYANI AYURVEDIC ORANGE FACE WASH",
+    "subtitle": "Freshness for Your Skin, Confidence for Your Day",
+    "tagline": "Pure Nature, Pure Care.",
+    "category": "Skin Care",
+    "categorySlug": "skin-care",
+    "price": 279,
+    "mrp": 399,
+    "discountPercent": 30,
+    "rating": 4.7,
+    "ratingCount": 194,
+    "badge": "Anti-Tan & Glow",
+    "volume": "150 ml / 5.07 fl oz",
+    "image": "images/face-wash.png",
+    "gallery": [
+      "images/face-wash.png",
+      "images/ayurvedic_herbs_circle.jpg"
+    ],
+    "inStock": true,
+    "stockCount": 62,
+    "asin": "B09AYURV03",
+    "shortDescription": "Refresh your daily skincare routine with Umanarayani Ayurvedic Orange Face Wash. Inspired by the freshness of orange and botanical skincare, this facial cleanser is designed to remove everyday dirt, excess oil, and impurities, leaving your skin feeling clean and refreshed.",
+    "description": "Refresh your daily skincare routine with Umanarayani Ayurvedic Orange Face Wash. Inspired by the freshness of orange and botanical skincare, this facial cleanser is designed to remove everyday dirt, excess oil, and impurities, leaving your skin feeling clean and refreshed.\n\nFormulated with natural citrus orange extracts, neem, and purifying Ayurvedic herbs, it specifically targets tanning, environmental dullness, and pimple-causing excess sebum. Experience radiant, refreshed skin that feels soft and hydrated throughout the day without tightness.",
+    "keyBenefits": [
+      "Helps remove dirt, sweat, and excess oil.",
+      "Leaves skin feeling clean and refreshed.",
+      "Helps cleanse oily skin and remove surface impurities.",
+      "Supports a fresh, healthy-looking complexion.",
+      "Targeted support for tanning and darkness reduction.",
+      "Helps with pimples and breakout prevention.",
+      "Makes an easy addition to your daily skincare routine."
+    ],
+    "featuredIngredients": [
+      "Orange Peel Extract",
+      "Neem Leaf Extract",
+      "Aloe Vera",
+      "Citrus Essential Oil",
+      "Haldi (Turmeric)",
+      "Tulsi"
+    ],
+    "ingredientsDetails": [
+      {
+        "name": "Orange Peel Botanical Extract",
+        "role": "Natural Vitamin C & Anti-Tan",
+        "description": "High in natural citric antioxidants; clarifies pigmentation, dullness, and sun tan."
+      },
+      {
+        "name": "Neem & Tulsi",
+        "role": "Anti-Bacterial Pimple Defense",
+        "description": "Purifies skin pores, prevents blemishes, and curbs microbial inflammation."
+      },
+      {
+        "name": "Aloe Vera Gel",
+        "role": "Hydrating & Soothing Veil",
+        "description": "Retains essential skin moisture so your skin never feels dry or stretched."
+      }
+    ],
+    "howToUse": "1. Wet your face with water.\n2. Apply a small quantity of face wash.\n3. Gently massage in circular motions, avoiding the eyes.\n4. Rinse thoroughly and pat dry.\n5. Follow with a suitable moisturiser.",
+    "usageSteps": [
+      { "step": 1, "title": "Splash Face", "text": "Wet your face and neck with cool or lukewarm water." },
+      { "step": 2, "title": "Dispense & Lather", "text": "Apply a coin-sized amount of face wash onto wet palms and lather." },
+      { "step": 3, "title": "Massage Gently", "text": "Gently massage in upward circular motions for 30–60 seconds, avoiding eye area." },
+      { "step": 4, "title": "Rinse & Glow", "text": "Rinse thoroughly with clean water, pat dry with a soft towel, and apply moisturiser." }
+    ],
+    "suitableFor": "Customers looking for a refreshing daily facial cleanser, targeting tanning, darkness, and pimple removal.",
+    "certifications": [
+      "100% Soap Free",
+      "Cruelty Free",
+      "Non-Comedogenic",
+      "Suitable for Oily, Normal & Combination Skin"
+    ],
+    "faqs": [
+      {
+        "q": "Will this face wash dry out my skin?",
+        "a": "No, Umanarayani Orange Face Wash is soap-free and infused with soothing Aloe Vera to maintain your skin's natural moisture barrier."
+      },
+      {
+        "q": "Does it help with pimples and acne spots?",
+        "a": "Yes! The combination of orange peel bioflavonoids and neem leaves actively helps control excess oil and clears acne-causing bacteria."
+      }
+    ]
+  },
+  {
+    "id": "neem-tulsi-body-wash",
+    "name": "UMANARAYANI NEEM & TULSI PURIFYING BODY WASH",
+    "subtitle": "Ayurvedic Botanical Bathing Ritual for Silky, Protected Skin",
+    "tagline": "Pure Nature, Pure Care.",
+    "category": "Body Care",
+    "categorySlug": "body-care",
+    "price": 349,
+    "mrp": 499,
+    "discountPercent": 30,
+    "rating": 4.9,
+    "ratingCount": 118,
+    "badge": "New Release",
+    "volume": "300 ml / 10.14 fl oz",
+    "image": "images/ayurvedic_herbs_circle.jpg",
+    "gallery": [
+      "images/ayurvedic_herbs_circle.jpg"
+    ],
+    "inStock": true,
+    "stockCount": 20,
+    "asin": "B09AYURV04",
+    "shortDescription": "Awaken your senses with the purifying blend of Neem, Tulsi, and cooling Vetiver. Designed to refresh tired skin, combat body acne, and leave your whole body feeling invigorated and naturally fragranced.",
+    "description": "Awaken your senses with the purifying blend of Neem, Tulsi, and cooling Vetiver. Designed to refresh tired skin, combat body acne, and leave your whole body feeling invigorated and naturally fragranced.\n\nFormulated with time-tested medicinal herbs, this rich body wash provides gentle purifying foam without stripping skin moisture, leaving a fresh botanical aroma that lingers throughout your day.",
+    "keyBenefits": [
+      "Antibacterial protection against daily pollution and sweat.",
+      "Helps clear back acne and chest breakouts.",
+      "Leaves skin silky smooth, soft, and refreshed.",
+      "Infused with relaxing Ayurvedic essential oils."
+    ],
+    "featuredIngredients": [
+      "Neem",
+      "Tulsi",
+      "Vetiver (Khus)",
+      "Aloe Vera",
+      "Eucalyptus"
+    ],
+    "ingredientsDetails": [
+      { "name": "Neem", "role": "Deep Purifier", "description": "Protects skin against environmental impurities." },
+      { "name": "Tulsi", "role": "Holy Basil Antioxidant", "description": "Soothes skin irritation and promotes even tone." }
+    ],
+    "howToUse": "Dispense a generous amount onto a wet loofah or sponge. Lather all over the body, then rinse thoroughly with clean water.",
+    "usageSteps": [
+      { "step": 1, "title": "Pour", "text": "Pour 10ml onto wet sponge or palms." },
+      { "step": 2, "title": "Lather", "text": "Massage over wet body into a rich herbal lather." },
+      { "step": 3, "title": "Rinse", "text": "Rinse clean and feel the revitalizing freshness." }
+    ],
+    "suitableFor": "All skin types, especially for daily post-workout and refreshing morning showers.",
+    "certifications": [
+      "Sulphate Free",
+      "100% Ayurvedic Ingredients",
+      "Vegan & Cruelty Free"
+    ],
+    "faqs": [
+      { "q": "Is this suitable for sensitive skin?", "a": "Yes, it contains pure Aloe and calming Vetiver that gently cleanses sensitive skin without irritation." }
+    ]
+  }
+]

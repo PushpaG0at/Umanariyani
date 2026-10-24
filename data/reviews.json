@@ -1,0 +1,85 @@
+{
+  "ayurvedic-hair-oil": [
+    {
+      "id": "rev_1",
+      "author": "Ananya Sharma",
+      "location": "Bengaluru, Karnataka",
+      "rating": 5,
+      "date": "October 18, 2026",
+      "title": "Remarkable difference in hair fall and texture!",
+      "body": "I've tried numerous Ayurvedic oils, but Umanarayani Hair Oil has genuine herbal potency. The infusion of Brahmi, Nagarmotha, and Amarbel gives a cooling champi experience. After 3 weeks, my comb collects noticeably less hair and strands feel super soft.",
+      "verifiedPurchase": true,
+      "helpfulCount": 42
+    },
+    {
+      "id": "rev_2",
+      "author": "Vikram Joshi",
+      "location": "Pune, Maharashtra",
+      "rating": 5,
+      "date": "October 12, 2026",
+      "title": "Authentic classical preparation without synthetic perfume",
+      "body": "As someone who studies Ayurveda, I immediately checked the ingredient list. The presence of authentic herbs like Jatamansi and Kalonji provides real scalp nourishment without mineral oil fillers. Truly pure nature and care.",
+      "verifiedPurchase": true,
+      "helpfulCount": 29
+    },
+    {
+      "id": "rev_3",
+      "author": "Meera Nair",
+      "location": "Kochi, Kerala",
+      "rating": 4,
+      "date": "October 5, 2026",
+      "title": "Lovely fragrance and zero stickiness",
+      "body": "It washes out easily with the Umanarayani shampoo and leaves my hair glowing. Highly recommend doing an overnight champi.",
+      "verifiedPurchase": true,
+      "helpfulCount": 15
+    }
+  ],
+  "herbal-shampoo": [
+    {
+      "id": "rev_4",
+      "author": "Rohan Kapoor",
+      "location": "Delhi NCR",
+      "rating": 5,
+      "date": "October 20, 2026",
+      "title": "Cleanses thoroughly without drying like chemical shampoos",
+      "body": "Reetha and Shikakai give a surprisingly gentle and rich lather. Scalp feels squeaky clean yet moisturized. Pairs magically with the hair oil.",
+      "verifiedPurchase": true,
+      "helpfulCount": 31
+    },
+    {
+      "id": "rev_5",
+      "author": "Pooja Verma",
+      "location": "Jaipur, Rajasthan",
+      "rating": 5,
+      "date": "October 14, 2026",
+      "title": "Natural shine is back!",
+      "body": "My frizz has tamed down considerably. No sulphates or parabens, which is a big relief for sensitive scalps.",
+      "verifiedPurchase": true,
+      "helpfulCount": 18
+    }
+  ],
+  "orange-face-wash": [
+    {
+      "id": "rev_6",
+      "author": "Sanya Gupta",
+      "location": "Chandigarh",
+      "rating": 5,
+      "date": "October 21, 2026",
+      "title": "Instantly removes tanning after sun exposure!",
+      "body": "The fresh orange peel aroma is heavenly and authentic, not like artificial scents. Cleared up stubborn forehead pimples in just 10 days.",
+      "verifiedPurchase": true,
+      "helpfulCount": 37
+    },
+    {
+      "id": "rev_7",
+      "author": "Aditya Mehta",
+      "location": "Mumbai",
+      "rating": 4,
+      "date": "October 16, 2026",
+      "title": "Controls midday oiliness very effectively",
+      "body": "Perfect morning face cleanser. Doesn't leave the skin feeling tight or stretchy.",
+      "verifiedPurchase": true,
+      "helpfulCount": 12
+    }
+  ]
+}

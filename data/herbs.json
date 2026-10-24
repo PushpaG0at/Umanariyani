@@ -1,0 +1,139 @@
+[
+  {
+    "id": "amla",
+    "name": "AMLA",
+    "hindi": "अमला",
+    "botanical": "Phyllanthus emblica (Indian Gooseberry)",
+    "image": "images/badge-amla.png",
+    "tagline": "Natural Vitamin C & Youthful Vitality",
+    "shortBenefit": "Natural Vitamin C & Shine",
+    "role": "Rich in natural Vitamin C, powerful antioxidant that fortifies hair roots, prevents premature graying, and enhances natural shine.",
+    "benefits": [
+      "Rich source of bioavailable Vitamin C",
+      "Strengthens hair follicles from deep roots",
+      "Imparts natural dark luster and shine",
+      "Combats oxidative scalp stress"
+    ],
+    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL", "UMANARAYANI HERBAL SHAMPOO"]
+  },
+  {
+    "id": "reetha",
+    "name": "REETHA",
+    "hindi": "रीठा",
+    "botanical": "Sapindus mukorossi (Soapnut)",
+    "image": "images/badge-reetha.png",
+    "tagline": "Nature's Pure Cleansing Saponin",
+    "shortBenefit": "Gentle Natural Saponin",
+    "role": "Produces mild, natural lather that washes away dirt and excess sebum without stripping scalp natural lipids.",
+    "benefits": [
+      "100% natural, hypoallergenic cleanser",
+      "Gently cleanses excess oil and scalp impurities",
+      "Maintains scalp pH balance and softness",
+      "Leaves hair naturally soft and bouncy"
+    ],
+    "presentIn": ["UMANARAYANI HERBAL SHAMPOO"]
+  },
+  {
+    "id": "shikakai",
+    "name": "SHIKAKAI",
+    "hindi": "शिकाकाई",
+    "botanical": "Acacia concinna",
+    "image": "images/badge-shikakai.png",
+    "tagline": "Fruit for the Hair (Keshya)",
+    "shortBenefit": "Fruit for Hair & Silkiness",
+    "role": "Ancient herbal cleanser and detangler rich in vitamins A, C, D, and K, known for silky manageability.",
+    "benefits": [
+      "Gentle natural cleansing with mild pH",
+      "Soothes dry, itchy scalp and irritation",
+      "Conditions hair strands and reduces split ends",
+      "Detangles knots smoothly"
+    ],
+    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL", "UMANARAYANI HERBAL SHAMPOO"]
+  },
+  {
+    "id": "brahmi",
+    "name": "BRAHMI",
+    "hindi": "ब्राह्मी",
+    "botanical": "Bacopa monnieri",
+    "image": "images/badge-brahmi.png",
+    "tagline": "Mind & Crown Nourisher",
+    "shortBenefit": "Crown Calmer & Follicle Rejuvenator",
+    "role": "Cools the mind, reduces stress-induced hair loss, and supplies vital biochemicals to hair follicles.",
+    "benefits": [
+      "Cools scalp heat (Pitta dosha pacification)",
+      "Reduces hair fall triggered by stress & exhaustion",
+      "Strengthens hair fibers from root to tip",
+      "Nourishes hair roots during head massage (champi)"
+    ],
+    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL", "UMANARAYANI HERBAL SHAMPOO"]
+  },
+  {
+    "id": "kalonji",
+    "name": "KALONJI",
+    "hindi": "कलौंजी",
+    "botanical": "Nigella sativa (Black Seed)",
+    "image": "images/badge-kalonji.png",
+    "tagline": "The Miracle Seed of Vitality",
+    "shortBenefit": "Vitality & Follicle Density",
+    "role": "Loaded with thymoquinone and essential fatty acids, it nourishes thinning hair and locks in deep moisture.",
+    "benefits": [
+      "Contains potent thymoquinone antioxidant",
+      "Improves hair density and scalp microcirculation",
+      "Locks in deep moisture to curb breakage",
+      "Enhances scalp defense against pollution"
+    ],
+    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL"]
+  },
+  {
+    "id": "jatamansi",
+    "name": "Jatamansi",
+    "name": "JATAMANSI",
+    "hindi": "जटामांसी",
+    "botanical": "Nardostachys jatamansi (Spikenard)",
+    "image": "images/badge-jatamansi.png",
+    "tagline": "Sacred Calming Root for Follicle Growth",
+    "shortBenefit": "Calming Root & Growth Anagen",
+    "role": "Celebrated in Charaka Samhita for calming the nervous system, encouraging deep sleep, and stimulating follicular expansion.",
+    "benefits": [
+      "Deeply calms agitated scalp tissues and nerves",
+      "Supports follicular growth phase (anagen phase)",
+      "Promotes deep hair conditioning and thickness",
+      "Lends an enchanting, soothing natural herbal aroma"
+    ],
+    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL"]
+  },
+  {
+    "id": "nagarmotha",
+    "name": "NAGARMOTHA",
+    "hindi": "नागरमोथा",
+    "botanical": "Cyperus scariosus / rotundus (Nut Grass)",
+    "image": "images/badge-nagarmotha.png",
+    "tagline": "Microbiome Purifier & Root Anchor",
+    "shortBenefit": "Dandruff Defense & Root Anchor",
+    "role": "Controls microbial imbalances on the scalp, alleviates persistent flakes and itching, and strengthens the root anchor.",
+    "benefits": [
+      "Controls excess scalp sebum and flakiness",
+      "Improves hair root anchoring strength",
+      "Deeply purifies pores without harsh drying",
+      "Supports lustrous, bouncy hair feel"
+    ],
+    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL"]
+  },
+  {
+    "id": "amarbel",
+    "name": "AMARBEL",
+    "hindi": "अमरबेल",
+    "botanical": "Cuscuta reflexa (Golden Dodder)",
+    "image": "images/badge-amarbel.png",
+    "tagline": "Traditional Length & Density Booster",
+    "shortBenefit": "Length Retention & Growth Vitality",
+    "role": "A revered parasitic plant used in classical formulations to invigorate weak hair roots and promote longer, fuller growth.",
+    "benefits": [
+      "Traditional Indian botanical for hair length retention",
+      "Revitalizes dormant and thinning hair patches",
+      "Improves hair strand elasticity and resistance",
+      "Blends harmoniously with herbal carrier oils"
+    ],
+    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL"]
+  }
+]
