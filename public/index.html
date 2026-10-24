@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UMANARAYANI — Pure Nature, Pure Care | Ayurvedic Personal Care</title>
+  <meta name="description" content="Discover classical Ayurvedic personal care products by Umanarayani. Pure herbal hair oils, shampoos, orange face wash, and botanical cosmetics crafted with time-honoured Indian herbs.">
+  <link rel="icon" type="image/png" href="images/logo-center.png">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Core & Mandala Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/revolving-mandala.css">
+  <link rel="stylesheet" href="css/ai-consultant.css">
+</head>
+<body>
+
+  <!-- ==================== TOP ANNOUNCEMENT BAR & LIVE USERS INDICATOR ==================== -->
+  <div class="top-bar">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+      <div class="top-bar-left">
+        <span class="ayush-badge">
+          <i class="fa-solid fa-certificate" style="color:var(--gold-light);"></i> 100% Classical Ayurveda &bull; Ayush Certified
+        </span>
+        <div class="live-users-pill" title="Real-time nature lovers active on website">
+          <span class="live-pulse"></span>
+          <span><strong id="liveUsersCount">142</strong> Nature Lovers Exploring Live</span>
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <a href="https://wa.me/918641033514?text=Hello%20Umanarayani%2C%20I%20have%20a%20query%20about%20your%20Ayurvedic%20products." target="_blank" class="top-whatsapp-link">
+          <i class="fa-brands fa-whatsapp"></i> Ayurvedic Helpline: +91 8641033514
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN NAVIGATION HEADER ==================== -->
+  <header class="main-header">
+    <div class="container nav-wrapper">
+      <!-- Brand Logo -->
+      <a href="index.html" class="brand-link">
+        <img src="images/logo-center.png" alt="Umanarayani Ayurveda Logo" class="brand-logo-img">
+        <div class="brand-text-block">
+          <span class="brand-name">UMANARAYANI</span>
+          <span class="brand-tagline">Pure Nature, Pure Care.</span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav Menu -->
+      <ul class="nav-links">
+        <li class="nav-item active"><a href="index.html">Home</a></li>
+        <li class="nav-item"><a href="#mandalaShowcase">Herbal Core</a></li>
+        <li class="nav-item"><a href="#productsSection">Products</a></li>
+        <li class="nav-item"><a href="#aiSanctuarySection" style="color:var(--gold-deep); font-weight:700;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Consult</a></li>
+        <li class="nav-item"><a href="#herbsPhilosophy">Herbology</a></li>
+      </ul>
+
+      <!-- Nav Actions -->
+      <div class="nav-actions">
+        <!-- Search Input -->
+        <div class="search-bar-wrap">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="globalSearchInput" class="search-input" placeholder="Search herbs, oil...">
+        </div>
+
+        <!-- Add New Product Button (Extensibility) -->
+        <a href="admin.html" class="btn-add-product" title="Add More Products to Store">
+          <i class="fa-solid fa-circle-plus"></i> <span class="add-prod-text">Add Product</span>
+        </a>
+
+        <!-- Sign-in Button -->
+        <a href="signin.html" class="btn-signin" id="headerSignInBtn">
+          <i class="fa-regular fa-user"></i>
+          <span>Sign In</span>
+        </a>
+
+        <!-- Cart Icon -->
+        <a href="cart.html" class="btn-icon" title="View Cart">
+          <i class="fa-solid fa-bag-shopping"></i>
+          <span class="badge-count" id="cartBadgeCount" style="display:none;">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== HERO SECTION: REVOLVING HERBS AROUND BRAND LOGO ==================== -->
+  <section class="hero-section" id="mandalaShowcase" style="padding: 40px 0 60px;">
+    <div class="hero-pattern-bg"></div>
+    <div class="container" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+
+      <!-- Hero Header Text -->
+      <div class="hero-badge" style="margin-bottom: 12px;">
+        <i class="fa-solid fa-seedling" style="color:var(--green-sage);"></i>
+        <span>Ancient Indian Botanical Formulations</span>
+      </div>
+
+      <h1 class="hero-title" style="max-width: 880px; font-size: 2.9rem; margin-bottom: 12px;">
+        Pure Ayurvedic Harmony Rejuvenating <span class="highlight">Hair & Skin</span>
+      </h1>
+
+      <p class="hero-subtitle" style="max-width: 680px; margin-bottom: 24px;">
+        Watch the eight classical herbs of Umanarayani revolve around our sacred emblem. Hover on any ingredient to reveal its classical potency or drag the wheel to explore.
+      </p>
+
+      <!-- Trust Chips -->
+      <div class="hero-trust-chips" style="justify-content: center; margin-bottom: 24px;">
+        <span class="trust-chip"><i class="fa-solid fa-droplet" style="color:var(--green-mint);"></i> Classical Kshirapak Oil</span>
+        <span class="trust-chip"><i class="fa-solid fa-ban" style="color:var(--gold-deep);"></i> 100% Sulphate & Paraben Free</span>
+        <span class="trust-chip"><i class="fa-solid fa-heart" style="color:#E74C3C;"></i> Cruelty Free</span>
+        <span class="trust-chip"><i class="fa-solid fa-award" style="color:var(--gold-primary);"></i> Ayush Certified</span>
+      </div>
+
+      <!-- ==================== GRAND REVOLVING MANDALA CENTERPIECE ==================== -->
+      <!-- The 8 herbs revolve around this central UMANARAYANI logo/brand name with smooth popping -->
+      <div id="revolvingMandalaContainer" style="width: 100%; display: flex; justify-content: center;">
+        <!-- Rendered dynamically by revolving-mandala.js -->
+      </div>
+
+      <!-- Hero CTA Buttons -->
+      <div class="hero-cta-group" style="justify-content: center; margin-top: 16px; flex-wrap: wrap; gap: 12px;">
+        <a href="#productsSection" class="btn-primary-hero">
+          <span>Explore All Formulations</span>
+          <i class="fa-solid fa-arrow-down"></i>
+        </a>
+        <a href="#aiSanctuarySection" class="btn-secondary-hero" style="background:#FFFFFF; color:var(--green-primary); border:2px solid var(--green-forest); padding:12px 22px; border-radius:30px; text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--gold-deep);"></i>
+          <span>Ask AI Vaidya (Gemini)</span>
+        </a>
+        <a href="https://wa.me/918641033514?text=Hello%20Umanarayani!%20I%20would%20like%20to%20consult%20an%20Ayurvedic%20specialist." target="_blank" class="btn-whatsapp-hero">
+          <i class="fa-brands fa-whatsapp" style="font-size:1.3rem;"></i>
+          <span>WhatsApp Helpline (+91 8641033514)</span>
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ==================== AYURVEDIC PRODUCT CATALOG (POPPING CARDS) ==================== -->
+  <section class="section-products" id="productsSection">
+    <div class="container">
+      <div class="section-header-wrap">
+        <span class="section-tag">
+          <i class="fa-solid fa-spa"></i> Sacred Ayurvedic Formulations
+        </span>
+        <h2 class="section-title">Pure Nature, Pure Care.</h2>
+        <p class="section-desc">
+          Crafted with pure herbal distillates and classical botanicals. Hover on any product card for an interactive smooth pop, or click to open our Amazon-style detailed product experience in a new window.
+        </p>
+      </div>
+
+      <!-- Category Filter Tabs -->
+      <div class="category-filter-tabs">
+        <button class="cat-tab-btn active" data-cat="all">All Formulations</button>
+        <button class="cat-tab-btn" data-cat="hair-care">Hair Care (Oil & Shampoo)</button>
+        <button class="cat-tab-btn" data-cat="skin-care">Skin & Face Wash</button>
+        <button class="cat-tab-btn" data-cat="body-care">Body Care & Wellness</button>
+      </div>
+
+      <!-- Interactive Products Grid -->
+      <div class="products-grid" id="productsGrid">
+        <!-- Rendered dynamically by main.js with smooth popping physics on hover -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== BOTANICAL SCIENCE & REVOLVING HERBS SHOWCASE ==================== -->
+  <section class="section-botanical-showcase" id="herbsPhilosophy">
+    <div class="container botanical-grid">
+      <div class="botanical-artwork-wrap">
+        <img src="images/ayurvedic_herbs_circle.jpg" alt="Ayurvedic Botanical Circle of Herbs" class="botanical-artwork-img">
+      </div>
+
+      <div class="botanical-content-block">
+        <span class="section-tag"><i class="fa-solid fa-leaf"></i> Ancient Herbology</span>
+        <h2 style="font-size:2.2rem; color:var(--green-primary); font-family:'Playfair Display', serif;">
+          The Eight Sacred Pillars of Umanarayani Formulations
+        </h2>
+        <p style="color:var(--text-muted); font-size:1rem; line-height:1.65;">
+          Every bottle of Umanarayani is powered by classical Rasayana botanicals: Amla for youthfulness, Reetha & Shikakai for gentle natural lather, Brahmi & Jatamansi for root tranquility, Nagarmotha & Kalonji for scalp strength, and Amarbel for length preservation.
+        </p>
+
+        <div class="herb-feature-list">
+          <div class="herb-feature-card">
+            <div class="herb-feature-icon">🌿</div>
+            <div class="herb-feature-info">
+              <h4>Brahmi & Jatamansi</h4>
+              <p>Cool crown heat and curb stress-induced hair loss during calming head massage.</p>
+            </div>
+          </div>
+
+          <div class="herb-feature-card">
+            <div class="herb-feature-icon">✨</div>
+            <div class="herb-feature-info">
+              <h4>Amla & Amarbel</h4>
+              <p>Supply bioavailable Vitamin C to protect natural pigment and stimulate hair length.</p>
+            </div>
+          </div>
+
+          <div class="herb-feature-card">
+            <div class="herb-feature-icon">🍃</div>
+            <div class="herb-feature-info">
+              <h4>Shikakai & Reetha</h4>
+              <p>Ancient natural saponins that wash away sebum without harsh sulphate detergents.</p>
+            </div>
+          </div>
+
+          <div class="herb-feature-card">
+            <div class="herb-feature-icon">🌱</div>
+            <div class="herb-feature-info">
+              <h4>Nagarmotha & Kalonji</h4>
+              <p>Deep follicle anchors that balance scalp microflora and prevent flakiness.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== AYURVEDIC CONSULTATION SANCTUARY (AI VAIDYA & HUMAN SPECIALIST) ==================== -->
+  <section class="section-ai-sanctuary" id="aiSanctuarySection">
+    <div class="container">
+      <div class="section-header-wrap">
+        <span class="section-tag">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Dual Consultation Care
+        </span>
+        <h2 class="section-title">Ask AI Vaidya or Talk with Human Specialist</h2>
+        <p class="section-desc">
+          Have queries about hair fall, dandruff, skincare, or ingredient rituals? Ask our intelligent <strong>Gemini AI Vaidya</strong> for instant tailored advice, or chat directly with our <strong>Ayurvedic Herbal Care Team on WhatsApp (+91 8641033514)</strong>. The choice is completely yours.
+        </p>
+      </div>
+
+      <div class="ai-consult-grid">
+        <!-- LEFT CARD: AI VAIDYA POWERED BY GOOGLE GEMINI -->
+        <div class="consult-card">
+          <div class="consult-card-header ai-header">
+            <div class="header-brand-group">
+              <img src="images/logo-center.png" alt="Umanarayani AI Vaidya" class="consult-avatar-img">
+              <div class="consult-title-wrap">
+                <h3>Umanarayani AI Vaidya</h3>
+                <span class="consult-subtitle">
+                  <span class="pulse-dot"></span> 24/7 Virtual Ayurvedic Intelligence
+                </span>
+              </div>
+            </div>
+            <span class="gemini-badge">
+              <i class="fa-solid fa-bolt"></i> Powered by Gemini 3.6
+            </span>
+          </div>
+
+          <!-- Mode Toggle: Chat vs Dosha Quiz -->
+          <div class="ai-mode-tabs">
+            <button class="ai-tab-btn active" data-mode="chat">
+              <i class="fa-regular fa-comments"></i> Live Ayurvedic Q&amp;A
+            </button>
+            <button class="ai-tab-btn" data-mode="dosha">
+              <i class="fa-solid fa-leaf"></i> 1-Min Dosha Diagnosis Quiz
+            </button>
+          </div>
+
+          <!-- View 1: Chat Stream -->
+          <div id="aiChatView" style="display:flex; flex-direction:column; flex:1;">
+            <div class="ai-chat-body" id="aiChatBody">
+              <div class="chat-msg bot">
+                <div class="msg-avatar">
+                  <img src="images/logo-center.png" alt="AI Vaidya" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                </div>
+                <div class="msg-content">
+                  <p><strong>Namaste! 🙏 Welcome to Umanarayani Ayurvedic Sanctuary.</strong></p>
+                  <p>I am your AI Vaidya, trained in classical Ayurveda and our 100% natural personal care formulations (Hair Oil, Shampoo, Orange Face Wash, Neem Body Wash).</p>
+                  <p>Ask me anything regarding hair fall, scalp champi, tanning, pimples, or our eight revolving sacred herbs!</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Query Chips -->
+            <div class="quick-chips-wrapper">
+              <button class="ai-quick-chip" data-query="Which herbs in Umanarayani Hair Oil help stop severe hair fall and dryness?">
+                🌿 Hair Fall &amp; Oil Benefits
+              </button>
+              <button class="ai-quick-chip" data-query="How does Orange Face Wash remove tanning and pimples?">
+                🍊 Orange Face Wash for Glowing Skin
+              </button>
+              <button class="ai-quick-chip" data-query="Why are Shikakai and Reetha used in Umanarayani Shampoo instead of sulphates?">
+                🧴 Reetha &amp; Shikakai Natural Cleanse
+              </button>
+              <button class="ai-quick-chip" data-query="What is the ideal Ayurvedic weekly ritual for dry scalp and frizz?">
+                ✨ Weekly Scalp Ritual
+              </button>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="ai-chat-input-bar">
+              <input type="text" id="aiInputField" class="ai-input-field" placeholder="Ask AI Vaidya any query about our Ayurvedic products...">
+              <button class="ai-send-btn" id="aiSendBtn" title="Send Question to AI">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- View 2: Dosha Quiz -->
+          <div class="dosha-quiz-container" id="doshaQuizView">
+            <form id="doshaQuizForm">
+              <div class="dosha-step-card">
+                <div class="dosha-step-title">
+                  <span>1.</span> What is your primary hair texture?
+                </div>
+                <div class="dosha-options-grid">
+                  <label class="dosha-radio-label selected">
+                    <input type="radio" name="hairTexture" value="Dry & Frizzy" checked>
+                    <span class="dosha-radio-icon">🌾</span>
+                    <span>Dry &amp; Frizzy (Vata)</span>
+                  </label>
+                  <label class="dosha-radio-label">
+                    <input type="radio" name="hairTexture" value="Thin & Scalp Heat">
+                    <span class="dosha-radio-icon">🔥</span>
+                    <span>Fine &amp; Heated (Pitta)</span>
+                  </label>
+                  <label class="dosha-radio-label">
+                    <input type="radio" name="hairTexture" value="Thick & Oily">
+                    <span class="dosha-radio-icon">💧</span>
+                    <span>Thick &amp; Oily (Kapha)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="dosha-step-card" style="margin-top:14px;">
+                <div class="dosha-step-title">
+                  <span>2.</span> What is your facial skin tendency?
+                </div>
+                <div class="dosha-options-grid">
+                  <label class="dosha-radio-label selected">
+                    <input type="radio" name="skinType" value="Combination / T-Zone" checked>
+                    <span class="dosha-radio-icon">✨</span>
+                    <span>Combination / T-Zone</span>
+                  </label>
+                  <label class="dosha-radio-label">
+                    <input type="radio" name="skinType" value="Prone to Acne & Tan">
+                    <span class="dosha-radio-icon">🍊</span>
+                    <span>Sun Tan &amp; Blemishes</span>
+                  </label>
+                  <label class="dosha-radio-label">
+                    <input type="radio" name="skinType" value="Dry & Stretchy">
+                    <span class="dosha-radio-icon">🍂</span>
+                    <span>Dry &amp; Stretchy</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="dosha-step-card" style="margin-top:14px;">
+                <div class="dosha-step-title">
+                  <span>3.</span> What is your main concern right now?
+                </div>
+                <div class="dosha-options-grid">
+                  <label class="dosha-radio-label selected">
+                    <input type="radio" name="mainConcern" value="Hair Fall & Thinning" checked>
+                    <span class="dosha-radio-icon">🧴</span>
+                    <span>Severe Hair Fall</span>
+                  </label>
+                  <label class="dosha-radio-label">
+                    <input type="radio" name="mainConcern" value="Dandruff & Scalp Itch">
+                    <span class="dosha-radio-icon">❄️</span>
+                    <span>Dandruff &amp; Flakes</span>
+                  </label>
+                  <label class="dosha-radio-label">
+                    <input type="radio" name="mainConcern" value="Dull Skin & Tanning">
+                    <span class="dosha-radio-icon">🌟</span>
+                    <span>Tanning &amp; Dull Skin</span>
+                  </label>
+                </div>
+              </div>
+
+              <div style="margin-top:18px; text-align:center;">
+                <button type="submit" class="btn-diagnose-dosha" style="width:100%;">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i>
+                  <span>Generate AI Dosha Regimen &amp; Product Matches</span>
+                </button>
+              </div>
+            </form>
+
+            <div class="dosha-result-box" id="doshaResultBox">
+              <div id="doshaResultContent"></div>
+              <div style="margin-top:16px; padding-top:12px; border-top:1px dashed var(--border-gold); text-align:center;">
+                <a href="https://wa.me/918641033514" target="_blank" class="btn-helpline-action wa" id="btnDoshaWaReview" style="display:inline-flex;">
+                  <i class="fa-brands fa-whatsapp"></i> Review this Regimen on WhatsApp (+91 8641033514)
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT CARD: HUMAN AYURVEDIC SPECIALIST ON WHATSAPP -->
+        <div class="consult-card">
+          <div class="consult-card-header human-header">
+            <div class="header-brand-group">
+              <div style="width:48px; height:48px; border-radius:50%; background:#FFFFFF; display:flex; align-items:center; justify-content:center; font-size:1.5rem; box-shadow:0 4px 12px rgba(0,0,0,0.15); flex-shrink:0;">
+                🌿
+              </div>
+              <div class="consult-title-wrap">
+                <h3>Ayurvedic Herbal Care Team</h3>
+                <span class="consult-subtitle">
+                  <span class="pulse-dot"></span> Herbal Formulations &amp; Support Team
+                </span>
+              </div>
+            </div>
+            <span class="online-pill">
+              <i class="fa-brands fa-whatsapp"></i> Online
+            </span>
+          </div>
+
+          <div class="human-specialist-body">
+            <!-- Herbal Care Team Badge -->
+            <div class="herbal-team-card">
+              <div class="team-img-wrap">
+                <img src="images/logo-center.png" alt="Ayurvedic Care Team" class="team-avatar">
+                <span class="team-status-badge"></span>
+              </div>
+              <div class="team-info">
+                <h4>Umanarayani Herbal Care Team</h4>
+                <div class="team-credentials">Authentic Herbal Formulations &amp; Regimen Support</div>
+                <div class="team-availability">
+                  <i class="fa-regular fa-clock"></i> Available Mon–Sun, 9:00 AM – 9:00 PM IST
+                </div>
+              </div>
+            </div>
+
+            <!-- Phone Callout Box -->
+            <div class="helpline-callout">
+              <div class="helpline-label">Direct WhatsApp &amp; Phone Helpline</div>
+              <a href="tel:+918641033514" class="helpline-number">+91 8641033514</a>
+              <div class="helpline-actions">
+                <a href="https://wa.me/918641033514?text=Hello%20Umanarayani!%20I%20would%20like%20guidance%20regarding%20my%20hair%20and%20skin." target="_blank" class="btn-helpline-action wa">
+                  <i class="fa-brands fa-whatsapp" style="font-size:1.1rem;"></i>
+                  <span>WhatsApp Support</span>
+                </a>
+                <a href="tel:+918641033514" class="btn-helpline-action call">
+                  <i class="fa-solid fa-phone"></i>
+                  <span>Direct Call</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Why Talk to Human Specialist -->
+            <div class="human-benefits-list">
+              <div class="human-benefit-item">
+                <div class="benefit-icon"><i class="fa-solid fa-leaf"></i></div>
+                <div class="benefit-text">
+                  <h5>Personal Scalp &amp; Skin Guidance</h5>
+                  <p>Share your hair or skin queries for 1-on-1 herbal product advice and daily rituals.</p>
+                </div>
+              </div>
+
+              <div class="human-benefit-item">
+                <div class="benefit-icon"><i class="fa-solid fa-boxes-packing"></i></div>
+                <div class="benefit-text">
+                  <h5>Direct WhatsApp Ordering &amp; Tracking</h5>
+                  <p>Place orders directly through WhatsApp, confirm PIN code delivery, and get instant updates.</p>
+                </div>
+              </div>
+
+              <div class="human-benefit-item">
+                <div class="benefit-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                <div class="benefit-text">
+                  <h5>Wholesale &amp; Custom Blends</h5>
+                  <p>Inquire about family care bundles, salon packages, or bulk Ayurvedic orders.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick WhatsApp Launch Buttons -->
+            <div class="direct-wa-inquiries">
+              <span style="font-size:0.78rem; text-transform:uppercase; font-weight:700; color:var(--text-muted); letter-spacing:0.5px;">
+                Quick WhatsApp Questions:
+              </span>
+              <a href="https://wa.me/918641033514?text=Hello%20Umanarayani%2C%20I%20have%20hair%20fall%20and%20dryness.%20Which%20routine%20do%20you%20recommend%3F" target="_blank" class="direct-wa-btn">
+                <span>🌿 Ask About Hair Fall Herbal Solutions</span>
+                <i class="fa-brands fa-whatsapp"></i>
+              </a>
+              <a href="https://wa.me/918641033514?text=Hello%2C%20I%20want%20to%20know%20how%20to%20order%20the%20Ayurvedic%20Hair%20Oil%20and%20Shampoo%20combo." target="_blank" class="direct-wa-btn">
+                <span>📦 Order Hair Oil &amp; Shampoo Combo</span>
+                <i class="fa-brands fa-whatsapp"></i>
+              </a>
+              <a href="https://wa.me/918641033514?text=Hello%20Umanarayani%2C%20is%20the%20Orange%20Face%20Wash%20suitable%20for%20sensitive%20skin%3F" target="_blank" class="direct-wa-btn">
+                <span>🍊 Consult on Orange Face Wash</span>
+                <i class="fa-brands fa-whatsapp"></i>
+              </a>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+  <div class="whatsapp-floating-bubble">
+    <div class="whatsapp-popup-teaser" id="whatsappTeaser">
+      <img src="images/logo-center.png" alt="Ayurvedic Consultant" class="teaser-avatar">
+      <div class="teaser-text">
+        <span class="teaser-title">Ayurvedic Specialist</span>
+        <span class="teaser-sub">Ask any product query &bull; Online</span>
+      </div>
+    </div>
+
+    <button class="whatsapp-main-btn" id="whatsappFloatingBtn" title="Chat directly with Umanarayani (+91 8641033514)">
+      <i class="fa-brands fa-whatsapp"></i>
+      <span class="whatsapp-online-dot"></span>
+    </button>
+  </div>
+
+  <!-- WhatsApp Interactive Drawer / Modal -->
+  <div class="whatsapp-modal" id="whatsappModal">
+    <div class="whatsapp-modal-header">
+      <div class="header-consultant-info">
+        <img src="images/logo-center.png" alt="Umanarayani Support" style="width:36px; height:36px; border-radius:50%; border:2px solid #FFF;">
+        <div>
+          <h4>Umanarayani Ayurveda</h4>
+          <p>Direct WhatsApp: +91 8641033514</p>
+        </div>
+      </div>
+      <button class="close-modal-btn" id="btnCloseWaModal">&times;</button>
+    </div>
+
+    <div class="whatsapp-modal-body">
+      <div class="chat-bubble-received">
+        Namaste! 🙏 Welcome to Umanarayani. Which personal care routine or product can we guide you with today?
+      </div>
+
+      <div class="quick-questions-list">
+        <button class="quick-q-btn" data-query="Hello Umanarayani, which product is best for severe hair fall and dryness?">
+          🌿 Which product is best for hair fall?
+        </button>
+        <button class="quick-q-btn" data-query="Hello, I want to know about Umanarayani Ayurvedic Hair Oil ingredients and price.">
+          🧴 Inquire about Ayurvedic Hair Oil
+        </button>
+        <button class="quick-q-btn" data-query="Hello, does the Orange Face Wash help with tanning and pimples?">
+          🍊 Inquire about Orange Face Wash
+        </button>
+        <button class="quick-q-btn" data-query="Hello, how can I place an order or check delivery to my PIN code?">
+          📦 Order / Delivery Assistance
+        </button>
+      </div>
+    </div>
+
+    <div class="whatsapp-modal-footer">
+      <input type="text" id="waInput" class="wa-input" placeholder="Type your Ayurvedic query...">
+      <button class="wa-send-btn" id="btnWaSend">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="main-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <div class="footer-logo-row">
+            <img src="images/logo-center.png" alt="Umanarayani" class="footer-logo-img">
+            <span class="footer-brand-title">UMANARAYANI</span>
+          </div>
+          <p class="footer-desc">
+            Traditional herbal personal care dedicated to pure nature and holistic wellness. Experience classical hair oils, herbal shampoos, and brightening botanical face cleansers.
+          </p>
+          <span class="ayush-badge" style="width:fit-content;">100% Herbal Formulations</span>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Ayurvedic Formulations</h4>
+          <ul class="footer-links-list">
+            <li><a href="product.html?id=ayurvedic-hair-oil" target="_blank">Ayurvedic Hair Oil</a></li>
+            <li><a href="product.html?id=herbal-shampoo" target="_blank">Herbal Shampoo</a></li>
+            <li><a href="product.html?id=orange-face-wash" target="_blank">Orange Face Wash</a></li>
+            <li><a href="product.html?id=neem-tulsi-body-wash" target="_blank">Neem & Tulsi Body Wash</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Customer Care</h4>
+          <ul class="footer-links-list">
+            <li><a href="signin.html">Ayurvedic Profile / Sign In</a></li>
+            <li><a href="cart.html">View Cart & Checkout</a></li>
+            <li><a href="admin.html">Add New Product</a></li>
+            <li><a href="#herbsPhilosophy">Classical Herbology</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Direct Contact</h4>
+          <div class="footer-contact-item">
+            <i class="fa-brands fa-whatsapp" style="color:var(--whatsapp-green); font-size:1.2rem;"></i>
+            <span>WhatsApp: <strong>+91 8641033514</strong></span>
+          </div>
+          <div class="footer-contact-item">
+            <i class="fa-solid fa-clock"></i>
+            <span>Ayurvedic Support: 9:00 AM – 9:00 PM IST</span>
+          </div>
+          <div class="footer-contact-item">
+            <i class="fa-solid fa-location-dot"></i>
+            <span>Crafted with Botanical Purity &bull; India</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <span>&copy; 2026 UMANARAYANI HERBAL PRODUCTS. All Rights Reserved. Pure Nature, Pure Care.</span>
+        <span>Made with 🌿 Classical Ayurveda</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating AI Quick Assistant Button (Bottom Right) -->
+  <button class="ai-floating-assistant-btn" id="floatingAiBtn" title="Ask AI Vaidya or WhatsApp Herbal Support">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span class="ai-floating-badge">AI</span>
+  </button>
+
+  <!-- Floating AI Vaidya Chat Modal Drawer -->
+  <div class="ai-floating-modal" id="aiFloatingModal">
+    <div class="ai-floating-header">
+      <div class="ai-floating-brand">
+        <img src="images/logo-center.png" alt="Umanarayani AI" class="ai-floating-logo">
+        <div>
+          <h4>Umanarayani AI Vaidya</h4>
+          <span class="ai-floating-status">
+            <span class="pulse-dot"></span> Powered by Gemini 3.6 &bull; Online
+          </span>
+        </div>
+      </div>
+      <div class="ai-floating-header-actions">
+        <a href="https://wa.me/918641033514?text=Hello%20Umanarayani!%20I%20want%20to%20connect%20with%20your%20herbal%20care%20team." target="_blank" class="ai-header-wa-pill" title="Chat on WhatsApp">
+          <i class="fa-brands fa-whatsapp"></i> WhatsApp
+        </a>
+        <button class="ai-floating-close-btn" id="btnCloseAiModal" title="Close AI Chat">&times;</button>
+      </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="ai-floating-body" id="aiFloatingChatBody">
+      <div class="chat-msg bot">
+        <div class="msg-avatar">🌿</div>
+        <div class="msg-content">
+          <p><strong>Namaste! 🙏 I am your AI Vaidya.</strong></p>
+          <p>Ask me any query about our Ayurvedic hair oil, herbal shampoo, orange face wash, or personal scalp &amp; skin care routines!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Prompt Chips -->
+    <div class="ai-floating-chips">
+      <button class="ai-mini-chip" data-query="Which herbs in Umanarayani oil help stop hair fall?">🌿 Hair Fall Oil</button>
+      <button class="ai-mini-chip" data-query="Does Orange Face Wash clear tanning and pimples?">🍊 Face Wash</button>
+      <button class="ai-mini-chip" data-query="How does Reetha and Shikakai shampoo cleanse gently?">🧴 Shampoo</button>
+      <button class="ai-mini-chip" data-query="Tell me about Brahmi & Jatamansi benefits">🌱 Brahmi Benefits</button>
+    </div>
+
+    <!-- Human Herbal Support Bar -->
+    <div class="ai-floating-support-bar">
+      <span>Need personalized guidance?</span>
+      <a href="https://wa.me/918641033514?text=Hello%20Umanarayani!%20I%20want%20guidance%20on%20your%20herbal%20products." target="_blank">
+        <i class="fa-brands fa-whatsapp"></i> WhatsApp Herbal Support &rarr;
+      </a>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="ai-floating-footer">
+      <input type="text" id="aiFloatingInput" class="ai-floating-input" placeholder="Ask AI Vaidya anything...">
+      <button class="ai-floating-send-btn" id="aiFloatingSendBtn" title="Send Question to AI">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/revolving-mandala.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/ai-consultant.js"></script>
+  <script>
+    // Initialize the Revolving Mandala Centerpiece
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.initRevolvingMandala && document.getElementById('revolvingMandalaContainer')) {
+        window.initRevolvingMandala('revolvingMandalaContainer');
+      }
+    });
+  </script>
+</body>
+</html>
