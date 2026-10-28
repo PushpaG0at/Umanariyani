@@ -12,8 +12,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.initRevolvingMandala('revolvingMandalaContainer');
   }
 
-  // 2. Fetch and render products
-  loadProducts();
+  // 2. Fetch and render products (with URL search param support)
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialSearch = urlParams.get('search');
+  if (initialSearch) {
+    const input = document.getElementById('globalSearchInput');
+    if (input) input.value = initialSearch;
+    loadProducts('all', initialSearch);
+    setTimeout(() => {
+      const sec = document.getElementById('productsSection');
+      if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+    }, 450);
+  } else {
+    loadProducts();
+  }
 
   // 3. Setup real-time active users listener
   setupActiveUsersTracker();
@@ -43,6 +55,23 @@ async function loadProducts(category = 'all', query = '') {
   const grid = document.getElementById('productsGrid');
   if (!grid) return;
 
+  const searchBanner = document.getElementById('activeSearchBanner');
+  const searchQueryText = document.getElementById('activeSearchQueryText');
+  const searchCountEl = document.getElementById('activeSearchCount');
+  const clearBtn = document.getElementById('searchClearBtn');
+
+  if (query) {
+    if (searchBanner) searchBanner.style.display = 'flex';
+    if (searchQueryText) searchQueryText.textContent = query;
+    if (clearBtn) clearBtn.style.display = 'block';
+  } else {
+    if (searchBanner) searchBanner.style.display = 'none';
+    if (clearBtn) {
+      const input = document.getElementById('globalSearchInput');
+      if (!input || !input.value) clearBtn.style.display = 'none';
+    }
+  }
+
   grid.innerHTML = `
     <div style="grid-column: 1/-1; text-align: center; padding: 48px; color: var(--text-muted);">
       <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--green-sage);"></i>
@@ -62,13 +91,14 @@ async function loadProducts(category = 'all', query = '') {
 
     if (data.success && data.products) {
       allProducts = data.products;
-      renderProductsGrid(data.products);
+      if (searchCountEl) searchCountEl.textContent = data.products.length;
+      renderProductsGrid(data.products, query);
     } else {
+      if (searchCountEl) searchCountEl.textContent = 0;
       grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px;">No products found in this category.</div>`;
     }
   } catch (err) {
     console.error("Failed to load products from API, falling back:", err);
-    // If running without backend yet or local static
     grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: red;">Failed to load products from server.</div>`;
   }
 }
@@ -339,18 +369,20 @@ function checkUserState() {
   const signinBtn = document.getElementById('headerSignInBtn');
   if (!signinBtn) return;
 
-  if (user) {
-    const firstName = (user.name || 'User').split(' ')[0];
+  if (user && user.name) {
+    const firstName = user.name.split(' ')[0];
     signinBtn.innerHTML = `
       <span style="font-size: 1rem;">${user.avatar || '🌿'}</span>
       <span class="user-btn-name">${firstName}</span>
     `;
     signinBtn.href = "signin.html";
     signinBtn.title = `${user.name} (${user.dosha || 'Ayurvedic Profile'}) — Click to view profile / logout`;
+    signinBtn.classList.add('logged-in');
   } else {
     signinBtn.innerHTML = `<i class="fa-regular fa-user"></i> <span>Sign In</span>`;
     signinBtn.href = "signin.html";
     signinBtn.title = "Sign In / Register";
+    signinBtn.classList.remove('logged-in');
   }
 }
 
@@ -371,16 +403,154 @@ function setupCategoryTabs() {
 
 function setupSearch() {
   const input = document.getElementById('globalSearchInput');
+  const clearBtn = document.getElementById('searchClearBtn');
+  const dropdown = document.getElementById('searchResultsDropdown');
   if (!input) return;
 
   let debounceTimer;
+
   input.addEventListener('input', (e) => {
+    const q = e.target.value.trim();
+    if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      const q = e.target.value.trim();
+    if (!q) {
+      if (dropdown) dropdown.style.display = 'none';
+      loadProducts('all', '');
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      // 1. Update matching products in catalog grid
       loadProducts('all', q);
-    }, 300);
+
+      // 2. Fetch and render instant preview dropdown
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        const products = (data && data.success && data.products) ? data.products : [];
+        renderSearchDropdown(products, q);
+      } catch (err) {
+        console.error("Search dropdown error:", err);
+      }
+    }, 220);
   });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = input.value.trim();
+      if (dropdown) dropdown.style.display = 'none';
+      if (q) {
+        loadProducts('all', q);
+        const sec = document.getElementById('productsSection');
+        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (e.key === 'Escape') {
+      if (dropdown) dropdown.style.display = 'none';
+    }
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      clearGlobalSearch();
+      input.focus();
+    });
+  }
+
+  // Close dropdown on click outside
+  document.addEventListener('click', (e) => {
+    if (dropdown && !e.target.closest('.search-bar-wrap')) {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+
+function renderSearchDropdown(products, query) {
+  const dropdown = document.getElementById('searchResultsDropdown');
+  if (!dropdown) return;
+
+  if (products.length === 0) {
+    dropdown.innerHTML = `
+      <div class="search-dropdown-empty">
+        <i class="fa-solid fa-leaf" style="font-size: 1.6rem; color: var(--green-light); margin-bottom: 8px; display:block;"></i>
+        <span>No products found matching "<strong>${escapeHtml(query)}</strong>"</span>
+        <div style="margin-top: 6px; font-size: 0.75rem; color: #888;">Try searching: Hair Oil, Shampoo, or Face Wash</div>
+      </div>
+    `;
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  const itemsHtml = products.map(p => `
+    <a href="product.html?id=${encodeURIComponent(p.id)}" class="search-dropdown-item">
+      <img src="${p.image}" class="search-item-thumb" alt="${escapeHtml(p.name)}">
+      <div class="search-item-info">
+        <span class="search-item-name">${highlightMatch(p.name, query)}</span>
+        <div class="search-item-cat">
+          <span>🌿 ${p.category}</span>
+          <span>&bull;</span>
+          <span>★ ${p.rating}</span>
+        </div>
+      </div>
+      <div class="search-item-price">₹${p.price}</div>
+    </a>
+  `).join('');
+
+  dropdown.innerHTML = `
+    <div class="search-dropdown-header">
+      <span>Suggested Ayurvedic Products</span>
+      <span style="color:var(--gold-deep);">${products.length} found</span>
+    </div>
+    ${itemsHtml}
+    <div class="search-dropdown-footer" onclick="scrollToProductsAndFilter('${escapeHtml(query)}')">
+      View all in product catalog &darr;
+    </div>
+  `;
+  dropdown.style.display = 'block';
+}
+
+function scrollToProductsAndFilter(query) {
+  const dropdown = document.getElementById('searchResultsDropdown');
+  if (dropdown) dropdown.style.display = 'none';
+  loadProducts('all', query);
+  const sec = document.getElementById('productsSection');
+  if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+}
+
+window.clearGlobalSearch = function() {
+  const input = document.getElementById('globalSearchInput');
+  if (input) input.value = '';
+  const clearBtn = document.getElementById('searchClearBtn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  const dropdown = document.getElementById('searchResultsDropdown');
+  if (dropdown) dropdown.style.display = 'none';
+  const searchBanner = document.getElementById('activeSearchBanner');
+  if (searchBanner) searchBanner.style.display = 'none';
+
+  // Reset category tabs to 'All'
+  const tabs = document.querySelectorAll('.cat-tab-btn');
+  tabs.forEach(t => {
+    if (t.getAttribute('data-cat') === 'all') t.classList.add('active');
+    else t.classList.remove('active');
+  });
+
+  loadProducts('all', '');
+};
+
+function highlightMatch(text, query) {
+  if (!query) return escapeHtml(text);
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return escapeHtml(text).replace(regex, '<strong style="color:var(--green-sage); background:rgba(197,160,89,0.18); padding:0 2px; border-radius:2px;">$1</strong>');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 /* ==========================================================================

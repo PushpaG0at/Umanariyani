@@ -60,10 +60,14 @@
 
       <!-- Nav Actions -->
       <div class="nav-actions">
-        <!-- Search Input -->
+        <!-- Search Products Bar with Live Dropdown -->
         <div class="search-bar-wrap">
           <i class="fa-solid fa-magnifying-glass search-icon"></i>
-          <input type="text" id="globalSearchInput" class="search-input" placeholder="Search herbs, oil...">
+          <input type="text" id="globalSearchInput" class="search-input" placeholder="Search products..." autocomplete="off" aria-label="Search Ayurvedic Products">
+          <button type="button" id="searchClearBtn" class="search-clear-btn" title="Clear search" aria-label="Clear search">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <div id="searchResultsDropdown" class="search-results-dropdown" style="display:none;" role="listbox"></div>
         </div>
 
         <!-- Add New Product Button (Extensibility) -->
@@ -157,6 +161,17 @@
         <button class="cat-tab-btn" data-cat="hair-care">Hair Care (Oil & Shampoo)</button>
         <button class="cat-tab-btn" data-cat="skin-care">Skin & Face Wash</button>
         <button class="cat-tab-btn" data-cat="body-care">Body Care & Wellness</button>
+      </div>
+
+      <!-- Active Search Filter Banner -->
+      <div id="activeSearchBanner" class="active-search-banner" style="display:none;">
+        <span class="active-search-banner-text">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <span>Showing results for: <strong id="activeSearchQueryText"></strong> (<span id="activeSearchCount">0</span> products found)</span>
+        </span>
+        <button type="button" class="btn-clear-search" onclick="clearGlobalSearch()">
+          <i class="fa-solid fa-xmark"></i> Clear Filter
+        </button>
       </div>
 
       <!-- Interactive Products Grid -->
