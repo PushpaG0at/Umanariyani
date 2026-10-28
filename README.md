@@ -36,7 +36,6 @@ The platform blends ancient Ayurvedic heritage with a state-of-the-art interacti
   - **Umanarayani Ayurvedic Hair Oil** (₹349 / 200ml) — Infused with Brahmi, Bhringraj, Nagarmotha & Amarbel.
   - **Umanarayani Herbal Shampoo** (₹329 / 250ml) — Sulphate-free Reetha & Shikakai gentle foaming formula.
   - **Umanarayani Ayurvedic Orange Face Wash** (₹279 / 150ml) — Anti-tan, acne-clearing citrus bioflavonoids & Neem.
-  - **Umanarayani Neem & Tulsi Purifying Body Wash** (₹349 / 300ml) — Antibacterial botanical shower ritual.
 - Amazon-style product pages (`product.html`) featuring:
   - High-resolution multi-angle image galleries
   - Dynamic pricing, savings badges, and volume selectors

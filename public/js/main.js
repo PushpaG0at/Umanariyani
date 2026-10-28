@@ -206,54 +206,61 @@ window.toggleWishlist = function(event, productId) {
 };
 
 /* ==========================================================================
-   REAL-TIME ACTIVE USERS TRACKER (SSE & Polling)
+   REAL-TIME ACTUAL ACTIVE USERS TRACKER (SSE & Polling)
    ========================================================================== */
+function getClientSessionId() {
+  let sid = sessionStorage.getItem('umanarayani_session_id');
+  if (!sid) {
+    sid = 'sess_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now();
+    sessionStorage.setItem('umanarayani_session_id', sid);
+  }
+  return sid;
+}
+
 function setupActiveUsersTracker() {
   const activeCountEl = document.getElementById('liveUsersCount');
   if (!activeCountEl) return;
 
-  // Try Server-Sent Events for real-time live streaming
+  const sessionId = getClientSessionId();
+
+  // Connect to live Server-Sent Events stream
   if (window.EventSource) {
     try {
-      const evtSource = new EventSource('/api/users/stream');
+      const evtSource = new EventSource(`/api/users/stream?sessionId=${encodeURIComponent(sessionId)}`);
       evtSource.onmessage = function(e) {
         try {
           const data = JSON.parse(e.data);
-          if (data && data.activeUsers) {
+          if (data && typeof data.activeUsers === 'number') {
             updateUserDisplay(data.activeUsers);
           }
         } catch (err) {}
       };
       evtSource.onerror = function() {
-        // Fallback to polling
         evtSource.close();
-        startPollingActiveUsers();
+        startPollingActiveUsers(sessionId);
       };
       return;
     } catch (e) {
-      startPollingActiveUsers();
+      startPollingActiveUsers(sessionId);
     }
   } else {
-    startPollingActiveUsers();
+    startPollingActiveUsers(sessionId);
   }
 }
 
-function startPollingActiveUsers() {
+function startPollingActiveUsers(sessionId) {
   const fetchCount = async () => {
     try {
-      const res = await fetch('/api/users/active');
+      const res = await fetch(`/api/users/active?sessionId=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
-      if (data.success && data.activeUsers) {
+      if (data && data.success && typeof data.activeUsers === 'number') {
         updateUserDisplay(data.activeUsers);
       }
-    } catch (err) {
-      // Natural fallback
-      updateUserDisplay(138 + Math.floor(Math.random() * 8));
-    }
+    } catch (err) {}
   };
 
   fetchCount();
-  setInterval(fetchCount, 8000);
+  setInterval(fetchCount, 5000);
 }
 
 function updateUserDisplay(count) {

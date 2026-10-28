@@ -114,7 +114,7 @@ function initFormSubmissions() {
           avatar: "🌿"
         };
         localStorage.setItem('umanarayani_user', JSON.stringify(fallbackUser));
-        displayLoginSuccess(fallbackUser, 142);
+        displayLoginSuccess(fallbackUser);
       }
     });
   }
@@ -140,12 +140,11 @@ function initFormSubmissions() {
       const demoUser = {
         name: "Pushpendra Singh",
         email: "pushpendra@example.com",
-        dosha: "Pitta-Vata (Cooling & Nourishing)",
-        hairType: "Dry Scalp & Normal Hair",
+        dosha: "Pitta-Vata",
         avatar: "🌿"
       };
       localStorage.setItem('umanarayani_user', JSON.stringify(demoUser));
-      displayLoginSuccess(demoUser, 145);
+      displayLoginSuccess(demoUser);
     });
   }
 
@@ -187,16 +186,39 @@ function initFormSubmissions() {
           avatar: "🌸"
         };
         localStorage.setItem('umanarayani_user', JSON.stringify(regUser));
-        displayLoginSuccess(regUser, 138);
+        displayLoginSuccess(regUser);
       }
     });
   }
 }
 
 /* ==========================================================================
-   5. POST-LOGIN SCREEN & ACTIVE USERS SHOWCASE
-   Requirement: "after logging in also show how many users are using the website"
+   5. POST-LOGIN SCREEN & ACTUAL ACTIVE USERS SHOWCASE
+   Requirement: "use actual count of the users using the website"
    ========================================================================== */
+function getClientSessionId() {
+  let sid = sessionStorage.getItem('umanarayani_session_id');
+  if (!sid) {
+    sid = 'sess_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now();
+    sessionStorage.setItem('umanarayani_session_id', sid);
+  }
+  return sid;
+}
+
+function updateAuthBannerCount(count) {
+  const countEl = document.getElementById('liveUsersNumber');
+  if (countEl) countEl.textContent = count;
+
+  const subEl = document.querySelector('.active-banner-sub');
+  if (subEl) {
+    subEl.textContent = count === 1
+      ? '1 Nature Lover is currently exploring Umanarayani Ayurvedic personal care formulations right now!'
+      : `${count} Nature Lovers across India are currently exploring Umanarayani Ayurvedic personal care formulations right now!`;
+  }
+}
+
+let authEvtSource = null;
+
 async function displayLoginSuccess(user, initialCount) {
   const card = document.getElementById('herbalAuthCard');
   const formsWrap = document.getElementById('authFormsContainer');
@@ -212,22 +234,11 @@ async function displayLoginSuccess(user, initialCount) {
   document.getElementById('successUserDosha').textContent = `Ayurvedic Constitution: ${user.dosha || 'Pitta-Vata'}`;
   document.getElementById('successAvatar').textContent = user.avatar || '🌿';
 
-  // Fetch or update live user count
-  let count = initialCount || 142;
-  try {
-    const res = await fetch('/api/users/active');
-    const data = await res.json();
-    if (data.success && data.activeUsers) {
-      count = data.activeUsers;
-    }
-  } catch (e) {}
-
-  const countEl = document.getElementById('liveUsersNumber');
-  if (countEl) {
-    countEl.textContent = count;
+  if (typeof initialCount === 'number') {
+    updateAuthBannerCount(initialCount);
   }
 
-  // Start live SSE or interval on this page as well
+  // Connect to live SSE for exact synchronized count across all users
   startLiveUserTicker();
 }
 
@@ -235,20 +246,45 @@ function startLiveUserTicker() {
   const countEl = document.getElementById('liveUsersNumber');
   if (!countEl) return;
 
-  setInterval(async () => {
+  const sessionId = getClientSessionId();
+
+  if (window.EventSource) {
+    if (authEvtSource) authEvtSource.close();
     try {
-      const res = await fetch('/api/users/active');
-      const data = await res.json();
-      if (data.success && data.activeUsers) {
-        countEl.textContent = data.activeUsers;
-      }
+      authEvtSource = new EventSource(`/api/users/stream?sessionId=${encodeURIComponent(sessionId)}`);
+      authEvtSource.onmessage = function(e) {
+        try {
+          const data = JSON.parse(e.data);
+          if (data && typeof data.activeUsers === 'number') {
+            updateAuthBannerCount(data.activeUsers);
+          }
+        } catch (err) {}
+      };
+      authEvtSource.onerror = function() {
+        authEvtSource.close();
+        pollAuthCount(sessionId);
+      };
+      return;
     } catch (e) {
-      // Gentle fluctuation
-      let current = parseInt(countEl.textContent, 10) || 140;
-      current += Math.random() > 0.5 ? 1 : -1;
-      countEl.textContent = current;
+      pollAuthCount(sessionId);
     }
-  }, 4000);
+  } else {
+    pollAuthCount(sessionId);
+  }
+}
+
+function pollAuthCount(sessionId) {
+  const fetchCount = async () => {
+    try {
+      const res = await fetch(`/api/users/active?sessionId=${encodeURIComponent(sessionId)}`);
+      const data = await res.json();
+      if (data && data.success && typeof data.activeUsers === 'number') {
+        updateAuthBannerCount(data.activeUsers);
+      }
+    } catch (e) {}
+  };
+  fetchCount();
+  setInterval(fetchCount, 5000);
 }
 
 function checkExistingSession() {

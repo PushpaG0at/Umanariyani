@@ -392,17 +392,57 @@ function setupReviewForm(productId) {
   });
 }
 
+function getClientSessionId() {
+  let sid = sessionStorage.getItem('umanarayani_session_id');
+  if (!sid) {
+    sid = 'sess_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now();
+    sessionStorage.setItem('umanarayani_session_id', sid);
+  }
+  return sid;
+}
+
 function setupActiveUsersTracker() {
+  const el = document.getElementById('liveUsersCount');
+  if (!el) return;
+
+  const sessionId = getClientSessionId();
+
+  if (window.EventSource) {
+    try {
+      const evtSource = new EventSource(`/api/users/stream?sessionId=${encodeURIComponent(sessionId)}`);
+      evtSource.onmessage = function(e) {
+        try {
+          const data = JSON.parse(e.data);
+          if (data && typeof data.activeUsers === 'number') {
+            el.textContent = data.activeUsers;
+          }
+        } catch (err) {}
+      };
+      evtSource.onerror = function() {
+        evtSource.close();
+        pollActiveUsers(el, sessionId);
+      };
+      return;
+    } catch (e) {
+      pollActiveUsers(el, sessionId);
+    }
+  } else {
+    pollActiveUsers(el, sessionId);
+  }
+}
+
+function pollActiveUsers(el, sessionId) {
   const fetchCount = async () => {
     try {
-      const res = await fetch('/api/users/active');
+      const res = await fetch(`/api/users/active?sessionId=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
-      const el = document.getElementById('liveUsersCount');
-      if (el && data.activeUsers) el.textContent = data.activeUsers;
+      if (data && data.success && typeof data.activeUsers === 'number') {
+        el.textContent = data.activeUsers;
+      }
     } catch (e) {}
   };
   fetchCount();
-  setInterval(fetchCount, 9000);
+  setInterval(fetchCount, 5000);
 }
 
 function updateCartBadge() {

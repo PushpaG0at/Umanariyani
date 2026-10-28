@@ -235,8 +235,8 @@
       loadCart();
     };
 
-    // WhatsApp Checkout
-    document.getElementById('btnCheckoutWhatsApp').addEventListener('click', () => {
+    // WhatsApp Checkout & Database Order Creation
+    document.getElementById('btnCheckoutWhatsApp').addEventListener('click', async () => {
       const cart = JSON.parse(localStorage.getItem('umanarayani_cart') || '[]');
       if (cart.length === 0) {
         alert("Your cart is empty. Please add items to checkout.");
@@ -250,6 +250,28 @@
         total += item.price * item.quantity;
       });
       text += `%0A*Total Order Amount:* ₹${total}%0A*Delivery:* FREE%0A%0APlease confirm my order & provide delivery address details.`;
+
+      // Wire order persistence to MySQL backend
+      try {
+        const user = JSON.parse(localStorage.getItem('umanarayani_user') || '{}');
+        await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id || null,
+            customerName: user.name || "Ayurvedic Patron",
+            customerEmail: user.email || "patron@umanarayani.com",
+            customerPhone: "+91 8641033514",
+            shippingAddress: "Confirmed via WhatsApp Helpline",
+            items: cart,
+            subtotal: total,
+            total: total,
+            paymentMethod: 'COD'
+          })
+        });
+      } catch (err) {
+        console.warn('Order could not be saved to backend:', err);
+      }
 
       window.open(`https://wa.me/${WHATSAPP_NO}?text=${text}`, '_blank');
     });

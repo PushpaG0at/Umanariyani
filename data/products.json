@@ -14,8 +14,10 @@
     "ratingCount": 342,
     "badge": "Bestseller",
     "volume": "200 ml / 6.76 fl oz",
-    "image": "images/hair-oil.png",
+    "image": "images/hair-oil.jpg",
     "gallery": [
+      "images/hair-oil.jpg",
+      "images/hair-oil-bottle.jpg",
       "images/hair-oil.png",
       "images/ayurvedic_herbs_circle.jpg"
     ],
@@ -112,8 +114,10 @@
     "ratingCount": 289,
     "badge": "Amazon's Choice",
     "volume": "250 ml / 8.45 fl oz",
-    "image": "images/shampoo.png",
+    "image": "images/shampoo.jpg",
     "gallery": [
+      "images/shampoo.jpg",
+      "images/shampoo-bottle.jpg",
       "images/shampoo.png",
       "images/ayurvedic_herbs_circle.jpg"
     ],
@@ -209,8 +213,10 @@
     "ratingCount": 194,
     "badge": "Anti-Tan & Glow",
     "volume": "150 ml / 5.07 fl oz",
-    "image": "images/face-wash.png",
+    "image": "images/face-wash.jpg",
     "gallery": [
+      "images/face-wash.jpg",
+      "images/face-wash-bottle.jpg",
       "images/face-wash.png",
       "images/ayurvedic_herbs_circle.jpg"
     ],
@@ -276,62 +282,6 @@
         "q": "Does it help with pimples and acne spots?",
         "a": "Yes! The combination of orange peel bioflavonoids and neem leaves actively helps control excess oil and clears acne-causing bacteria."
       }
-    ]
-  },
-  {
-    "id": "neem-tulsi-body-wash",
-    "name": "UMANARAYANI NEEM & TULSI PURIFYING BODY WASH",
-    "subtitle": "Ayurvedic Botanical Bathing Ritual for Silky, Protected Skin",
-    "tagline": "Pure Nature, Pure Care.",
-    "category": "Body Care",
-    "categorySlug": "body-care",
-    "price": 349,
-    "mrp": 499,
-    "discountPercent": 30,
-    "rating": 4.9,
-    "ratingCount": 118,
-    "badge": "New Release",
-    "volume": "300 ml / 10.14 fl oz",
-    "image": "images/ayurvedic_herbs_circle.jpg",
-    "gallery": [
-      "images/ayurvedic_herbs_circle.jpg"
-    ],
-    "inStock": true,
-    "stockCount": 20,
-    "asin": "B09AYURV04",
-    "shortDescription": "Awaken your senses with the purifying blend of Neem, Tulsi, and cooling Vetiver. Designed to refresh tired skin, combat body acne, and leave your whole body feeling invigorated and naturally fragranced.",
-    "description": "Awaken your senses with the purifying blend of Neem, Tulsi, and cooling Vetiver. Designed to refresh tired skin, combat body acne, and leave your whole body feeling invigorated and naturally fragranced.\n\nFormulated with time-tested medicinal herbs, this rich body wash provides gentle purifying foam without stripping skin moisture, leaving a fresh botanical aroma that lingers throughout your day.",
-    "keyBenefits": [
-      "Antibacterial protection against daily pollution and sweat.",
-      "Helps clear back acne and chest breakouts.",
-      "Leaves skin silky smooth, soft, and refreshed.",
-      "Infused with relaxing Ayurvedic essential oils."
-    ],
-    "featuredIngredients": [
-      "Neem",
-      "Tulsi",
-      "Vetiver (Khus)",
-      "Aloe Vera",
-      "Eucalyptus"
-    ],
-    "ingredientsDetails": [
-      { "name": "Neem", "role": "Deep Purifier", "description": "Protects skin against environmental impurities." },
-      { "name": "Tulsi", "role": "Holy Basil Antioxidant", "description": "Soothes skin irritation and promotes even tone." }
-    ],
-    "howToUse": "Dispense a generous amount onto a wet loofah or sponge. Lather all over the body, then rinse thoroughly with clean water.",
-    "usageSteps": [
-      { "step": 1, "title": "Pour", "text": "Pour 10ml onto wet sponge or palms." },
-      { "step": 2, "title": "Lather", "text": "Massage over wet body into a rich herbal lather." },
-      { "step": 3, "title": "Rinse", "text": "Rinse clean and feel the revitalizing freshness." }
-    ],
-    "suitableFor": "All skin types, especially for daily post-workout and refreshing morning showers.",
-    "certifications": [
-      "Sulphate Free",
-      "100% Ayurvedic Ingredients",
-      "Vegan & Cruelty Free"
-    ],
-    "faqs": [
-      { "q": "Is this suitable for sensitive skin?", "a": "Yes, it contains pure Aloe and calming Vetiver that gently cleanses sensitive skin without irritation." }
     ]
   }
 ]
