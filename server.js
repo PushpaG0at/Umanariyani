@@ -156,8 +156,18 @@ app.get('/api/products', async (req, res) => {
 
     if (search) {
       const q = `%${search.toLowerCase().trim()}%`;
-      query += ' AND (LOWER(name) LIKE ? OR LOWER(subtitle) LIKE ? OR LOWER(shortDescription) LIKE ? OR JSON_SEARCH(LOWER(featuredIngredients), "one", ?) IS NOT NULL)';
-      params.push(q, q, q, q);
+      query += ` AND (
+        LOWER(name) LIKE ? 
+        OR LOWER(subtitle) LIKE ? 
+        OR LOWER(tagline) LIKE ? 
+        OR LOWER(category) LIKE ? 
+        OR LOWER(categorySlug) LIKE ? 
+        OR LOWER(shortDescription) LIKE ? 
+        OR LOWER(description) LIKE ? 
+        OR LOWER(CAST(featuredIngredients AS CHAR)) LIKE ? 
+        OR LOWER(CAST(keyBenefits AS CHAR)) LIKE ?
+      )`;
+      params.push(q, q, q, q, q, q, q, q, q);
     }
 
     query += ' ORDER BY created_at DESC';

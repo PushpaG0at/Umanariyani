@@ -107,6 +107,41 @@ async function runTests() {
     }
   });
 
+  // 2b. Product Search
+  await test('GET /api/products?search=oil returns matching oil products', async () => {
+    const res = await request('GET', '/api/products?search=oil');
+    if (res.status !== 200 || !res.data.products || res.data.products.length === 0) {
+      throw new Error(`Search for 'oil' returned no products`);
+    }
+    const hasOil = res.data.products.some(p => p.name.toLowerCase().includes('oil') || p.category.toLowerCase().includes('hair'));
+    if (!hasOil) throw new Error(`Search for 'oil' did not match any oil product`);
+  });
+
+  await test('GET /api/products?search=orange returns Orange Face Wash', async () => {
+    const res = await request('GET', '/api/products?search=orange');
+    if (res.status !== 200 || !res.data.products || res.data.products.length === 0) {
+      throw new Error(`Search for 'orange' returned no products`);
+    }
+    const hasOrange = res.data.products.some(p => p.name.toLowerCase().includes('orange'));
+    if (!hasOrange) throw new Error(`Search for 'orange' did not match Orange Face Wash`);
+  });
+
+  await test('GET /api/products?search=shampoo returns Herbal Shampoo', async () => {
+    const res = await request('GET', '/api/products?search=shampoo');
+    if (res.status !== 200 || !res.data.products || res.data.products.length === 0) {
+      throw new Error(`Search for 'shampoo' returned no products`);
+    }
+    const hasShampoo = res.data.products.some(p => p.name.toLowerCase().includes('shampoo'));
+    if (!hasShampoo) throw new Error(`Search for 'shampoo' did not match Herbal Shampoo`);
+  });
+
+  await test('GET /api/products?search=bhringraj matches via herbal ingredients', async () => {
+    const res = await request('GET', '/api/products?search=bhringraj');
+    if (res.status !== 200 || !res.data.products || res.data.products.length === 0) {
+      throw new Error(`Search for ingredient 'bhringraj' returned no products`);
+    }
+  });
+
   // 3. Herbs
   await test('GET /api/herbs returns 8 sacred herbs', async () => {
     const res = await request('GET', '/api/herbs');
