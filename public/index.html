@@ -11,9 +11,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Core & Mandala Stylesheets -->
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/revolving-mandala.css">
-  <link rel="stylesheet" href="css/ai-consultant.css">
+  <link rel="stylesheet" href="css/style.css?v=2.2">
+  <link rel="stylesheet" href="css/revolving-mandala.css?v=2.2">
+  <link rel="stylesheet" href="css/ai-consultant.css?v=2.2">
 </head>
 <body>
 
@@ -163,14 +163,15 @@
         <button class="cat-tab-btn" data-cat="body-care">Body Care & Wellness</button>
       </div>
 
-      <!-- Active Search Filter Banner -->
+      <!-- Active Search Filter Banner (Prioritizes products at top) -->
       <div id="activeSearchBanner" class="active-search-banner" style="display:none;">
-        <span class="active-search-banner-text">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <span>Showing results for: <strong id="activeSearchQueryText"></strong> (<span id="activeSearchCount">0</span> products found)</span>
-        </span>
-        <button type="button" class="btn-clear-search" onclick="clearGlobalSearch()">
-          <i class="fa-solid fa-xmark"></i> Clear Filter
+        <div class="active-search-banner-left">
+          <span class="active-search-badge"><i class="fa-solid fa-magnifying-glass"></i> Top Search Priority</span>
+          <h3 class="active-search-title">Showing products for: "<span id="activeSearchQueryText" class="query-highlight"></span>" (<span id="activeSearchCount">0</span> found)</h3>
+          <p class="active-search-sub">Herbal core cycle minimized. Showing relevant Ayurvedic formulations as first priority.</p>
+        </div>
+        <button type="button" class="btn-clear-search-prominent" onclick="clearGlobalSearch()" title="Show all products and restore revolving herbal cycle">
+          <i class="fa-solid fa-arrow-left"></i> Clear &amp; Show Herbal Cycle
         </button>
       </div>
 
@@ -688,9 +689,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/revolving-mandala.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/ai-consultant.js"></script>
+  <script src="js/revolving-mandala.js?v=2.2"></script>
+  <script src="js/main.js?v=2.2"></script>
+  <script src="js/ai-consultant.js?v=2.2"></script>
   <script>
     // Initialize the Revolving Mandala Centerpiece
     document.addEventListener('DOMContentLoaded', () => {

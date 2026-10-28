@@ -19,10 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('globalSearchInput');
     if (input) input.value = initialSearch;
     loadProducts('all', initialSearch);
-    setTimeout(() => {
-      const sec = document.getElementById('productsSection');
-      if (sec) sec.scrollIntoView({ behavior: 'smooth' });
-    }, 450);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
     loadProducts();
   }
@@ -55,16 +52,22 @@ async function loadProducts(category = 'all', query = '') {
   const grid = document.getElementById('productsGrid');
   if (!grid) return;
 
+  const mandalaSection = document.getElementById('mandalaShowcase');
   const searchBanner = document.getElementById('activeSearchBanner');
   const searchQueryText = document.getElementById('activeSearchQueryText');
   const searchCountEl = document.getElementById('activeSearchCount');
   const clearBtn = document.getElementById('searchClearBtn');
 
-  if (query) {
+  if (query && query.trim()) {
+    // Top Priority: When searching products, hide the hero herbs cycle so products appear at the TOP as first priority!
+    if (mandalaSection) mandalaSection.style.display = 'none';
     if (searchBanner) searchBanner.style.display = 'flex';
-    if (searchQueryText) searchQueryText.textContent = query;
+    if (searchQueryText) searchQueryText.textContent = query.trim();
     if (clearBtn) clearBtn.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
+    // Normal View: restore the revolving herbs cycle
+    if (mandalaSection) mandalaSection.style.display = '';
     if (searchBanner) searchBanner.style.display = 'none';
     if (clearBtn) {
       const input = document.getElementById('globalSearchInput');
@@ -416,9 +419,16 @@ function setupSearch() {
     clearTimeout(debounceTimer);
     if (!q) {
       if (dropdown) dropdown.style.display = 'none';
+      const mandalaSection = document.getElementById('mandalaShowcase');
+      if (mandalaSection) mandalaSection.style.display = '';
       loadProducts('all', '');
       return;
     }
+
+    // Immediately minimize/hide the revolving cycle so searched products are at the TOP as first priority!
+    const mandalaSection = document.getElementById('mandalaShowcase');
+    if (mandalaSection) mandalaSection.style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     debounceTimer = setTimeout(async () => {
       // 1. Update matching products in catalog grid
@@ -433,7 +443,14 @@ function setupSearch() {
       } catch (err) {
         console.error("Search dropdown error:", err);
       }
-    }, 220);
+    }, 180);
+  });
+
+  input.addEventListener('focus', () => {
+    const q = input.value.trim();
+    if (q && dropdown && dropdown.innerHTML.trim()) {
+      dropdown.style.display = 'block';
+    }
   });
 
   input.addEventListener('keydown', (e) => {
@@ -441,9 +458,10 @@ function setupSearch() {
       const q = input.value.trim();
       if (dropdown) dropdown.style.display = 'none';
       if (q) {
+        const mandalaSection = document.getElementById('mandalaShowcase');
+        if (mandalaSection) mandalaSection.style.display = 'none';
         loadProducts('all', q);
-        const sec = document.getElementById('productsSection');
-        if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else if (e.key === 'Escape') {
       if (dropdown) dropdown.style.display = 'none';
@@ -456,6 +474,15 @@ function setupSearch() {
       input.focus();
     });
   }
+
+  // Restore cycle when clicking top nav "Home" or "Herbal Core"
+  document.querySelectorAll('a[href="index.html"], a[href="#mandalaShowcase"]').forEach(link => {
+    link.addEventListener('click', () => {
+      if (input && input.value) {
+        clearGlobalSearch();
+      }
+    });
+  });
 
   // Close dropdown on click outside
   document.addEventListener('click', (e) => {
@@ -513,8 +540,7 @@ function scrollToProductsAndFilter(query) {
   const dropdown = document.getElementById('searchResultsDropdown');
   if (dropdown) dropdown.style.display = 'none';
   loadProducts('all', query);
-  const sec = document.getElementById('productsSection');
-  if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 window.clearGlobalSearch = function() {
@@ -527,6 +553,10 @@ window.clearGlobalSearch = function() {
   const searchBanner = document.getElementById('activeSearchBanner');
   if (searchBanner) searchBanner.style.display = 'none';
 
+  // Restore the revolving herbs cycle!
+  const mandalaSection = document.getElementById('mandalaShowcase');
+  if (mandalaSection) mandalaSection.style.display = '';
+
   // Reset category tabs to 'All'
   const tabs = document.querySelectorAll('.cat-tab-btn');
   tabs.forEach(t => {
@@ -535,6 +565,7 @@ window.clearGlobalSearch = function() {
   });
 
   loadProducts('all', '');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 function highlightMatch(text, query) {

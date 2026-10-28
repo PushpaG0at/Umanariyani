@@ -567,12 +567,19 @@ function setupSearch() {
     }, 220);
   });
 
+  input.addEventListener('focus', () => {
+    const q = input.value.trim();
+    if (q && dropdown && dropdown.innerHTML.trim()) {
+      dropdown.style.display = 'block';
+    }
+  });
+
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       const q = input.value.trim();
       if (dropdown) dropdown.style.display = 'none';
       if (q) {
-        window.location.href = `index.html?search=${encodeURIComponent(q)}#productsSection`;
+        window.location.href = `index.html?search=${encodeURIComponent(q)}`;
       }
     } else if (e.key === 'Escape') {
       if (dropdown) dropdown.style.display = 'none';
