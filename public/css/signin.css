@@ -288,6 +288,9 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   transition: var(--pop-transition);
 }
 
@@ -318,6 +321,9 @@
   margin-top: 8px;
   display: inline-flex;
   align-items: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   gap: 6px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
   transition: var(--pop-transition);

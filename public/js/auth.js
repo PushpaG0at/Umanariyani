@@ -230,7 +230,6 @@ function updateAuthBannerCount(activeCount, totalCount) {
 let authEvtSource = null;
 
 async function displayLoginSuccess(user, initialCount, initialTotal) {
-  const card = document.getElementById('herbalAuthCard');
   const formsWrap = document.getElementById('authFormsContainer');
   const tabsWrap = document.getElementById('authTabsWrap');
   const successSection = document.getElementById('loginSuccessSection');
@@ -239,13 +238,26 @@ async function displayLoginSuccess(user, initialCount, initialTotal) {
   if (tabsWrap) tabsWrap.style.display = 'none';
   if (successSection) successSection.style.display = 'block';
 
-  // Populate user info
-  document.getElementById('successUserName').textContent = user.name;
-  document.getElementById('successUserDosha').textContent = `Ayurvedic Constitution: ${user.dosha || 'Pitta-Vata'}`;
-  document.getElementById('successAvatar').textContent = user.avatar || '🌿';
+  // Populate user info with null guards
+  const nameEl = document.getElementById('successUserName');
+  if (nameEl) nameEl.textContent = user.name || 'Seeker';
+  const doshaEl = document.getElementById('successUserDosha');
+  if (doshaEl) doshaEl.textContent = `Ayurvedic Constitution: ${user.dosha || 'Pitta-Vata'}`;
+  const avatarEl = document.getElementById('successAvatar');
+  if (avatarEl) avatarEl.textContent = user.avatar || '🌿';
 
   if (typeof initialCount === 'number') {
     updateAuthBannerCount(initialCount, initialTotal);
+  } else {
+    // Quick async fetch for current counts if not already passed
+    fetch(`/api/users/active?sessionId=${encodeURIComponent(getClientSessionId())}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.success) {
+          updateAuthBannerCount(d.activeUsers, d.totalUsers);
+        }
+      })
+      .catch(() => {});
   }
 
   // Connect to live SSE for exact synchronized count across all users
@@ -283,7 +295,9 @@ function startLiveUserTicker() {
   }
 }
 
+let pollInterval = null;
 function pollAuthCount(sessionId) {
+  if (pollInterval) clearInterval(pollInterval);
   const fetchCount = async () => {
     try {
       const res = await fetch(`/api/users/active?sessionId=${encodeURIComponent(sessionId)}`);
@@ -294,10 +308,7 @@ function pollAuthCount(sessionId) {
     } catch (e) {}
   };
   fetchCount();
-  setInterval(fetchCount, 5000);
-}
-  fetchCount();
-  setInterval(fetchCount, 5000);
+  pollInterval = setInterval(fetchCount, 5000);
 }
 
 function checkExistingSession() {
