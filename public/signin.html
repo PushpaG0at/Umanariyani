@@ -10,8 +10,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Core & Sign-in Stylesheets -->
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/signin.css">
+  <link rel="stylesheet" href="css/style.css?v=2.3">
+  <link rel="stylesheet" href="css/signin.css?v=2.3">
 </head>
 <body class="signin-page-body">
 
@@ -158,20 +158,42 @@
         <h3 class="success-welcome-title">Namaste, <span id="successUserName">Seeker</span>!</h3>
         <div class="success-user-dosha" id="successUserDosha">Ayurvedic Constitution: Pitta-Vata</div>
 
-        <!-- PROMINENT ACTIVE USERS FEATURED BANNER -->
+        <!-- PROMINENT LIVE & TOTAL COMMUNITY USERS BANNER -->
         <div class="active-users-featured-banner">
           <div class="banner-pulse-halo"></div>
           <span class="active-banner-label">
-            <i class="fa-solid fa-circle-nodes" style="color:var(--gold-light);"></i> LIVE COMMUNITY ACTIVITY
+            <i class="fa-solid fa-circle-nodes" style="color:var(--gold-light);"></i> COMMUNITY ENGAGEMENT & REACH
           </span>
 
-          <div class="active-count-huge">
-            <span class="live-dot"></span>
-            <span id="liveUsersNumber">1</span>
+          <div class="community-stats-grid">
+            <!-- Metric 1: Live Now -->
+            <div class="community-stat-card">
+              <span class="stat-card-badge live-badge">
+                <span class="live-dot"></span> LIVE NOW
+              </span>
+              <div class="active-count-huge">
+                <span id="liveUsersNumber">1</span>
+              </div>
+              <span class="stat-caption">Exploring Website Now</span>
+            </div>
+
+            <!-- Divider -->
+            <div class="community-stat-divider"></div>
+
+            <!-- Metric 2: Total Users / Patrons -->
+            <div class="community-stat-card">
+              <span class="stat-card-badge total-badge">
+                <i class="fa-solid fa-users"></i> TOTAL USERS
+              </span>
+              <div class="active-count-huge total-count">
+                <span id="totalUsersNumber">1,245+</span>
+              </div>
+              <span class="stat-caption">Patrons Using Website</span>
+            </div>
           </div>
 
           <p class="active-banner-sub">
-            Nature Lovers across India are currently exploring Umanarayani Ayurvedic personal care formulations right now!
+            <span id="liveUsersSubCount">1</span> Nature Lover is exploring right now &bull; Over <strong id="totalUsersSubText">1,245+</strong> seekers across India rely on Umanarayani Ayurvedic personal care!
           </p>
         </div>
 
@@ -190,6 +212,6 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/auth.js"></script>
+  <script src="js/auth.js?v=2.3"></script>
 </body>
 </html>

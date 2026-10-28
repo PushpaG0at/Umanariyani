@@ -101,7 +101,7 @@ function initFormSubmissions() {
 
         if (data.success) {
           localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
-          displayLoginSuccess(data.user, data.activeUsersCount);
+          displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
         } else {
           showAuthError(data.message || 'Login failed');
         }
@@ -131,7 +131,7 @@ function initFormSubmissions() {
         const data = await res.json();
         if (data.success) {
           localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
-          displayLoginSuccess(data.user, data.activeUsersCount);
+          displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
           return;
         }
       } catch (e) {}
@@ -173,7 +173,7 @@ function initFormSubmissions() {
 
         if (data.success) {
           localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
-          displayLoginSuccess(data.user);
+          displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
         } else {
           showAuthError(data.message || 'Registration failed');
         }
@@ -205,21 +205,31 @@ function getClientSessionId() {
   return sid;
 }
 
-function updateAuthBannerCount(count) {
-  const countEl = document.getElementById('liveUsersNumber');
-  if (countEl) countEl.textContent = count;
+function updateAuthBannerCount(activeCount, totalCount) {
+  const liveEl = document.getElementById('liveUsersNumber');
+  if (liveEl && typeof activeCount === 'number') {
+    liveEl.textContent = activeCount;
+  }
 
-  const subEl = document.querySelector('.active-banner-sub');
-  if (subEl) {
-    subEl.textContent = count === 1
-      ? '1 Nature Lover is currently exploring Umanarayani Ayurvedic personal care formulations right now!'
-      : `${count} Nature Lovers across India are currently exploring Umanarayani Ayurvedic personal care formulations right now!`;
+  const totalEl = document.getElementById('totalUsersNumber');
+  if (totalEl && totalCount) {
+    totalEl.textContent = typeof totalCount === 'number' ? totalCount.toLocaleString('en-IN') + '+' : totalCount;
+  }
+
+  const liveSub = document.getElementById('liveUsersSubCount');
+  if (liveSub && typeof activeCount === 'number') {
+    liveSub.textContent = activeCount;
+  }
+
+  const totalSub = document.getElementById('totalUsersSubText');
+  if (totalSub && totalCount) {
+    totalSub.textContent = typeof totalCount === 'number' ? totalCount.toLocaleString('en-IN') + '+' : totalCount;
   }
 }
 
 let authEvtSource = null;
 
-async function displayLoginSuccess(user, initialCount) {
+async function displayLoginSuccess(user, initialCount, initialTotal) {
   const card = document.getElementById('herbalAuthCard');
   const formsWrap = document.getElementById('authFormsContainer');
   const tabsWrap = document.getElementById('authTabsWrap');
@@ -235,7 +245,7 @@ async function displayLoginSuccess(user, initialCount) {
   document.getElementById('successAvatar').textContent = user.avatar || '🌿';
 
   if (typeof initialCount === 'number') {
-    updateAuthBannerCount(initialCount);
+    updateAuthBannerCount(initialCount, initialTotal);
   }
 
   // Connect to live SSE for exact synchronized count across all users
@@ -256,7 +266,7 @@ function startLiveUserTicker() {
         try {
           const data = JSON.parse(e.data);
           if (data && typeof data.activeUsers === 'number') {
-            updateAuthBannerCount(data.activeUsers);
+            updateAuthBannerCount(data.activeUsers, data.totalUsers);
           }
         } catch (err) {}
       };
@@ -279,10 +289,13 @@ function pollAuthCount(sessionId) {
       const res = await fetch(`/api/users/active?sessionId=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
       if (data && data.success && typeof data.activeUsers === 'number') {
-        updateAuthBannerCount(data.activeUsers);
+        updateAuthBannerCount(data.activeUsers, data.totalUsers);
       }
     } catch (e) {}
   };
+  fetchCount();
+  setInterval(fetchCount, 5000);
+}
   fetchCount();
   setInterval(fetchCount, 5000);
 }

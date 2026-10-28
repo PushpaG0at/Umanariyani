@@ -416,35 +416,46 @@ function setupActiveUsersTracker() {
         try {
           const data = JSON.parse(e.data);
           if (data && typeof data.activeUsers === 'number') {
-            el.textContent = data.activeUsers;
+            updateProductUserDisplay(data.activeUsers, data.totalUsers);
           }
         } catch (err) {}
       };
       evtSource.onerror = function() {
         evtSource.close();
-        pollActiveUsers(el, sessionId);
+        pollActiveUsers(sessionId);
       };
       return;
     } catch (e) {
-      pollActiveUsers(el, sessionId);
+      pollActiveUsers(sessionId);
     }
   } else {
-    pollActiveUsers(el, sessionId);
+    pollActiveUsers(sessionId);
   }
 }
 
-function pollActiveUsers(el, sessionId) {
+function pollActiveUsers(sessionId) {
   const fetchCount = async () => {
     try {
       const res = await fetch(`/api/users/active?sessionId=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
       if (data && data.success && typeof data.activeUsers === 'number') {
-        el.textContent = data.activeUsers;
+        updateProductUserDisplay(data.activeUsers, data.totalUsers);
       }
     } catch (e) {}
   };
   fetchCount();
   setInterval(fetchCount, 5000);
+}
+
+function updateProductUserDisplay(activeCount, totalCount) {
+  const el = document.getElementById('liveUsersCount');
+  if (el && typeof activeCount === 'number') {
+    el.textContent = activeCount;
+  }
+  const totalEl = document.getElementById('totalUsersCount');
+  if (totalEl && totalCount) {
+    totalEl.textContent = typeof totalCount === 'number' ? totalCount.toLocaleString('en-IN') + '+' : totalCount;
+  }
 }
 
 function updateCartBadge() {

@@ -264,7 +264,7 @@ function setupActiveUsersTracker() {
         try {
           const data = JSON.parse(e.data);
           if (data && typeof data.activeUsers === 'number') {
-            updateUserDisplay(data.activeUsers);
+            updateUserDisplay(data.activeUsers, data.totalUsers);
           }
         } catch (err) {}
       };
@@ -287,7 +287,7 @@ function startPollingActiveUsers(sessionId) {
       const res = await fetch(`/api/users/active?sessionId=${encodeURIComponent(sessionId)}`);
       const data = await res.json();
       if (data && data.success && typeof data.activeUsers === 'number') {
-        updateUserDisplay(data.activeUsers);
+        updateUserDisplay(data.activeUsers, data.totalUsers);
       }
     } catch (err) {}
   };
@@ -296,14 +296,18 @@ function startPollingActiveUsers(sessionId) {
   setInterval(fetchCount, 5000);
 }
 
-function updateUserDisplay(count) {
+function updateUserDisplay(activeCount, totalCount) {
   const countEl = document.getElementById('liveUsersCount');
-  if (countEl) {
-    countEl.textContent = count;
+  if (countEl && typeof activeCount === 'number') {
+    countEl.textContent = activeCount;
+  }
+  const totalEl = document.getElementById('totalUsersCount');
+  if (totalEl && totalCount) {
+    totalEl.textContent = typeof totalCount === 'number' ? totalCount.toLocaleString('en-IN') + '+' : totalCount;
   }
   const bannerEl = document.getElementById('liveUsersBannerCount');
-  if (bannerEl) {
-    bannerEl.textContent = count;
+  if (bannerEl && typeof activeCount === 'number') {
+    bannerEl.textContent = activeCount;
   }
 }
 
