@@ -108,13 +108,15 @@ async function runTests() {
   });
 
   // 2b. Product Search
-  await test('GET /api/products?search=oil returns matching oil products', async () => {
+  await test('GET /api/products?search=oil returns Hair Oil as first priority (#1)', async () => {
     const res = await request('GET', '/api/products?search=oil');
     if (res.status !== 200 || !res.data.products || res.data.products.length === 0) {
       throw new Error(`Search for 'oil' returned no products`);
     }
-    const hasOil = res.data.products.some(p => p.name.toLowerCase().includes('oil') || p.category.toLowerCase().includes('hair'));
-    if (!hasOil) throw new Error(`Search for 'oil' did not match any oil product`);
+    const firstProduct = res.data.products[0];
+    if (!firstProduct.name.toLowerCase().includes('oil')) {
+      throw new Error(`First product for 'oil' was "${firstProduct.name}", expected Hair Oil at top priority!`);
+    }
   });
 
   await test('GET /api/products?search=orange returns Orange Face Wash', async () => {

@@ -168,9 +168,19 @@ app.get('/api/products', async (req, res) => {
         OR LOWER(CAST(keyBenefits AS CHAR)) LIKE ?
       )`;
       params.push(q, q, q, q, q, q, q, q, q);
+      // Search relevance ranking: products with matching names appear FIRST as top priority!
+      query += ` ORDER BY 
+        CASE 
+          WHEN LOWER(name) LIKE ? THEN 1 
+          WHEN LOWER(subtitle) LIKE ? OR LOWER(tagline) LIKE ? THEN 2
+          WHEN LOWER(category) LIKE ? OR LOWER(categorySlug) LIKE ? THEN 3
+          WHEN LOWER(shortDescription) LIKE ? THEN 4
+          ELSE 5
+        END ASC, created_at DESC`;
+      params.push(q, q, q, q, q, q);
+    } else {
+      query += ' ORDER BY created_at DESC';
     }
-
-    query += ' ORDER BY created_at DESC';
 
     const [rows] = await db.query(query, params);
     const products = rows.map(formatProduct);
