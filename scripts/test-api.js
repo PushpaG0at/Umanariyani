@@ -198,11 +198,14 @@ async function runTests() {
     }
   });
 
-  // 7. Active Users
-  await test('GET /api/users/active returns synchronized user count', async () => {
+  // 7. Active Users & Total Community Members
+  await test('GET /api/users/active returns synchronized user count and total community members', async () => {
     const res = await request('GET', '/api/users/active');
     if (res.status !== 200 || typeof res.data.activeUsers !== 'number') {
-      throw new Error(`Invalid active users count`);
+      throw new Error(`Invalid active users count: ${res.data ? res.data.activeUsers : 'missing'}`);
+    }
+    if (typeof res.data.totalUsers !== 'number' || res.data.totalUsers < 1) {
+      throw new Error(`Invalid total users count: ${res.data ? res.data.totalUsers : 'missing'}`);
     }
   });
 

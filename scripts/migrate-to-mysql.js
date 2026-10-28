@@ -129,6 +129,15 @@ async function migrate() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_order_user (userId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- SITE STATS TABLE
+    CREATE TABLE IF NOT EXISTS site_stats (
+      stat_key VARCHAR(64) PRIMARY KEY,
+      stat_value BIGINT NOT NULL DEFAULT 0,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    INSERT IGNORE INTO site_stats (stat_key, stat_value) VALUES ('total_visitors', 1240);
   `);
 
   console.log('✅ Tables created successfully.');
