@@ -61,6 +61,16 @@
 
       <!-- Nav Actions -->
       <div class="nav-actions">
+        <!-- Search Products Bar with Live Dropdown -->
+        <div class="search-bar-wrap">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="globalSearchInput" class="search-input" placeholder="Search products..." autocomplete="off" aria-label="Search Ayurvedic Products">
+          <button type="button" id="searchClearBtn" class="search-clear-btn" title="Clear search" aria-label="Clear search">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <div id="searchResultsDropdown" class="search-results-dropdown" style="display:none;" role="listbox"></div>
+        </div>
+
         <a href="https://wa.me/918641033514?text=Hello%20Umanarayani%2C%20I%20have%20a%20query%20about%20your%20products." target="_blank" class="top-whatsapp-link" style="color:var(--whatsapp-dark); font-weight:700; background:#E8F8EE; padding:6px 14px; border-radius:999px; border:1px solid rgba(37,211,102,0.3);">
           <i class="fa-brands fa-whatsapp" style="color:var(--whatsapp-green); font-size:1.1rem;"></i>
           <span>Help: +91 8641033514</span>

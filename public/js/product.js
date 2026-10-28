@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupReviewForm(productId);
   updateCartBadge();
   setupActiveUsersTracker();
+  checkUserState();
+  setupSearch();
 });
 
 let currentProduct = null;
@@ -500,3 +502,156 @@ window.handleSmartBack = function(event) {
     return;
   }
 };
+
+/* ==========================================================================
+   USER AUTH STATE & HEADER SYNCHRONIZATION
+   ========================================================================== */
+function checkUserState() {
+  const user = JSON.parse(localStorage.getItem('umanarayani_user') || 'null');
+  const signinBtn = document.getElementById('headerSignInBtn');
+  if (!signinBtn) return;
+
+  if (user && user.name) {
+    const firstName = user.name.split(' ')[0];
+    signinBtn.innerHTML = `
+      <span style="font-size: 1rem;">${user.avatar || '🌿'}</span>
+      <span class="user-btn-name">${firstName}</span>
+    `;
+    signinBtn.href = "signin.html";
+    signinBtn.title = `${user.name} (${user.dosha || 'Ayurvedic Profile'}) — View sanctuary profile / logout`;
+    signinBtn.classList.add('logged-in');
+  } else {
+    signinBtn.innerHTML = `<i class="fa-regular fa-user"></i> <span>Sign In</span>`;
+    signinBtn.href = "signin.html";
+    signinBtn.title = "Sign In / Register";
+    signinBtn.classList.remove('logged-in');
+  }
+
+  // Auto-fill review author if present
+  const reviewAuthor = document.getElementById('reviewAuthor');
+  if (reviewAuthor && user && user.name && !reviewAuthor.value) {
+    reviewAuthor.value = user.name;
+  }
+}
+
+/* ==========================================================================
+   PRODUCT SEARCH & INSTANT AUTOCOMPLETE DROPDOWN
+   ========================================================================== */
+function setupSearch() {
+  const input = document.getElementById('globalSearchInput');
+  const clearBtn = document.getElementById('searchClearBtn');
+  const dropdown = document.getElementById('searchResultsDropdown');
+  if (!input) return;
+
+  let debounceTimer;
+
+  input.addEventListener('input', (e) => {
+    const q = e.target.value.trim();
+    if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+
+    clearTimeout(debounceTimer);
+    if (!q) {
+      if (dropdown) dropdown.style.display = 'none';
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        const products = (data && data.success && data.products) ? data.products : [];
+        renderSearchDropdown(products, q);
+      } catch (err) {
+        console.error("Product search error:", err);
+      }
+    }, 220);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = input.value.trim();
+      if (dropdown) dropdown.style.display = 'none';
+      if (q) {
+        window.location.href = `index.html?search=${encodeURIComponent(q)}#productsSection`;
+      }
+    } else if (e.key === 'Escape') {
+      if (dropdown) dropdown.style.display = 'none';
+    }
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      clearBtn.style.display = 'none';
+      if (dropdown) dropdown.style.display = 'none';
+      input.focus();
+    });
+  }
+
+  // Close dropdown on click outside
+  document.addEventListener('click', (e) => {
+    if (dropdown && !e.target.closest('.search-bar-wrap')) {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+
+function renderSearchDropdown(products, query) {
+  const dropdown = document.getElementById('searchResultsDropdown');
+  if (!dropdown) return;
+
+  if (products.length === 0) {
+    dropdown.innerHTML = `
+      <div class="search-dropdown-empty">
+        <i class="fa-solid fa-leaf" style="font-size: 1.6rem; color: var(--green-light); margin-bottom: 8px; display:block;"></i>
+        <span>No products found matching "<strong>${escapeHtml(query)}</strong>"</span>
+        <div style="margin-top: 6px; font-size: 0.75rem; color: #888;">Try searching: Hair Oil, Shampoo, or Face Wash</div>
+      </div>
+    `;
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  const itemsHtml = products.map(p => `
+    <a href="product.html?id=${encodeURIComponent(p.id)}" class="search-dropdown-item">
+      <img src="${p.image}" class="search-item-thumb" alt="${escapeHtml(p.name)}">
+      <div class="search-item-info">
+        <span class="search-item-name">${highlightMatch(p.name, query)}</span>
+        <div class="search-item-cat">
+          <span>🌿 ${p.category}</span>
+          <span>&bull;</span>
+          <span>★ ${p.rating}</span>
+        </div>
+      </div>
+      <div class="search-item-price">₹${p.price}</div>
+    </a>
+  `).join('');
+
+  dropdown.innerHTML = `
+    <div class="search-dropdown-header">
+      <span>Matching Ayurvedic Formulations</span>
+      <span style="color:var(--gold-deep);">${products.length} found</span>
+    </div>
+    ${itemsHtml}
+    <div class="search-dropdown-footer" onclick="window.location.href='index.html?search=${encodeURIComponent(query)}#productsSection'">
+      View all in product catalog &rarr;
+    </div>
+  `;
+  dropdown.style.display = 'block';
+}
+
+function highlightMatch(text, query) {
+  if (!query) return escapeHtml(text);
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return escapeHtml(text).replace(regex, '<strong style="color:var(--green-sage); background:rgba(197,160,89,0.18); padding:0 2px; border-radius:2px;">$1</strong>');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}

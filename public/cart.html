@@ -83,9 +83,15 @@
           <span class="brand-tagline">Pure Nature, Pure Care.</span>
         </div>
       </a>
-      <a href="index.html" class="btn-card-details" style="padding: 8px 18px;">
-        &larr; Continue Shopping
-      </a>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <a href="index.html#productsSection" class="btn-card-details" style="padding: 8px 18px;">
+          &larr; Continue Shopping
+        </a>
+        <a href="signin.html" class="btn-signin" id="headerSignInBtn">
+          <i class="fa-regular fa-user"></i>
+          <span>Sign In</span>
+        </a>
+      </div>
     </div>
   </header>
 
@@ -156,6 +162,25 @@
 
   <script>
     const WHATSAPP_NO = "918641033514";
+
+    function checkUserState() {
+      const user = JSON.parse(localStorage.getItem('umanarayani_user') || 'null');
+      const signinBtn = document.getElementById('headerSignInBtn');
+      if (!signinBtn) return;
+      if (user && user.name) {
+        const firstName = user.name.split(' ')[0];
+        signinBtn.innerHTML = `
+          <span style="font-size: 1rem;">${user.avatar || '🌿'}</span>
+          <span class="user-btn-name">${firstName}</span>
+        `;
+        signinBtn.href = "signin.html";
+        signinBtn.title = `${user.name} (${user.dosha || 'Ayurvedic Profile'}) — View profile / logout`;
+      } else {
+        signinBtn.innerHTML = `<i class="fa-regular fa-user"></i> <span>Sign In</span>`;
+        signinBtn.href = "signin.html";
+        signinBtn.title = "Sign In / Register";
+      }
+    }
 
     function loadCart() {
       const cart = JSON.parse(localStorage.getItem('umanarayani_cart') || '[]');
@@ -281,6 +306,7 @@
       document.getElementById('btnCheckoutWhatsApp').click();
     });
 
+    checkUserState();
     loadCart();
   </script>
 </body>
