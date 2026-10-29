@@ -340,16 +340,16 @@ async function loadReviews(productId) {
       container.innerHTML = data.reviews.map(r => `
         <div class="customer-review-item">
           <div class="review-author-line">
-            <div class="review-avatar-circ">${r.author.charAt(0)}</div>
-            <span class="review-author-name">${r.author}</span>
+            <div class="review-avatar-circ">${escapeHtml(r.author ? r.author.charAt(0) : 'U')}</div>
+            <span class="review-author-name">${escapeHtml(r.author)}</span>
             ${r.verifiedPurchase ? '<span class="review-badge-verified">✓ Verified Purchase</span>' : ''}
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
-            <span style="color:#FFA41C; font-size:0.9rem;">${'★'.repeat(r.rating)}</span>
-            <span class="review-title-bold">${r.title}</span>
+            <span style="color:#FFA41C; font-size:0.9rem;">${'★'.repeat(Math.max(1, Math.min(5, Number(r.rating) || 5)))}</span>
+            <span class="review-title-bold">${escapeHtml(r.title)}</span>
           </div>
-          <div style="font-size:0.75rem; color:#565959; margin-bottom:6px;">Reviewed in ${r.location || 'India'} on ${r.date}</div>
-          <p class="review-text-content">${r.body}</p>
+          <div style="font-size:0.75rem; color:#565959; margin-bottom:6px;">Reviewed in ${escapeHtml(r.location || 'India')} on ${escapeHtml(r.date)}</div>
+          <p class="review-text-content">${escapeHtml(r.body)}</p>
         </div>
       `).join('');
     } else {
@@ -495,7 +495,7 @@ function showToast(message) {
     document.body.appendChild(toast);
   }
 
-  toast.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2ECC71;"></i> ${message}`;
+  toast.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2ECC71;"></i> <span>${escapeHtml(message)}</span>`;
   toast.style.opacity = '1';
   toast.style.transform = 'translateX(-50%) translateY(0)';
 
@@ -632,16 +632,16 @@ function renderSearchDropdown(products, query) {
 
   const itemsHtml = products.map(p => `
     <a href="product.html?id=${encodeURIComponent(p.id)}" class="search-dropdown-item">
-      <img src="${p.image}" class="search-item-thumb" alt="${escapeHtml(p.name)}">
+      <img src="${escapeHtml(p.image)}" class="search-item-thumb" alt="${escapeHtml(p.name)}">
       <div class="search-item-info">
         <span class="search-item-name">${highlightMatch(p.name, query)}</span>
         <div class="search-item-cat">
-          <span>🌿 ${p.category}</span>
+          <span>🌿 ${escapeHtml(p.category)}</span>
           <span>&bull;</span>
-          <span>★ ${p.rating}</span>
+          <span>★ ${escapeHtml(p.rating)}</span>
         </div>
       </div>
-      <div class="search-item-price">₹${p.price}</div>
+      <div class="search-item-price">₹${escapeHtml(p.price)}</div>
     </a>
   `).join('');
 
@@ -651,11 +651,18 @@ function renderSearchDropdown(products, query) {
       <span style="color:var(--gold-deep);">${products.length} found</span>
     </div>
     ${itemsHtml}
-    <div class="search-dropdown-footer" onclick="window.location.href='index.html?search=${encodeURIComponent(query)}#productsSection'">
+    <div class="search-dropdown-footer" id="productSearchDropdownFooter">
       View all in product catalog &rarr;
     </div>
   `;
   dropdown.style.display = 'block';
+
+  const footerBtn = document.getElementById('productSearchDropdownFooter');
+  if (footerBtn) {
+    footerBtn.addEventListener('click', () => {
+      window.location.href = `index.html?search=${encodeURIComponent(query)}#productsSection`;
+    });
+  }
 }
 
 function highlightMatch(text, query) {

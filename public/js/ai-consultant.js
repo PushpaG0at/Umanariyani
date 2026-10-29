@@ -10,10 +10,25 @@
   const HUMAN_WHATSAPP_NUMBER = "+918641033514";
   const HUMAN_WHATSAPP_LINK_BASE = "https://wa.me/918641033514";
 
-  // Simple and safe markdown parser for Ayurvedic text
+  // Strict HTML escape function to prevent DOM XSS
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Safe and sanitized markdown parser for Ayurvedic text (pre-escaped against XSS)
   function formatMarkdown(text) {
     if (!text) return '';
-    let html = text
+    // 1. First escape raw HTML to prevent script / image onerror injection
+    const safe = escapeHtml(text);
+
+    // 2. Apply formatting rules safely on pre-escaped text
+    let html = safe
       // Headings
       .replace(/^### (.*$)/gim, '<h4>$1</h4>')
       .replace(/^## (.*$)/gim, '<h3>$1</h3>')
@@ -109,8 +124,8 @@
             <div class="suggested-items-row">
               ${suggestedProducts.map(p => `
                 <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" class="suggested-product-pill">
-                  <img src="${p.image || 'images/ayurvedic_herbs_circle.jpg'}" alt="${p.name}">
-                  <span>${p.name} (₹${p.price})</span>
+                  <img src="${escapeHtml(p.image) || 'images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
+                  <span>${escapeHtml(p.name)} (₹${escapeHtml(p.price)})</span>
                   <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem; margin-left:2px;"></i>
                 </a>
               `).join('')}
@@ -455,8 +470,8 @@
             <div class="suggested-items-row">
               ${suggestedProducts.map(p => `
                 <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" class="suggested-product-pill">
-                  <img src="${p.image || 'images/ayurvedic_herbs_circle.jpg'}" alt="${p.name}">
-                  <span>${p.name} (₹${p.price})</span>
+                  <img src="${escapeHtml(p.image) || 'images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
+                  <span>${escapeHtml(p.name)} (₹${escapeHtml(p.price)})</span>
                 </a>
               `).join('')}
             </div>

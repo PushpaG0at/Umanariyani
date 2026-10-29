@@ -514,16 +514,16 @@ function renderSearchDropdown(products, query) {
 
   const itemsHtml = products.map(p => `
     <a href="product.html?id=${encodeURIComponent(p.id)}" class="search-dropdown-item">
-      <img src="${p.image}" class="search-item-thumb" alt="${escapeHtml(p.name)}">
+      <img src="${escapeHtml(p.image)}" class="search-item-thumb" alt="${escapeHtml(p.name)}">
       <div class="search-item-info">
         <span class="search-item-name">${highlightMatch(p.name, query)}</span>
         <div class="search-item-cat">
-          <span>🌿 ${p.category}</span>
+          <span>🌿 ${escapeHtml(p.category)}</span>
           <span>&bull;</span>
-          <span>★ ${p.rating}</span>
+          <span>★ ${escapeHtml(p.rating)}</span>
         </div>
       </div>
-      <div class="search-item-price">₹${p.price}</div>
+      <div class="search-item-price">₹${escapeHtml(p.price)}</div>
     </a>
   `).join('');
 
@@ -533,11 +533,18 @@ function renderSearchDropdown(products, query) {
       <span style="color:var(--gold-deep);">${products.length} found</span>
     </div>
     ${itemsHtml}
-    <div class="search-dropdown-footer" onclick="scrollToProductsAndFilter('${escapeHtml(query)}')">
+    <div class="search-dropdown-footer" id="searchDropdownViewAll">
       View all in product catalog &darr;
     </div>
   `;
   dropdown.style.display = 'block';
+
+  const viewAllBtn = document.getElementById('searchDropdownViewAll');
+  if (viewAllBtn) {
+    viewAllBtn.addEventListener('click', () => {
+      scrollToProductsAndFilter(query);
+    });
+  }
 }
 
 function scrollToProductsAndFilter(query) {
@@ -628,7 +635,7 @@ function showToast(message) {
     document.body.appendChild(toast);
   }
 
-  toast.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2ECC71;"></i> ${message}`;
+  toast.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #2ECC71;"></i> <span>${escapeHtml(message)}</span>`;
   toast.style.opacity = '1';
   toast.style.transform = 'translateX(-50%) translateY(0)';
 

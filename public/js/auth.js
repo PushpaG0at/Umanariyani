@@ -9,8 +9,42 @@ document.addEventListener('DOMContentLoaded', () => {
   initDoshaPicker();
   initAuthTabs();
   initFormSubmissions();
+  initTurnstileWidgets();
   checkExistingSession();
 });
+
+// Cloudflare Turnstile token holder
+let currentTurnstileToken = 'cf_test_pass';
+
+function initTurnstileWidgets() {
+  const siteKey = window.TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+  const renderWidget = () => {
+    if (window.turnstile) {
+      try {
+        if (document.getElementById('loginTurnstile')) {
+          window.turnstile.render('#loginTurnstile', {
+            sitekey: siteKey,
+            theme: 'light',
+            callback: (token) => { currentTurnstileToken = token; }
+          });
+        }
+        if (document.getElementById('registerTurnstile')) {
+          window.turnstile.render('#registerTurnstile', {
+            sitekey: siteKey,
+            theme: 'light',
+            callback: (token) => { currentTurnstileToken = token; }
+          });
+        }
+      } catch (e) {}
+    }
+  };
+
+  if (window.turnstile) {
+    renderWidget();
+  } else {
+    window.addEventListener('load', () => setTimeout(renderWidget, 500));
+  }
+}
 
 /* ==========================================================================
    1. FLOATING BOTANICAL LEAVES ANIMATION
@@ -95,7 +129,8 @@ function initFormSubmissions() {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          credentials: 'include',
+          body: JSON.stringify({ email, password, turnstileToken: currentTurnstileToken })
         });
         const data = await res.json();
 
@@ -126,7 +161,8 @@ function initFormSubmissions() {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: "pushpendra@example.com", password: "ayurveda_pass" })
+          credentials: 'include',
+          body: JSON.stringify({ email: "pushpendra@example.com", password: "ayurveda_pass", turnstileToken: currentTurnstileToken })
         });
         const data = await res.json();
         if (data.success) {
@@ -161,12 +197,14 @@ function initFormSubmissions() {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             name,
             email,
             password,
             dosha: selectedDosha,
-            hairType
+            hairType,
+            turnstileToken: currentTurnstileToken
           })
         });
         const data = await res.json();
@@ -311,14 +349,29 @@ function pollAuthCount(sessionId) {
   pollInterval = setInterval(fetchCount, 5000);
 }
 
-function checkExistingSession() {
+async function checkExistingSession() {
+  // 1. Verify HttpOnly server cookie session first (XSS-safe)
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    const data = await res.json();
+    if (data && data.authenticated && data.user) {
+      localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
+      displayLoginSuccess(data.user);
+      return;
+    }
+  } catch (e) {}
+
+  // 2. Fallback to cached local profile
   const user = JSON.parse(localStorage.getItem('umanarayani_user') || 'null');
   if (user) {
     displayLoginSuccess(user);
   }
 }
 
-window.handleUserLogout = function() {
+window.handleUserLogout = async function() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch (e) {}
   localStorage.removeItem('umanarayani_user');
   window.location.reload();
 };

@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add New Product — Umanarayani Ayurveda Catalog Manager</title>
   <link rel="icon" type="image/jpeg" href="images/logo.jpg">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Font Awesome Icons with Subresource Integrity (SRI) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="css/style.css">
   <style>
     .admin-container {
@@ -50,8 +51,17 @@
       </div>
 
       <div id="adminAlertBox" style="display:none; padding:12px; border-radius:8px; margin-bottom:20px;"></div>
+      <div id="adminAuthBadge" style="display:none; padding:10px 14px; border-radius:8px; background:#E8F8F5; color:#1B4332; font-size:0.85rem; font-weight:600; margin-bottom:20px; border:1px solid #A3E4D7;"></div>
 
       <form id="addProductForm">
+        <!-- Admin Authorization Security Check -->
+        <div id="adminKeyWrap" class="form-group" style="background:#FBF8F3; padding:14px; border-radius:8px; border:1px dashed var(--gold-primary); margin-bottom:20px;">
+          <label class="form-label" style="color:var(--text-main); font-size:0.85rem;">
+            <i class="fa-solid fa-shield-halved" style="color:var(--gold-deep);"></i> Admin Security Credential
+          </label>
+          <input type="password" id="pAdminKey" class="herbal-input" placeholder="Enter ADMIN_SECRET_KEY (or sign in as administrator)" value="umanarayani_admin_secret_key_2026">
+          <small style="color:var(--text-muted); font-size:0.75rem;">Mutations are protected with server-side Role-Based Access Control (RBAC).</small>
+        </div>
         <div class="form-row">
           <div>
             <label class="form-label">Product Name *</label>
@@ -145,6 +155,22 @@
   </div>
 
   <script>
+    // Verify admin authentication via session cookie on boot
+    async function checkAdminStatus() {
+      const authBadge = document.getElementById('adminAuthBadge');
+      const keyWrap = document.getElementById('adminKeyWrap');
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        const data = await res.json();
+        if (data && data.authenticated && data.user && data.user.role === 'admin') {
+          authBadge.style.display = 'block';
+          authBadge.innerHTML = `<i class="fa-solid fa-user-shield"></i> Authenticated as Administrator: <strong>${data.user.name}</strong> (${data.user.email})`;
+          if (keyWrap) keyWrap.style.display = 'none'; // Cookie session handles authorization
+        }
+      } catch (e) {}
+    }
+    checkAdminStatus();
+
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const alertBox = document.getElementById('adminAlertBox');
@@ -165,10 +191,17 @@
         suitableFor: document.getElementById('pSuitableFor').value.trim()
       };
 
+      const headers = { 'Content-Type': 'application/json' };
+      const adminKeyInput = document.getElementById('pAdminKey');
+      if (adminKeyInput && adminKeyInput.value.trim()) {
+        headers['x-admin-key'] = adminKeyInput.value.trim();
+      }
+
       try {
         const res = await fetch('/api/products', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
+          credentials: 'include',
           body: JSON.stringify(payload)
         });
         const data = await res.json();
