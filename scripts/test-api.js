@@ -4,7 +4,9 @@ const http = require('http');
 const PORT = process.env.PORT || 3000;
 const BASE_URL = `http://localhost:${PORT}`;
 
-function request(method, path, body = null) {
+const ADMIN_KEY = process.env.ADMIN_SECRET_KEY || 'umanarayani_admin_secret_key_2026';
+
+function request(method, path, body = null, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, BASE_URL);
     const options = {
@@ -15,6 +17,7 @@ function request(method, path, body = null) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        ...extraHeaders
       }
     };
 
@@ -24,9 +27,9 @@ function request(method, path, body = null) {
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          resolve({ status: res.statusCode, data: json });
+          resolve({ status: res.statusCode, headers: res.headers, data: json });
         } catch {
-          resolve({ status: res.statusCode, raw: data });
+          resolve({ status: res.statusCode, headers: res.headers, raw: data });
         }
       });
     });
@@ -86,22 +89,35 @@ async function runTests() {
     }
   });
 
+  // 2. RBAC & Product Mutations
+  await test('POST /api/products rejects unauthenticated access with 403 Forbidden', async () => {
+    const unauthRes = await request('POST', '/api/products', {
+      name: "Malicious Injection Product",
+      price: 99,
+      category: "Hair Care"
+    });
+    if (unauthRes.status !== 403) {
+      throw new Error(`Expected 403 Forbidden for unauthenticated product creation, got status: ${unauthRes.status}`);
+    }
+  });
+
   const testProdId = `test-oil-${Date.now()}`;
-  await test('POST /api/products creates a product and DELETE removes it', async () => {
+  await test('POST /api/products creates product with Admin credentials and DELETE removes it', async () => {
     const createRes = await request('POST', '/api/products', {
       name: `Test Product ${testProdId}`,
       subtitle: "Test Subtitle",
       category: "Hair Care",
       price: 199,
       mrp: 299
-    });
+    }, { 'x-admin-key': ADMIN_KEY });
+
     if (createRes.status !== 201) {
-      throw new Error(`Create failed with status ${createRes.status}`);
+      throw new Error(`Create failed with status ${createRes.status}: ${JSON.stringify(createRes.data)}`);
     }
     const createdId = createRes.data.product.id;
 
     // Delete
-    const delRes = await request('DELETE', `/api/products/${createdId}`);
+    const delRes = await request('DELETE', `/api/products/${createdId}`, null, { 'x-admin-key': ADMIN_KEY });
     if (delRes.status !== 200) {
       throw new Error(`Delete failed with status ${delRes.status}`);
     }
@@ -167,14 +183,51 @@ async function runTests() {
     }
   });
 
-  // 5. Auth Login
-  await test('POST /api/auth/login authenticates test user', async () => {
+  // 5. Auth Login & HttpOnly Cookie Session
+  let authCookie = '';
+  await test('POST /api/auth/login authenticates test user and sets HttpOnly cookie', async () => {
     const res = await request('POST', '/api/auth/login', {
       email: 'pushpendra@example.com',
       password: 'ayurveda_pass'
     });
     if (res.status !== 200 || !res.data.success || !res.data.user) {
       throw new Error(`Authentication failed: ${res.data ? res.data.message : 'Unknown'}`);
+    }
+    const setCookie = res.headers['set-cookie'];
+    if (!setCookie || !setCookie.some(c => c.includes('umanarayani_auth') && c.includes('HttpOnly'))) {
+      throw new Error(`Expected HttpOnly cookie 'umanarayani_auth' in response headers`);
+    }
+    authCookie = setCookie[0].split(';')[0];
+  });
+
+  await test('GET /api/auth/me verifies session with HttpOnly cookie', async () => {
+    const res = await request('GET', '/api/auth/me', null, { Cookie: authCookie });
+    if (res.status !== 200 || !res.data.authenticated || !res.data.user) {
+      throw new Error(`Session verification via cookie failed: ${JSON.stringify(res.data)}`);
+    }
+  });
+
+  // 5b. AI Consultant Guardrails
+  await test('POST /api/ai/consult enforces 600-char maximum length defense', async () => {
+    const massiveText = 'A'.repeat(650);
+    const res = await request('POST', '/api/ai/consult', { message: massiveText });
+    if (res.status !== 400) {
+      throw new Error(`Expected 400 Bad Request for prompt > 600 chars, got status: ${res.status}`);
+    }
+  });
+
+  // 5c. Helmet Security Headers & Anti-Clickjacking
+  await test('HTTP Headers include Helmet CSP and clickjacking defenses', async () => {
+    const res = await request('GET', '/api/health');
+    const headers = res.headers;
+    if (headers['x-frame-options'] !== 'DENY') {
+      throw new Error(`Expected X-Frame-Options: DENY, got: ${headers['x-frame-options']}`);
+    }
+    if (headers['x-content-type-options'] !== 'nosniff') {
+      throw new Error(`Expected X-Content-Type-Options: nosniff, got: ${headers['x-content-type-options']}`);
+    }
+    if (!headers['content-security-policy'] || !headers['content-security-policy'].includes("frame-ancestors 'none'")) {
+      throw new Error(`Missing frame-ancestors 'none' in Content-Security-Policy`);
     }
   });
 
