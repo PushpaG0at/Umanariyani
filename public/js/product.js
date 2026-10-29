@@ -517,8 +517,7 @@ window.handleSmartBack = function(event) {
 /* ==========================================================================
    USER AUTH STATE & HEADER SYNCHRONIZATION
    ========================================================================== */
-function checkUserState() {
-  const user = JSON.parse(localStorage.getItem('umanarayani_user') || 'null');
+function updateUserHeaderButton(user) {
   const signinBtn = document.getElementById('headerSignInBtn');
   if (!signinBtn) return;
 
@@ -526,7 +525,7 @@ function checkUserState() {
     const firstName = user.name.split(' ')[0];
     signinBtn.innerHTML = `
       <span style="font-size: 1rem;">${user.avatar || '🌿'}</span>
-      <span class="user-btn-name">${firstName}</span>
+      <span class="user-btn-name">${escapeHtml(firstName)}</span>
     `;
     signinBtn.href = "signin.html";
     signinBtn.title = `${user.name} (${user.dosha || 'Ayurvedic Profile'}) — View sanctuary profile / logout`;
@@ -537,12 +536,31 @@ function checkUserState() {
     signinBtn.title = "Sign In / Register";
     signinBtn.classList.remove('logged-in');
   }
+}
+
+async function checkUserState() {
+  const localUser = JSON.parse(localStorage.getItem('umanarayani_user') || 'null');
+  updateUserHeaderButton(localUser);
 
   // Auto-fill review author if present
   const reviewAuthor = document.getElementById('reviewAuthor');
-  if (reviewAuthor && user && user.name && !reviewAuthor.value) {
-    reviewAuthor.value = user.name;
+  if (reviewAuthor && localUser && localUser.name && !reviewAuthor.value) {
+    reviewAuthor.value = localUser.name;
   }
+
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    const data = await res.json();
+    if (data && data.authenticated && data.user) {
+      localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
+      updateUserHeaderButton(data.user);
+      if (reviewAuthor && !reviewAuthor.value) {
+        reviewAuthor.value = data.user.name;
+      }
+    } else if (data && !data.authenticated && !localUser) {
+      updateUserHeaderButton(null);
+    }
+  } catch (e) {}
 }
 
 /* ==========================================================================

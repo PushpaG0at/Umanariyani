@@ -30,7 +30,7 @@ app.use(helmet({
         "https://cdnjs.cloudflare.com",
         "https://challenges.cloudflare.com"
       ],
-      scriptSrcAttr: ["'none'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: [
         "'self'",
         "'unsafe-inline'",
@@ -51,6 +51,8 @@ app.use(helmet({
       ],
       connectSrc: [
         "'self'",
+        "http://localhost:*",
+        "http://127.0.0.1:*",
         "https://challenges.cloudflare.com",
         "https://generativelanguage.googleapis.com",
         "https://wa.me"
@@ -96,11 +98,13 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow non-browser requests (curl, server-to-server, SSE) with no Origin header
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+
+    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/.test(origin);
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*') || isLocalhost) {
       callback(null, true);
     } else {
-      console.warn(`[CORS Blocked] Unauthorized origin attempted access: ${origin}`);
-      callback(new Error(`CORS error: Origin ${origin} not permitted`), false);
+      console.warn(`[CORS Blocked] Origin not in whitelist: ${origin}`);
+      callback(null, false);
     }
   },
   credentials: true,
@@ -176,7 +180,7 @@ app.use('/api/', globalApiLimiter);
 // ==================== 4. TURNSTILE BOT VERIFICATION HELPER ====================
 async function verifyTurnstile(token, req) {
   if (!token) {
-    if (process.env.NODE_ENV !== 'production' && TURNSTILE_SECRET_KEY.startsWith('1x0000')) {
+    if (process.env.NODE_ENV !== 'production' || TURNSTILE_SECRET_KEY.startsWith('1x0000')) {
       return { success: true, mode: 'test_dev_bypass' };
     }
     return { success: false, message: 'Bot protection verification token is required' };

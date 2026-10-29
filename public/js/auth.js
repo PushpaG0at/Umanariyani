@@ -11,6 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initFormSubmissions();
   initTurnstileWidgets();
   checkExistingSession();
+
+  const logoutBtn = document.getElementById('btnLogoutSession');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.handleUserLogout();
+    });
+  }
 });
 
 // Cloudflare Turnstile token holder

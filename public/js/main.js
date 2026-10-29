@@ -371,8 +371,7 @@ function setupWhatsAppWidget() {
 /* ==========================================================================
    USER STATE & HEADER MANAGEMENT
    ========================================================================== */
-function checkUserState() {
-  const user = JSON.parse(localStorage.getItem('umanarayani_user') || 'null');
+function updateUserHeaderButton(user) {
   const signinBtn = document.getElementById('headerSignInBtn');
   if (!signinBtn) return;
 
@@ -380,7 +379,7 @@ function checkUserState() {
     const firstName = user.name.split(' ')[0];
     signinBtn.innerHTML = `
       <span style="font-size: 1rem;">${user.avatar || '🌿'}</span>
-      <span class="user-btn-name">${firstName}</span>
+      <span class="user-btn-name">${escapeHtml(firstName)}</span>
     `;
     signinBtn.href = "signin.html";
     signinBtn.title = `${user.name} (${user.dosha || 'Ayurvedic Profile'}) — Click to view profile / logout`;
@@ -391,6 +390,22 @@ function checkUserState() {
     signinBtn.title = "Sign In / Register";
     signinBtn.classList.remove('logged-in');
   }
+}
+
+async function checkUserState() {
+  const localUser = JSON.parse(localStorage.getItem('umanarayani_user') || 'null');
+  updateUserHeaderButton(localUser);
+
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    const data = await res.json();
+    if (data && data.authenticated && data.user) {
+      localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
+      updateUserHeaderButton(data.user);
+    } else if (data && !data.authenticated && !localUser) {
+      updateUserHeaderButton(null);
+    }
+  } catch (e) {}
 }
 
 /* ==========================================================================
