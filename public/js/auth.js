@@ -1,8 +1,15 @@
 /**
  * UMANARAYANI AYURVEDA — CREATIVE HERBAL AUTHENTICATION SCRIPT
- * Manages floating botanical leaves animation, interactive Dosha selection,
- * Sign In / Register toggle, and post-login real-time active users showcase.
+ * Two-Step OTP Verification Flow (Email & SMS OTP via Nodemailer & Twilio),
+ * Floating botanical leaves animation, interactive Dosha selection,
+ * and post-login real-time active users showcase.
  */
+
+let currentTurnstileToken = 'cf_test_pass';
+let pendingAuthIdentifier = '';
+let resendTimer = null;
+let resendSecondsRemaining = 60;
+let lastDevOtp = '';
 
 document.addEventListener('DOMContentLoaded', () => {
   initFloatingLeaves();
@@ -21,9 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Cloudflare Turnstile token holder
-let currentTurnstileToken = 'cf_test_pass';
-
 function initTurnstileWidgets() {
   const siteKey = window.TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
   const renderWidget = () => {
@@ -38,6 +42,13 @@ function initTurnstileWidgets() {
         }
         if (document.getElementById('registerTurnstile')) {
           window.turnstile.render('#registerTurnstile', {
+            sitekey: siteKey,
+            theme: 'light',
+            callback: (token) => { currentTurnstileToken = token; }
+          });
+        }
+        if (document.getElementById('otpTurnstile')) {
+          window.turnstile.render('#otpTurnstile', {
             sitekey: siteKey,
             theme: 'light',
             callback: (token) => { currentTurnstileToken = token; }
@@ -80,7 +91,7 @@ function initFloatingLeaves() {
 /* ==========================================================================
    2. INTERACTIVE DOSHA PROFILE SELECTOR
    ========================================================================== */
-let selectedDosha = "Pitta-Vata";
+let selectedDosha = "Pitta (Sensitive/Warm)";
 
 function initDoshaPicker() {
   const pills = document.querySelectorAll('.dosha-choice-pill');
@@ -100,106 +111,254 @@ function initAuthTabs() {
   const tabBtns = document.querySelectorAll('.auth-tab-btn');
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
+  const otpForm = document.getElementById('otpForm');
 
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       tabBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      clearAuthMessages();
+
+      if (otpForm) otpForm.style.display = 'none';
 
       const mode = btn.getAttribute('data-mode');
       if (mode === 'login') {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
+        if (loginForm) loginForm.style.display = 'block';
+        if (registerForm) registerForm.style.display = 'none';
       } else {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
+        if (loginForm) loginForm.style.display = 'none';
+        if (registerForm) registerForm.style.display = 'block';
       }
     });
   });
 }
 
 /* ==========================================================================
-   4. FORM SUBMISSIONS & DEMO LOGIN
+   4. TWO-STEP OTP FLOW & FORM SUBMISSIONS
    ========================================================================== */
+function showOtpVerificationStep(identifier, maskedText, devOtp) {
+  clearAuthMessages();
+  pendingAuthIdentifier = identifier;
+  lastDevOtp = devOtp || '';
+
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const tabsWrap = document.getElementById('authTabsWrap');
+  const otpForm = document.getElementById('otpForm');
+  const otpTargetMasked = document.getElementById('otpTargetMasked');
+  const otpInput = document.getElementById('otpInput');
+  const otpDevHint = document.getElementById('otpDevHint');
+  const otpDevCode = document.getElementById('otpDevCode');
+
+  if (loginForm) loginForm.style.display = 'none';
+  if (registerForm) registerForm.style.display = 'none';
+  if (tabsWrap) tabsWrap.style.display = 'none';
+  if (otpForm) otpForm.style.display = 'block';
+
+  if (otpTargetMasked) {
+    otpTargetMasked.textContent = maskedText || identifier;
+  }
+
+  if (otpDevHint && otpDevCode) {
+    if (devOtp) {
+      otpDevHint.style.display = 'block';
+      otpDevCode.textContent = devOtp;
+    } else {
+      otpDevHint.style.display = 'none';
+    }
+  }
+
+  if (otpInput) {
+    otpInput.value = '';
+    otpInput.focus();
+  }
+
+  startResendCountdownTimer();
+}
+
+function startResendCountdownTimer() {
+  const btnResend = document.getElementById('btnResendOtp');
+  const countdownSpan = document.getElementById('otpCountdown');
+
+  if (resendTimer) clearInterval(resendTimer);
+  resendSecondsRemaining = 60;
+
+  if (btnResend) {
+    btnResend.disabled = true;
+    btnResend.style.opacity = '0.6';
+    btnResend.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Resend OTP in <span id="otpCountdown">60</span>s`;
+  }
+
+  resendTimer = setInterval(() => {
+    resendSecondsRemaining--;
+    const span = document.getElementById('otpCountdown');
+    if (span) span.textContent = resendSecondsRemaining;
+
+    if (resendSecondsRemaining <= 0) {
+      clearInterval(resendTimer);
+      if (btnResend) {
+        btnResend.disabled = false;
+        btnResend.style.opacity = '1';
+        btnResend.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Resend OTP Now`;
+      }
+    }
+  }, 1000);
+}
+
 function initFormSubmissions() {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
+  const otpForm = document.getElementById('otpForm');
   const demoBtn = document.getElementById('btnDemoLogin');
+  const btnBack = document.getElementById('btnBackToCredentials');
+  const btnResend = document.getElementById('btnResendOtp');
+  const btnAutoFill = document.getElementById('btnAutoFillOtp');
 
-  // Login
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPassword').value;
+  // Back button from OTP step to credentials
+  if (btnBack) {
+    btnBack.addEventListener('click', () => {
+      clearAuthMessages();
+      if (resendTimer) clearInterval(resendTimer);
 
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email, password, turnstileToken: currentTurnstileToken })
-        });
-        const data = await res.json();
+      const tabsWrap = document.getElementById('authTabsWrap');
+      if (tabsWrap) tabsWrap.style.display = 'flex';
+      if (otpForm) otpForm.style.display = 'none';
 
-        if (data.success) {
-          localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
-          displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
-        } else {
-          showAuthError(data.message || 'Login failed');
-        }
-      } catch (err) {
-        // Fallback demo login
-        const fallbackUser = {
-          name: email.split('@')[0] || "Pushpendra Singh",
-          email,
-          dosha: selectedDosha,
-          avatar: "🌿"
-        };
-        localStorage.setItem('umanarayani_user', JSON.stringify(fallbackUser));
-        displayLoginSuccess(fallbackUser);
+      // Re-open active tab
+      const activeTab = document.querySelector('.auth-tab-btn.active');
+      const mode = activeTab ? activeTab.getAttribute('data-mode') : 'login';
+      if (mode === 'login' && loginForm) {
+        loginForm.style.display = 'block';
+      } else if (registerForm) {
+        registerForm.style.display = 'block';
       }
     });
   }
 
-  // Demo Login (Quick 1-Click Sign In)
-  if (demoBtn) {
-    demoBtn.addEventListener('click', async () => {
+  // Auto-fill dev OTP helper button
+  if (btnAutoFill) {
+    btnAutoFill.addEventListener('click', () => {
+      const otpInput = document.getElementById('otpInput');
+      if (otpInput && lastDevOtp) {
+        otpInput.value = lastDevOtp;
+        otpInput.focus();
+      }
+    });
+  }
+
+  // Resend OTP action
+  if (btnResend) {
+    btnResend.addEventListener('click', async () => {
+      if (btnResend.disabled || !pendingAuthIdentifier) return;
+      clearAuthMessages();
+
+      try {
+        btnResend.disabled = true;
+        btnResend.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending code...`;
+
+        const res = await fetch('/api/resend-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ identifier: pendingAuthIdentifier })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          lastDevOtp = data.devOtp || '';
+          if (data.devOtp && document.getElementById('otpDevCode')) {
+            document.getElementById('otpDevHint').style.display = 'block';
+            document.getElementById('otpDevCode').textContent = data.devOtp;
+          }
+          startResendCountdownTimer();
+        } else {
+          showAuthError(data.message || 'Could not resend OTP. Please try again.');
+          btnResend.disabled = false;
+        }
+      } catch (err) {
+        showAuthError('Network error resending OTP. Please try again.');
+        btnResend.disabled = false;
+      }
+    });
+  }
+
+  // 1. Step 1: Login Form
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAuthMessages();
+
+      const identifier = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const submitBtn = document.getElementById('btnLoginSubmit') || loginForm.querySelector('button[type="submit"]');
+
+      if (!identifier || !password) {
+        showAuthError('Please enter your email/mobile number and password.');
+        return;
+      }
+
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Checking credentials...`;
+      }
+
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ email: "pushpendra@example.com", password: "ayurveda_pass", turnstileToken: currentTurnstileToken })
+          body: JSON.stringify({ identifier, password, turnstileToken: currentTurnstileToken })
         });
         const data = await res.json();
-        if (data.success) {
+
+        if (data.requireOtp) {
+          showOtpVerificationStep(data.identifier || identifier, data.masked, data.devOtp);
+        } else if (data.success && data.user) {
           localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
           displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
-          return;
+        } else {
+          showAuthError(data.message || 'Login failed. Please verify credentials.');
         }
-      } catch (e) {}
-
-      // Instant Local Fallback
-      const demoUser = {
-        name: "Pushpendra Singh",
-        email: "pushpendra@example.com",
-        dosha: "Pitta-Vata",
-        avatar: "🌿"
-      };
-      localStorage.setItem('umanarayani_user', JSON.stringify(demoUser));
-      displayLoginSuccess(demoUser);
+      } catch (err) {
+        showAuthError('Unable to connect to Ayurvedic Sanctuary server. Please try again.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
+      }
     });
   }
 
-  // Register
+  // 2. Step 1: Register Form
   if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      clearAuthMessages();
+
       const name = document.getElementById('regName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
+      const phone = document.getElementById('regPhone') ? document.getElementById('regPhone').value.trim() : '';
       const password = document.getElementById('regPassword').value;
       const hairType = document.getElementById('regHairType').value;
+      const submitBtn = document.getElementById('btnRegisterSubmit') || registerForm.querySelector('button[type="submit"]');
+
+      if (!name || (!email && !phone) || !password) {
+        showAuthError('Please provide your name, email/mobile number, and a secure password.');
+        return;
+      }
+
+      if (password.length < 6) {
+        showAuthError('Password must contain at least 6 characters.');
+        return;
+      }
+
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Registering sanctuary account...`;
+      }
 
       try {
         const res = await fetch('/api/auth/register', {
@@ -209,6 +368,7 @@ function initFormSubmissions() {
           body: JSON.stringify({
             name,
             email,
+            phone,
             password,
             dosha: selectedDosha,
             hairType,
@@ -217,30 +377,125 @@ function initFormSubmissions() {
         });
         const data = await res.json();
 
-        if (data.success) {
+        if (data.requireOtp) {
+          const primaryId = data.identifier || email || phone;
+          showOtpVerificationStep(primaryId, data.masked, data.devOtp);
+        } else if (data.success && data.user) {
           localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
           displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
         } else {
-          showAuthError(data.message || 'Registration failed');
+          showAuthError(data.message || 'Registration failed.');
         }
       } catch (err) {
-        const regUser = {
-          name,
-          email,
-          dosha: selectedDosha,
-          hairType,
-          avatar: "🌸"
-        };
-        localStorage.setItem('umanarayani_user', JSON.stringify(regUser));
-        displayLoginSuccess(regUser);
+        showAuthError('Unable to connect to server for registration. Please try again.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
       }
+    });
+  }
+
+  // 3. Step 2: OTP Verification Form Submission
+  if (otpForm) {
+    otpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAuthMessages();
+
+      const otp = document.getElementById('otpInput').value.trim();
+      const submitBtn = document.getElementById('btnSubmitOtp');
+
+      if (!/^\d{6}$/.test(otp)) {
+        showAuthError('Please enter a valid 6-digit numeric OTP code.');
+        return;
+      }
+
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying Sacred OTP...`;
+      }
+
+      try {
+        const res = await fetch('/api/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            identifier: pendingAuthIdentifier,
+            otp,
+            turnstileToken: currentTurnstileToken
+          })
+        });
+        const data = await res.json();
+
+        if (data.success && data.user) {
+          if (resendTimer) clearInterval(resendTimer);
+          localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
+          displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
+        } else {
+          showAuthError(data.message || 'OTP verification failed. Please try again.');
+        }
+      } catch (err) {
+        showAuthError('Error verifying OTP with server. Please try again.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
+      }
+    });
+  }
+
+  // 4. Quick 1-Click Demo Login
+  if (demoBtn) {
+    demoBtn.addEventListener('click', async () => {
+      clearAuthMessages();
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            identifier: "pushpendra@example.com",
+            password: "ayurveda_pass",
+            turnstileToken: currentTurnstileToken
+          })
+        });
+        const data = await res.json();
+
+        if (data.requireOtp) {
+          showOtpVerificationStep(data.identifier || "pushpendra@example.com", data.masked, data.devOtp);
+          // For demo speed: if devOtp is returned, pre-fill it into the input
+          if (data.devOtp) {
+            const input = document.getElementById('otpInput');
+            if (input) input.value = data.devOtp;
+          }
+          return;
+        } else if (data.success && data.user) {
+          localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
+          displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
+          return;
+        }
+      } catch (e) {}
+
+      // Instant Local Fallback if server is offline
+      const demoUser = {
+        name: "Pushpendra Singh",
+        email: "pushpendra@example.com",
+        dosha: "Pitta-Vata",
+        avatar: "🌿",
+        is_verified: true
+      };
+      localStorage.setItem('umanarayani_user', JSON.stringify(demoUser));
+      displayLoginSuccess(demoUser);
     });
   }
 }
 
 /* ==========================================================================
    5. POST-LOGIN SCREEN & ACTUAL ACTIVE USERS SHOWCASE
-   Requirement: "use actual count of the users using the website"
    ========================================================================== */
 function getClientSessionId() {
   let sid = sessionStorage.getItem('umanarayani_session_id');
@@ -279,9 +534,11 @@ async function displayLoginSuccess(user, initialCount, initialTotal) {
   const formsWrap = document.getElementById('authFormsContainer');
   const tabsWrap = document.getElementById('authTabsWrap');
   const successSection = document.getElementById('loginSuccessSection');
+  const otpForm = document.getElementById('otpForm');
 
   if (formsWrap) formsWrap.style.display = 'none';
   if (tabsWrap) tabsWrap.style.display = 'none';
+  if (otpForm) otpForm.style.display = 'none';
   if (successSection) successSection.style.display = 'block';
 
   // Populate user info with null guards
@@ -389,19 +646,25 @@ function showAuthError(msg) {
   if (!errBox) {
     errBox = document.createElement('div');
     errBox.id = 'authErrorBox';
-    errBox.style.cssText = `
-      background: #FDEDEC;
-      color: #C0392B;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      margin-bottom: 16px;
-      border: 1px solid #F5B7B1;
-      text-align: center;
-    `;
-    const form = document.querySelector('.auth-form-wrap');
-    if (form) form.prepend(errBox);
+    const formWrap = document.querySelector('.auth-form-wrap');
+    if (formWrap) formWrap.prepend(errBox);
   }
+  errBox.style.cssText = `
+    background: #FDEDEC;
+    color: #C0392B;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    border: 1px solid #F5B7B1;
+    text-align: center;
+    font-weight: 600;
+  `;
   errBox.textContent = msg;
   errBox.style.display = 'block';
+}
+
+function clearAuthMessages() {
+  const errBox = document.getElementById('authErrorBox');
+  if (errBox) errBox.style.display = 'none';
 }

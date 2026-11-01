@@ -55,14 +55,14 @@
         <!-- 1. Sign In Form -->
         <form id="loginForm">
           <div class="form-group">
-            <label class="form-label" for="loginEmail">Email Address</label>
+            <label class="form-label" for="loginEmail">Email Address or Mobile Number</label>
             <div class="input-with-icon">
               <i class="fa-regular fa-envelope"></i>
-              <input type="email" id="loginEmail" class="herbal-input" placeholder="name@domain.com" required value="pushpendra@example.com">
+              <input type="text" id="loginEmail" class="herbal-input" placeholder="name@domain.com or +91 9876543210" required value="pushpendra@example.com">
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" id="loginPasswordGroup">
             <label class="form-label" for="loginPassword">Password</label>
             <div class="input-with-icon">
               <i class="fa-solid fa-lock"></i>
@@ -73,9 +73,9 @@
           <!-- Cloudflare Turnstile Bot Mitigation Widget Hook -->
           <div id="loginTurnstile" style="margin:10px auto; min-height:48px; display:flex; justify-content:center;"></div>
 
-          <button type="submit" class="btn-herbal-submit">
+          <button type="submit" class="btn-herbal-submit" id="btnLoginSubmit">
             <i class="fa-solid fa-spa"></i>
-            <span>Enter Sanctuary</span>
+            <span>Continue to Verification</span>
           </button>
 
           <!-- 1-Click Demo Sign-in for immediate convenience -->
@@ -106,6 +106,14 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="regPhone">Mobile Number (Optional for SMS OTP)</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-phone"></i>
+              <input type="tel" id="regPhone" class="herbal-input" placeholder="+91 9876543210">
+            </div>
+          </div>
+
+          <div class="form-group" id="regPasswordGroup">
             <label class="form-label" for="regPassword">Password</label>
             <div class="input-with-icon">
               <i class="fa-solid fa-lock"></i>
@@ -151,10 +159,53 @@
           <!-- Cloudflare Turnstile Bot Mitigation Widget Hook -->
           <div id="registerTurnstile" style="margin:10px auto; min-height:48px; display:flex; justify-content:center;"></div>
 
-          <button type="submit" class="btn-herbal-submit">
+          <button type="submit" class="btn-herbal-submit" id="btnRegisterSubmit">
             <i class="fa-solid fa-seedling"></i>
-            <span>Begin Botanical Journey</span>
+            <span>Continue to Verification</span>
           </button>
+        </form>
+
+        <!-- 3. Mandatory 2-Step OTP Verification Form (Shown after Step 1) -->
+        <form id="otpForm" style="display:none;">
+          <div class="otp-header-box" style="text-align:center; margin-bottom:18px;">
+            <div class="otp-icon-badge" style="width:52px; height:52px; margin:0 auto 10px; background:rgba(26,60,42,0.08); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--green-forest); font-size:1.4rem;">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h3 style="font-size:1.2rem; color:var(--green-forest); margin-bottom:4px; font-weight:700;">Enter Verification Code</h3>
+            <p style="font-size:0.86rem; color:var(--text-muted); line-height:1.45; margin:0;">
+              A 6-digit OTP code was sent to<br>
+              <strong id="otpTargetMasked" style="color:var(--green-primary); font-size:0.95rem;"></strong>
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="otpInput" style="text-align:center; display:block;">6-Digit OTP</label>
+            <div class="input-with-icon" style="max-width:240px; margin:0 auto;">
+              <i class="fa-solid fa-key"></i>
+              <input type="text" id="otpInput" class="herbal-input" placeholder="••••••" maxlength="6" inputmode="numeric" autocomplete="one-time-code" required style="letter-spacing:6px; font-size:1.25rem; text-align:center; font-weight:700;">
+            </div>
+            <div id="otpDevHint" style="display:none; text-align:center; margin-top:10px; font-size:0.8rem; color:var(--gold-deep); background:rgba(193,154,91,0.12); padding:6px 12px; border-radius:8px;">
+              <span>Test OTP: <strong id="otpDevCode"></strong></span>
+              <button type="button" id="btnAutoFillOtp" style="margin-left:8px; background:var(--forest-deep, #1A3C2A); color:#fff; border:none; padding:3px 9px; border-radius:4px; font-size:0.75rem; cursor:pointer;">Auto-Fill</button>
+            </div>
+          </div>
+
+          <!-- Cloudflare Turnstile Bot Mitigation Widget Hook for OTP step -->
+          <div id="otpTurnstile" style="margin:8px auto; min-height:48px; display:flex; justify-content:center;"></div>
+
+          <button type="submit" class="btn-herbal-submit" id="btnSubmitOtp">
+            <i class="fa-solid fa-lock-open"></i>
+            <span>Verify & Enter Sanctuary</span>
+          </button>
+
+          <div class="otp-action-row" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:0.82rem;">
+            <button type="button" id="btnBackToCredentials" style="background:none; border:none; color:var(--text-muted); cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-arrow-left"></i> Change account
+            </button>
+            <button type="button" id="btnResendOtp" disabled style="background:none; border:none; color:var(--gold-deep); font-weight:600; cursor:pointer;">
+              Resend OTP in <span id="otpCountdown">60</span>s
+            </button>
+          </div>
         </form>
 
       </div>

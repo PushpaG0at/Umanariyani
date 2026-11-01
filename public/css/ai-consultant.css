@@ -445,6 +445,27 @@
   40% { transform: scale(1); opacity: 1; }
 }
 
+/* Real-time Streaming Cursor & Pulse */
+.ai-stream-cursor {
+  display: inline-block;
+  width: 3px;
+  height: 1.05em;
+  background-color: var(--green-primary, #2D6A4F);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: aiCursorBlink 0.75s infinite ease-in-out;
+  border-radius: 1px;
+}
+
+@keyframes aiCursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.msg-text-stream {
+  display: inline;
+}
+
 /* Quick Prompt Chips */
 .quick-chips-wrapper {
   padding: 12px 24px;

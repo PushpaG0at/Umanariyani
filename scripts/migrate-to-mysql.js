@@ -30,7 +30,11 @@ async function migrate() {
     CREATE TABLE IF NOT EXISTS users (
       id VARCHAR(64) PRIMARY KEY,
       name VARCHAR(120) NOT NULL,
-      email VARCHAR(160) NOT NULL UNIQUE,
+      email VARCHAR(160) NULL UNIQUE,
+      phone_number VARCHAR(32) NULL UNIQUE,
+      is_verified BOOLEAN DEFAULT FALSE,
+      otp_code VARCHAR(255) NULL,
+      otp_expiry DATETIME NULL,
       password VARCHAR(255) NOT NULL,
       dosha VARCHAR(100) DEFAULT 'Balanced Tridosha',
       hairType VARCHAR(100) DEFAULT 'Normal',
@@ -39,7 +43,8 @@ async function migrate() {
       joinedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_user_email (email)
+      INDEX idx_user_email (email),
+      INDEX idx_user_phone (phone_number)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     -- HERBS TABLE

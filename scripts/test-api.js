@@ -1,5 +1,7 @@
 require('dotenv').config();
 const http = require('http');
+const bcrypt = require('bcryptjs');
+const db = require('../db');
 
 const PORT = process.env.PORT || 3000;
 const BASE_URL = `http://localhost:${PORT}`;
@@ -183,21 +185,50 @@ async function runTests() {
     }
   });
 
-  // 5. Auth Login & HttpOnly Cookie Session
+  // 5. Auth Two-Step OTP Verification Flow
   let authCookie = '';
-  await test('POST /api/auth/login authenticates test user and sets HttpOnly cookie', async () => {
+
+  await test('POST /api/auth/login validates credentials and triggers Step 1 OTP dispatch', async () => {
     const res = await request('POST', '/api/auth/login', {
       email: 'pushpendra@example.com',
       password: 'ayurveda_pass'
     });
+    if (res.status !== 200 || !res.data.success || !res.data.requireOtp) {
+      throw new Error(`Expected requireOtp: true, got: ${JSON.stringify(res.data)}`);
+    }
+    if (res.data.devOtp) {
+      throw new Error(`Security violation: devOtp leaked in API response!`);
+    }
+  });
+
+  await test('POST /api/verify-otp validates 6-digit OTP, sets HttpOnly cookie, and issues session', async () => {
+    // Inject hashed test OTP into MySQL to verify verification mechanics
+    const testOtp = '753190';
+    const hashedOtp = await bcrypt.hash(testOtp, 10);
+    const expiry = new Date(Date.now() + 5 * 60 * 1000);
+    await db.saveUserOtp('pushpendra@example.com', hashedOtp, expiry);
+
+    const res = await request('POST', '/api/verify-otp', {
+      identifier: 'pushpendra@example.com',
+      otp: testOtp
+    });
     if (res.status !== 200 || !res.data.success || !res.data.user) {
-      throw new Error(`Authentication failed: ${res.data ? res.data.message : 'Unknown'}`);
+      throw new Error(`OTP Verification failed: ${JSON.stringify(res.data)}`);
     }
     const setCookie = res.headers['set-cookie'];
     if (!setCookie || !setCookie.some(c => c.includes('umanarayani_auth') && c.includes('HttpOnly'))) {
       throw new Error(`Expected HttpOnly cookie 'umanarayani_auth' in response headers`);
     }
     authCookie = setCookie[0].split(';')[0];
+  });
+
+  await test('POST /api/resend-otp triggers fresh OTP generation and delivery', async () => {
+    const res = await request('POST', '/api/resend-otp', {
+      identifier: 'pushpendra@example.com'
+    });
+    if (res.status !== 200 || !res.data.success) {
+      throw new Error(`Resend OTP failed: ${JSON.stringify(res.data)}`);
+    }
   });
 
   await test('GET /api/auth/me verifies session with HttpOnly cookie', async () => {

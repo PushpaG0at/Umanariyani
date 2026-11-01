@@ -10,6 +10,7 @@
     "test:db": "node scripts/test-db.js",
     "test:api": "node scripts/test-api.js",
     "test": "node scripts/test-db.js",
+    "verify": "node scripts/verify-all.js",
     "security:check": "npm audit"
   },
   "keywords": [],
@@ -26,7 +27,9 @@
     "express-rate-limit": "^8.7.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.24.6"
+    "mysql2": "^3.24.6",
+    "nodemailer": "^10.3.1",
+    "twilio": "^6.2.0"
   },
   "allowScripts": {
     "protobufjs@7.6.6": true,

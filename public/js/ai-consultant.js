@@ -60,6 +60,100 @@
     return html;
   }
 
+  // Real-time progressive stream reader for Ayurvedic AI consultation
+  async function streamConsultation({
+    message,
+    productId = '',
+    onStart,
+    onChunk,
+    onDone,
+    onError
+  }) {
+    try {
+      const response = await fetch('/api/ai/consult', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream'
+        },
+        body: JSON.stringify({ message, productId, stream: true })
+      });
+
+      if (!response.ok) {
+        let errMsg = "AI consultation request failed.";
+        try {
+          const errJson = await response.json();
+          if (errJson.message) errMsg = errJson.message;
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('text/event-stream') || !response.body) {
+        // Fallback for non-streaming response
+        const data = await response.json();
+        if (data.success && data.reply) {
+          onStart && onStart();
+          onChunk && onChunk(data.reply, data.reply);
+          onDone && onDone(data);
+        } else {
+          throw new Error(data.message || 'No response from AI');
+        }
+        return;
+      }
+
+      let started = false;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let accumulated = '';
+      let donePayload = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep partial trailing line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const jsonStr = trimmed.slice(5).trim();
+          if (!jsonStr) continue;
+
+          try {
+            const payload = JSON.parse(jsonStr);
+            if (payload.chunk) {
+              if (!started) {
+                started = true;
+                onStart && onStart();
+              }
+              accumulated += payload.chunk;
+              onChunk && onChunk(payload.chunk, accumulated);
+            }
+            if (payload.done) {
+              donePayload = payload;
+            }
+          } catch (e) {
+            // Ignore unparseable SSE line
+          }
+        }
+      }
+
+      if (!started) {
+        started = true;
+        onStart && onStart();
+      }
+
+      onDone && onDone(donePayload || { fullReply: accumulated });
+    } catch (err) {
+      console.error("AI Stream Error:", err);
+      onError && onError(err);
+    }
+  }
+
   /* ==================== 1. MAIN SANCTUARY AI CHAT ==================== */
   function initMainAiChat() {
     const chatBody = document.getElementById('aiChatBody');
@@ -180,7 +274,7 @@
       typingEl = null;
     }
 
-    // Send question to AI
+    // Send question to AI with real-time progressive streaming
     async function handleSend(text) {
       const q = text || inputField.value.trim();
       if (!q) return;
@@ -190,29 +284,85 @@
       sendBtn.disabled = true;
       showTyping();
 
-      try {
-        const response = await fetch('/api/ai/consult', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: q })
-        });
+      let botBubble = null;
+      let textContainer = null;
 
-        const data = await response.json();
-        hideTyping();
+      await streamConsultation({
+        message: q,
+        onStart: () => {
+          hideTyping();
+          botBubble = document.createElement('div');
+          botBubble.className = 'chat-msg bot';
+          botBubble.innerHTML = `
+            <div class="msg-avatar">
+              <img src="images/logo-center.png" alt="AI Vaidya" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+            </div>
+            <div class="msg-content">
+              <div class="msg-text-stream"><span class="ai-stream-cursor"></span></div>
+            </div>
+          `;
+          chatBody.appendChild(botBubble);
+          textContainer = botBubble.querySelector('.msg-text-stream');
+          scrollToBottom();
+        },
+        onChunk: (chunk, accumulated) => {
+          if (textContainer) {
+            textContainer.innerHTML = formatMarkdown(accumulated) + '<span class="ai-stream-cursor"></span>';
+            scrollToBottom();
+          }
+        },
+        onDone: (data) => {
+          if (textContainer) {
+            const finalFullText = data.fullReply || textContainer.innerText;
+            textContainer.innerHTML = formatMarkdown(finalFullText);
 
-        if (data.success && data.reply) {
-          appendMessage('bot', data.reply, data.suggestedProducts || [], data.whatsappLink);
-        } else {
-          appendMessage('bot', "Namaste! 🙏 Our AI is momentarily resting. You can connect directly with our human Ayurvedic specialist on WhatsApp at **+91 8641033514**.", [], `${HUMAN_WHATSAPP_LINK_BASE}?text=Namaste!`);
+            const contentBox = botBubble.querySelector('.msg-content');
+            if (contentBox) {
+              // Append suggested product pills if any
+              if (data.suggestedProducts && data.suggestedProducts.length > 0) {
+                const prodBox = document.createElement('div');
+                prodBox.className = 'suggested-products-box';
+                prodBox.innerHTML = `
+                  <div class="suggested-title"><i class="fa-solid fa-leaf"></i> Matching Ayurvedic Formulations:</div>
+                  <div class="suggested-items-row">
+                    ${data.suggestedProducts.map(p => `
+                      <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" class="suggested-product-pill">
+                        <img src="${escapeHtml(p.image) || 'images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
+                        <span>${escapeHtml(p.name)} (₹${escapeHtml(p.price)})</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem; margin-left:2px;"></i>
+                      </a>
+                    `).join('')}
+                  </div>
+                `;
+                contentBox.appendChild(prodBox);
+              }
+
+              // Append WhatsApp herbal support banner
+              const escalateBox = document.createElement('div');
+              escalateBox.className = 'ai-answer-whatsapp-escalate';
+              const waUrl = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I want to consult regarding: ' + q.substring(0, 60))}`;
+              escalateBox.innerHTML = `
+                <span>Want 1-on-1 guidance from our Herbal Care Team?</span>
+                <a href="${waUrl}" target="_blank">
+                  <i class="fa-brands fa-whatsapp"></i> Chat on WhatsApp
+                </a>
+              `;
+              contentBox.appendChild(escalateBox);
+            }
+            scrollToBottom();
+          }
+          sendBtn.disabled = false;
+          inputField.focus();
+        },
+        onError: (err) => {
+          hideTyping();
+          if (!botBubble) {
+            appendMessage('bot', "Namaste! 🙏 For any immediate question or custom Ayurvedic product guidance, feel free to message our Herbal Care Team directly on WhatsApp at **+91 8641033514**.", [], `${HUMAN_WHATSAPP_LINK_BASE}?text=Namaste!`);
+          }
+          sendBtn.disabled = false;
+          inputField.focus();
         }
-      } catch (err) {
-        console.error("AI Consult Error:", err);
-        hideTyping();
-        appendMessage('bot', "Namaste! 🙏 For any immediate question or custom Ayurvedic product guidance, feel free to message our Herbal Care Team directly on WhatsApp at **+91 8641033514**.", [], `${HUMAN_WHATSAPP_LINK_BASE}?text=Namaste!`);
-      } finally {
-        sendBtn.disabled = false;
-        inputField.focus();
-      }
+      });
     }
 
     sendBtn.addEventListener('click', () => handleSend());
@@ -360,26 +510,63 @@
       chatStream.appendChild(typingDiv);
       chatStream.scrollTop = chatStream.scrollHeight;
 
-      try {
-        const res = await fetch('/api/ai/consult', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: q, productId: productId })
-        });
-        const data = await res.json();
-        if (typingDiv.parentNode) typingDiv.parentNode.removeChild(typingDiv);
+      let botBubble = null;
+      let textContainer = null;
 
-        if (data.success && data.reply) {
-          appendProdMsg('bot', data.reply, data.whatsappLink);
-        } else {
-          appendProdMsg('bot', "Namaste! Please chat with our human Ayurvedic specialist on WhatsApp at +91 8641033514 for specific guidance on this product.");
+      await streamConsultation({
+        message: q,
+        productId: productId,
+        onStart: () => {
+          if (typingDiv.parentNode) typingDiv.parentNode.removeChild(typingDiv);
+          botBubble = document.createElement('div');
+          botBubble.className = 'chat-msg bot';
+          botBubble.innerHTML = `
+            <div class="msg-avatar">🌿</div>
+            <div class="msg-content">
+              <div class="msg-text-stream"><span class="ai-stream-cursor"></span></div>
+            </div>
+          `;
+          chatStream.appendChild(botBubble);
+          textContainer = botBubble.querySelector('.msg-text-stream');
+          chatStream.scrollTop = chatStream.scrollHeight;
+        },
+        onChunk: (chunk, accumulated) => {
+          if (textContainer) {
+            textContainer.innerHTML = formatMarkdown(accumulated) + '<span class="ai-stream-cursor"></span>';
+            chatStream.scrollTop = chatStream.scrollHeight;
+          }
+        },
+        onDone: (data) => {
+          if (textContainer) {
+            const finalFullText = data.fullReply || textContainer.innerText;
+            textContainer.innerHTML = formatMarkdown(finalFullText);
+
+            const contentBox = botBubble.querySelector('.msg-content');
+            if (contentBox) {
+              const escalate = document.createElement('div');
+              escalate.className = 'ai-answer-whatsapp-escalate';
+              escalate.style.marginTop = '8px';
+              const link = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I have a question about ' + productId + ': ' + q.substring(0, 50))}`;
+              escalate.innerHTML = `
+                <span style="font-size:0.75rem;">Prefer 1-on-1 herbal guidance?</span>
+                <a href="${link}" target="_blank" style="padding:4px 10px; font-size:0.75rem;">
+                  <i class="fa-brands fa-whatsapp"></i> WhatsApp +918641033514
+                </a>
+              `;
+              contentBox.appendChild(escalate);
+            }
+            chatStream.scrollTop = chatStream.scrollHeight;
+          }
+          sendBtn.disabled = false;
+        },
+        onError: (err) => {
+          if (typingDiv.parentNode) typingDiv.parentNode.removeChild(typingDiv);
+          if (!botBubble) {
+            appendProdMsg('bot', "Namaste! Feel free to talk directly to our human specialist on WhatsApp at +91 8641033514.");
+          }
+          sendBtn.disabled = false;
         }
-      } catch (e) {
-        if (typingDiv.parentNode) typingDiv.parentNode.removeChild(typingDiv);
-        appendProdMsg('bot', "Namaste! Feel free to talk directly to our human specialist on WhatsApp at +91 8641033514.");
-      } finally {
-        sendBtn.disabled = false;
-      }
+      });
     }
 
     sendBtn.addEventListener('click', () => sendProdQuestion());
@@ -518,27 +705,82 @@
       const urlParams = new URLSearchParams(window.location.search);
       const prodId = urlParams.get('id') || '';
 
-      try {
-        const res = await fetch('/api/ai/consult', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: q, productId: prodId })
-        });
-        const data = await res.json();
-        if (typing.parentNode) typing.parentNode.removeChild(typing);
+      let botBubble = null;
+      let textContainer = null;
 
-        if (data.success && data.reply) {
-          appendModalMsg('bot', data.reply, data.suggestedProducts || [], data.whatsappLink);
-        } else {
-          appendModalMsg('bot', "Namaste! 🙏 Please chat with our human Ayurvedic specialist on WhatsApp at **+91 8641033514**.", [], `${HUMAN_WHATSAPP_LINK_BASE}?text=Namaste!`);
+      await streamConsultation({
+        message: q,
+        productId: prodId,
+        onStart: () => {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          botBubble = document.createElement('div');
+          botBubble.className = 'chat-msg bot';
+          botBubble.innerHTML = `
+            <div class="msg-avatar">🌿</div>
+            <div class="msg-content">
+              <div class="msg-text-stream"><span class="ai-stream-cursor"></span></div>
+            </div>
+          `;
+          chatBody.appendChild(botBubble);
+          textContainer = botBubble.querySelector('.msg-text-stream');
+          chatBody.scrollTop = chatBody.scrollHeight;
+        },
+        onChunk: (chunk, accumulated) => {
+          if (textContainer) {
+            textContainer.innerHTML = formatMarkdown(accumulated) + '<span class="ai-stream-cursor"></span>';
+            chatBody.scrollTop = chatBody.scrollHeight;
+          }
+        },
+        onDone: (data) => {
+          if (textContainer) {
+            const finalFullText = data.fullReply || textContainer.innerText;
+            textContainer.innerHTML = formatMarkdown(finalFullText);
+
+            const contentBox = botBubble.querySelector('.msg-content');
+            if (contentBox) {
+              if (data.suggestedProducts && data.suggestedProducts.length > 0) {
+                const prodDiv = document.createElement('div');
+                prodDiv.className = 'suggested-products-box';
+                prodDiv.innerHTML = `
+                  <div class="suggested-title"><i class="fa-solid fa-leaf"></i> Matching Formulations:</div>
+                  <div class="suggested-items-row">
+                    ${data.suggestedProducts.map(p => `
+                      <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" class="suggested-product-pill">
+                        <img src="${escapeHtml(p.image) || 'images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
+                        <span>${escapeHtml(p.name)} (₹${escapeHtml(p.price)})</span>
+                      </a>
+                    `).join('')}
+                  </div>
+                `;
+                contentBox.appendChild(prodDiv);
+              }
+
+              const esc = document.createElement('div');
+              esc.className = 'ai-answer-whatsapp-escalate';
+              esc.style.marginTop = '8px';
+              const link = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I consulted your AI and want to talk with a human specialist about: ' + q.substring(0, 50))}`;
+              esc.innerHTML = `
+                <span style="font-size:0.72rem;">Want 1-on-1 herbal support?</span>
+                <a href="${link}" target="_blank" style="padding:3px 10px; font-size:0.72rem;">
+                  <i class="fa-brands fa-whatsapp"></i> WhatsApp +918641033514
+                </a>
+              `;
+              contentBox.appendChild(esc);
+            }
+            chatBody.scrollTop = chatBody.scrollHeight;
+          }
+          sendBtn.disabled = false;
+          input.focus();
+        },
+        onError: (err) => {
+          if (typing.parentNode) typing.parentNode.removeChild(typing);
+          if (!botBubble) {
+            appendModalMsg('bot', "Namaste! For product support and herbal routine advice, please WhatsApp us at **+91 8641033514**.", [], `${HUMAN_WHATSAPP_LINK_BASE}?text=Namaste!`);
+          }
+          sendBtn.disabled = false;
+          input.focus();
         }
-      } catch (err) {
-        if (typing.parentNode) typing.parentNode.removeChild(typing);
-        appendModalMsg('bot', "Namaste! For product support and herbal routine advice, please WhatsApp us at **+91 8641033514**.", [], `${HUMAN_WHATSAPP_LINK_BASE}?text=Namaste!`);
-      } finally {
-        sendBtn.disabled = false;
-        input.focus();
-      }
+      });
     }
 
     sendBtn.addEventListener('click', () => sendModalMessage());
