@@ -95,7 +95,9 @@ async function migrate() {
       faqs JSON,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_product_category (categorySlug)
+      INDEX idx_product_category (categorySlug),
+      INDEX idx_product_name (name),
+      INDEX idx_product_cat (category)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     -- REVIEWS TABLE

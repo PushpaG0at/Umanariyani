@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -126,10 +127,14 @@ const corsOptions = {
   maxAge: 86400
 };
 
+app.use(compression());
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1d',
+  etag: true
+}));
 
 // ==================== 3. TIERED RATE LIMITERS ====================
 // Global API Limiter (Scraping and general volumetric protection)
@@ -1715,6 +1720,10 @@ ${sanitizedMessage}
       reply = modelRes.text || "";
     }
 
+    if (!reply) {
+      throw new Error("Gemini AI API did not return text");
+    }
+
     // Detect if specific products were mentioned in answer
     const mentionedProducts = products.filter(p => 
       reply.toLowerCase().includes(p.name.toLowerCase()) || 
@@ -1735,12 +1744,10 @@ ${sanitizedMessage}
     });
   } catch (err) {
     console.error("Gemini AI API Error in /api/ai/consult:", err.message);
-    const fallbackReply = getFallbackReply();
-    res.json({
-      success: true,
-      reply: fallbackReply,
-      whatsappNumber: "+918641033514",
-      whatsappLink: `https://wa.me/918641033514?text=${encodeURIComponent('Hello Umanarayani! I have a question regarding: ' + sanitizedMessage.substring(0, 80))}`
+    res.status(503).json({
+      success: false,
+      message: "Our Ayurvedic guides are currently assisting other customers. Please try again in a moment.",
+      error: "Our Ayurvedic guides are currently assisting other customers. Please try again in a moment."
     });
   }
 });
@@ -1876,6 +1883,18 @@ app.get('/admin', (req, res) => {
 // Fallback routing for SPA or direct page access
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Global Error Handling Middleware (production-hardened, suppresses stack traces)
+app.use((err, req, res, next) => {
+  console.error('[Unhandled Server Error]:', err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(500).json({
+    success: false,
+    message: 'Internal Server Error'
+  });
 });
 
 // Start Server
