@@ -1,4 +1,3 @@
-
 [
   {
     "id": "ayurvedic-hair-oil",
@@ -7,9 +6,9 @@
     "tagline": "Pure Nature, Pure Care.",
     "category": "Hair Care",
     "categorySlug": "hair-care",
-    "price": 349,
-    "mrp": 499,
-    "discountPercent": 30,
+    "price": 649,
+    "mrp": 849,
+    "discountPercent": 24,
     "rating": 4.8,
     "ratingCount": 342,
     "badge": "Bestseller",
@@ -107,13 +106,13 @@
     "tagline": "Pure Nature, Pure Care.",
     "category": "Hair Care",
     "categorySlug": "hair-care",
-    "price": 329,
-    "mrp": 449,
-    "discountPercent": 27,
+    "price": 749,
+    "mrp": 999,
+    "discountPercent": 25,
     "rating": 4.9,
     "ratingCount": 289,
     "badge": "Amazon's Choice",
-    "volume": "250 ml / 8.45 fl oz",
+    "volume": "500 ml / 16.9 fl oz",
     "image": "images/shampoo.jpg",
     "gallery": [
       "images/shampoo.jpg",
@@ -206,13 +205,13 @@
     "tagline": "Pure Nature, Pure Care.",
     "category": "Skin Care",
     "categorySlug": "skin-care",
-    "price": 279,
-    "mrp": 399,
-    "discountPercent": 30,
+    "price": 599,
+    "mrp": 799,
+    "discountPercent": 25,
     "rating": 4.7,
     "ratingCount": 194,
     "badge": "Anti-Tan & Glow",
-    "volume": "150 ml / 5.07 fl oz",
+    "volume": "200 ml / 6.76 fl oz",
     "image": "images/face-wash.jpg",
     "gallery": [
       "images/face-wash.jpg",
@@ -281,6 +280,320 @@
       {
         "q": "Does it help with pimples and acne spots?",
         "a": "Yes! The combination of orange peel bioflavonoids and neem leaves actively helps control excess oil and clears acne-causing bacteria."
+      }
+    ]
+  },
+  {
+    "id": "ayurvedic-mehndi",
+    "name": "UMANARAYANI NATURAL AYURVEDIC MEHNDI",
+    "subtitle": "100% Pure Rajasthani Henna Powder for Hair Care & Conditioning",
+    "tagline": "Pure Nature, Pure Care.",
+    "category": "Hair Care",
+    "categorySlug": "hair-care",
+    "price": 250,
+    "mrp": 349,
+    "discountPercent": 28,
+    "rating": 4.8,
+    "ratingCount": 142,
+    "badge": "100% Pure Organic",
+    "volume": "500g",
+    "image": "images/mehndi.jpg",
+    "gallery": [
+      "images/mehndi.jpg",
+      "images/hair-oil.jpg",
+      "images/shampoo.jpg",
+      "images/ayurvedic_herbs_circle.jpg"
+    ],
+    "inStock": true,
+    "stockCount": 50,
+    "asin": "B09AYURV04",
+    "shortDescription": "Pure Rajasthani henna (mehndi) leaf powder for natural hair conditioning, root cooling, and vibrant rich copper-brown shine.",
+    "description": "Umanarayani Natural Ayurvedic Mehndi is crafted from 100% pure, chemical-free henna leaves cultivated in the sun-drenched soils of Sojat, Rajasthan. Triple micro-filtered for silkiness, it coats the hair cuticle with intense plant nutrients, relieves scalp heat, controls dandruff, and imparts a deep, healthy botanical shine.",
+    "keyBenefits": [
+      "100% Pure Rajasthani Henna leaf powder",
+      "Deep botanical conditioning & scalp cooling champi",
+      "Imparts rich, natural copper-brown botanical shine",
+      "Helps control dandruff and soothes scalp itchiness",
+      "Zero ammonia, zero PPD, and zero synthetic additives"
+    ],
+    "featuredIngredients": [
+      "Pure Mehndi (Henna) Leaf Powder",
+      "Brahmi",
+      "Amla",
+      "Shikakai"
+    ],
+    "ingredientsDetails": [
+      {
+        "name": "Pure Mehndi (Lawsonia Inermis)",
+        "role": "Natural Color & Conditioning",
+        "description": "Triple-sifted pure henna leaves that bond with keratin to strengthen hair shafts."
+      },
+      {
+        "name": "Amla & Brahmi",
+        "role": "Nutrient & Root Fortifier",
+        "description": "Enhances pigment retention and deeply nourishes scalp roots."
+      }
+    ],
+    "howToUse": "Soak required powder in lukewarm water or black tea decoction for 2–3 hours. Apply evenly to parted hair from roots to tips. Leave on for 1–2 hours, then rinse thoroughly with plain water.",
+    "usageSteps": [
+      { "step": 1, "title": "Mix Paste", "text": "Mix 50–100g of Mehndi powder with lukewarm water or herbal tea into a smooth, yogurt-like paste." },
+      { "step": 2, "title": "Rest", "text": "Let the mixture sit in an iron or glass bowl for 2–3 hours for optimal herbal release." },
+      { "step": 3, "title": "Apply Evenly", "text": "Section your hair and apply the paste generously from roots to ends wearing gloves." },
+      { "step": 4, "title": "Rinse Clean", "text": "Leave on for 60–120 minutes. Rinse thoroughly with lukewarm water without shampoo." }
+    ],
+    "suitableFor": "All hair types seeking 100% pure, chemical-free conditioning and natural color.",
+    "certifications": [
+      "100% Natural Henna",
+      "Ammonia & PPD Free",
+      "Triple Sifted Grade A",
+      "Cruelty Free"
+    ],
+    "faqs": [
+      {
+        "q": "Does this mehndi contain any chemicals or synthetic dye?",
+        "a": "No, it is 100% pure, unadulterated Rajasthani henna leaves with zero artificial color, PPD, or preservatives."
+      },
+      {
+        "q": "How often can I apply this?",
+        "a": "For deep conditioning and vibrant color, apply once every 2 to 4 weeks."
+      }
+    ]
+  },
+  {
+    "id": "ayurvedic-mehndi-kit",
+    "name": "UMANARAYANI AYURVEDIC MEHNDI KIT",
+    "subtitle": "Complete Herbal Hair Color & Conditioning Ritual Box",
+    "tagline": "Pure Nature, Pure Care.",
+    "category": "Hair Care",
+    "categorySlug": "hair-care",
+    "price": 560,
+    "mrp": 749,
+    "discountPercent": 25,
+    "rating": 4.9,
+    "ratingCount": 188,
+    "badge": "Complete 3-Pack Ritual",
+    "volume": "3 Pack Kit (1x 500g Mehndi + 1x 250g Aamla Mix + 1x 100g Khair)",
+    "image": "images/mehndi-kit.jpg",
+    "gallery": [
+      "images/mehndi-kit.jpg",
+      "images/mehndi.jpg",
+      "images/hair-oil.jpg",
+      "images/ayurvedic_herbs_circle.jpg"
+    ],
+    "inStock": true,
+    "stockCount": 40,
+    "asin": "B09AYURV05",
+    "shortDescription": "Complete Ayurvedic hair ritual kit containing 1 pack of Mehndi (500g), 1 pack of Aamla mix powder (250g), and 1 pack of Khair powder (100g) for rich natural brown-black tones and total follicle revival.",
+    "description": "Unlock the timeless secret of classical Ayurvedic hair coloring and restoration. The Umanarayani Ayurvedic Mehndi Kit provides 3 harmonized botanical powders: 1 pack of Pure Rajasthani Mehndi (500g) for conditioning and foundational color, 1 pack of Aamla Mix Powder (250g) for follicle strength and deep darkening, and 1 pack of Khair (Acacia catechu) Powder (100g) to anchor rich, elegant dark brown tones. Combined, they deliver radiant color, eliminate grey visibility, and restore scalp health naturally.",
+    "keyBenefits": [
+      "Complete 3-Pack Box: 1 pac Mehndi (500g), 1 pac Aamla Mix Powder (250g), 1 pac Khair Powder (100g)",
+      "Synergistic Ayurvedic combination for richer, deeper natural dark brown tones",
+      "Khair (Katha) powder enhances pigment adherence and longevity",
+      "Aamla mix strengthens root anchors and promotes thick hair growth",
+      "Chemical-free, gentle on sensitive scalps, 100% botanical"
+    ],
+    "featuredIngredients": [
+      "Rajasthani Mehndi (500g)",
+      "Aamla Mix Botanical Powder (250g)",
+      "Khair (Acacia Catechu) Powder (100g)"
+    ],
+    "ingredientsDetails": [
+      {
+        "name": "Mehndi Powder (500g)",
+        "role": "Base Conditioning & Vibrant Tone",
+        "description": "Triple-filtered leaf powder delivering rich natural color and root silkiness."
+      },
+      {
+        "name": "Aamla Mix Powder (250g)",
+        "role": "Follicle Strengthening & Darkening",
+        "description": "Infused with Vitamin C and tannins to deepen natural undertones and reduce hair fall."
+      },
+      {
+        "name": "Khair Powder (100g)",
+        "role": "Rich Dark Brown Pigment Anchor",
+        "description": "Classical Katha bark powder that transforms bright orange henna tones into rich natural dark brown."
+      }
+    ],
+    "howToUse": "Mix the Mehndi powder, Aamla mix powder, and Khair powder in recommended ratios with warm water. Let sit for 2–3 hours. Apply from root to tip, keep for 2 hours, and rinse with water.",
+    "usageSteps": [
+      { "step": 1, "title": "Combine Powders", "text": "In a bowl, mix Mehndi powder, Aamla mix, and Khair powder according to your desired hair depth." },
+      { "step": 2, "title": "Prepare Paste", "text": "Add lukewarm water or tea water and stir into a lump-free creamy paste. Rest for 2–3 hours." },
+      { "step": 3, "title": "Apply to Hair", "text": "Apply uniformly to clean, dry or damp hair sections using an applicator brush or gloved hands." },
+      { "step": 4, "title": "Rinse with Water", "text": "Leave on for 90–120 minutes. Rinse thoroughly with water. Oil hair with Umanarayani Hair Oil that night." }
+    ],
+    "suitableFor": "Anyone seeking complete natural grey coverage, rich dark brown herbal tones, and intense scalp conditioning.",
+    "certifications": [
+      "100% Ayurvedic Botanical Kit",
+      "Zero Synthetics or Peroxides",
+      "Triple Sifted Purity",
+      "Ayush Approved"
+    ],
+    "faqs": [
+      {
+        "q": "What is the purpose of Khair powder?",
+        "a": "Khair (Katha) is derived from Acacia catechu. In Ayurveda, it is celebrated for moderating the bright orange tones of henna into rich, dark chocolate brown shades."
+      },
+      {
+        "q": "How many applications does this kit provide?",
+        "a": "With 850g total herbal powders, this kit provides 5 to 8 full-head coloring and conditioning sessions depending on hair length."
+      }
+    ]
+  },
+  {
+    "id": "ayurvedic-ubtan",
+    "name": "UMANARAYANI AYURVEDIC HERBAL UBTAN",
+    "subtitle": "Traditional De-Tan & Bridal Glow Body & Face Polisher",
+    "tagline": "Pure Nature, Pure Care.",
+    "category": "Skin Care",
+    "categorySlug": "skin-care",
+    "price": 350,
+    "mrp": 499,
+    "discountPercent": 30,
+    "rating": 4.8,
+    "ratingCount": 164,
+    "badge": "De-Tan & Glow",
+    "volume": "500g",
+    "image": "images/ubtan.jpg",
+    "gallery": [
+      "images/ubtan.jpg",
+      "images/face-wash.jpg",
+      "images/hair-oil.jpg",
+      "images/ayurvedic_herbs_circle.jpg"
+    ],
+    "inStock": true,
+    "stockCount": 55,
+    "asin": "B09AYURV06",
+    "shortDescription": "Traditional Ayurvedic Ubtan body polish and facial mask crafted with wild Kasturi Manjal, sandalwood, gram flour, and dried rose petals to remove tan and unveil glowing skin.",
+    "description": "Rooted in India's classical Shringara rituals, Umanarayani Ayurvedic Herbal Ubtan is an artisanal blend of stone-ground Kasturi turmeric, aromatic Chandan (sandalwood), nourishing Besan (gram flour), neem, and dried rose petals. It exfoliates dead skin layers, pulls out accumulated sun tanning, tightens open pores, and restores a velvet-soft bridal radiance across the face and entire body.",
+    "keyBenefits": [
+      "Intensive de-tanning and skin brightening for face and body",
+      "Gentle micro-exfoliation removes dead cells and ingrown hairs",
+      "Refines rough skin texture and minimizes enlarged pores",
+      "100% chemical-free herbal powder suitable for daily body wash",
+      "Infused with wild Kasturi Manjal that brightens without yellow staining"
+    ],
+    "featuredIngredients": [
+      "Kasturi Haldi (Wild Turmeric)",
+      "Chandan (Sandalwood)",
+      "Besan (Gram Flour)",
+      "Rose Petals",
+      "Neem Leaf"
+    ],
+    "ingredientsDetails": [
+      {
+        "name": "Kasturi Manjal (Wild Turmeric)",
+        "role": "Brightening & Anti-Tan",
+        "description": "Aromatic non-staining wild turmeric that corrects pigmentation and uneven skin tone."
+      },
+      {
+        "name": "Chandan (Sandalwood)",
+        "role": "Cooling & Blemish Clearing",
+        "description": "Soothes skin inflammation, reduces dark spots, and imparts a divine natural fragrance."
+      },
+      {
+        "name": "Besan & Rose Petals",
+        "role": "Gentle Cleanser & Texture Refiner",
+        "description": "Absorbs excess sebum, gently sloughs dead cells, and leaves skin smooth as silk."
+      }
+    ],
+    "howToUse": "Take 2–3 tablespoons of Ubtan powder. Mix with rose water (for oily skin) or milk/curd (for dry skin) into a smooth paste. Massage gently over face and body, leave for 10–15 minutes, then wash off with lukewarm water.",
+    "usageSteps": [
+      { "step": 1, "title": "Take Powder", "text": "Take 2 tablespoons for facial mask or 4 tablespoons for full body polish." },
+      { "step": 2, "title": "Mix with Liquid", "text": "Blend with rose water, milk, or plain water to make a spreadable paste." },
+      { "step": 3, "title": "Gentle Massage", "text": "Apply over skin in gentle circular motions to promote circulation and remove tan." },
+      { "step": 4, "title": "Rinse & Radiate", "text": "Let dry for 10–15 minutes until semi-dry. Scrub off gently with wet hands and rinse." }
+    ],
+    "suitableFor": "All skin types seeking natural de-tanning, dark spot reduction, and radiant bridal glow.",
+    "certifications": [
+      "100% Botanical Exfoliant",
+      "No Artificial Scents",
+      "Soap-Free Body Cleanser",
+      "Ayush Certified"
+    ],
+    "faqs": [
+      {
+        "q": "Does this Ubtan leave yellow stains on the skin?",
+        "a": "No! We use authentic Kasturi Manjal (wild turmeric), which is prized in Ayurveda for brightening without the strong yellow stains of cooking turmeric."
+      },
+      {
+        "q": "Can I use it as a daily body wash?",
+        "a": "Yes! It is completely soap-free and gentle enough to replace harsh chemical soaps for daily bath rituals."
+      }
+    ]
+  },
+  {
+    "id": "pure-aloe-vera-gel",
+    "name": "UMANARAYANI PURE AYURVEDIC ALOE VERA GEL",
+    "subtitle": "Multipurpose Cold-Pressed Soothing Gel for Glowing Skin & Soft Hair",
+    "tagline": "Pure Nature, Pure Care.",
+    "category": "Skin Care",
+    "categorySlug": "skin-care",
+    "price": 360,
+    "mrp": 499,
+    "discountPercent": 28,
+    "rating": 4.9,
+    "ratingCount": 226,
+    "badge": "100% Pure & Cold-Pressed",
+    "volume": "500g",
+    "image": "images/aloe-vera.jpg",
+    "gallery": [
+      "images/aloe-vera.jpg",
+      "images/face-wash.jpg",
+      "images/hair-oil.jpg",
+      "images/ayurvedic_herbs_circle.jpg"
+    ],
+    "inStock": true,
+    "stockCount": 65,
+    "asin": "B09AYURV07",
+    "shortDescription": "Pure cold-pressed Aloe Vera soothing gel in a generous 500g tub. Calms sun-damaged skin, soothes burns and acne redness, and deeply hydrates frizzy hair shafts.",
+    "description": "Harvested from organically grown Aloe Barbadensis Miller plants, Umanarayani Pure Ayurvedic Aloe Vera Gel is micro-stabilized to preserve live plant enzymes, polysaccharides, and vitamins. Its featherlight, zero-grease texture sinks instantly into parched skin and hair shafts, delivering deep hydration, calming sun irritation, soothing razor bumps, and locking in fresh, dewy radiance.",
+    "keyBenefits": [
+      "Generous 500g family pack of 100% pure cold-pressed Aloe Vera Gel",
+      "Delivers instant oil-free cooling hydration for face, body, and scalp",
+      "Soothes sunburn, pimple redness, irritation, and post-shaving burns",
+      "Works as an intensive leave-in conditioner to tame hair frizz and flyaways",
+      "Non-sticky, quick-absorbing formula free from parabens, mineral oil, and artificial green dye"
+    ],
+    "featuredIngredients": [
+      "Pure Aloe Barbadensis Leaf Juice",
+      "Vitamin E",
+      "Rose Floral Water",
+      "Cucumber Extract"
+    ],
+    "ingredientsDetails": [
+      {
+        "name": "Cold-Pressed Aloe Vera Gel",
+        "role": "Deep Hydration & Cell Healing",
+        "description": "Contains natural polysaccharides and vitamins that accelerate skin renewal and quench dehydration."
+      },
+      {
+        "name": "Vitamin E & Rose Hydrosol",
+        "role": "Antioxidant & Skin Soother",
+        "description": "Neutralizes environmental stress, softens fine lines, and tones pores."
+      }
+    ],
+    "howToUse": "Apply generously to face, body, or scalp as needed. For hair, apply as a pre-wash mask or lightweight leave-in serum. For face, use as a daily non-comedogenic moisturizer or overnight sleeping pack.",
+    "usageSteps": [
+      { "step": 1, "title": "Cleanse", "text": "Wash your face with Umanarayani Orange Face Wash or clean your hair." },
+      { "step": 2, "title": "Scoop Gel", "text": "Take a generous amount of cool aloe vera gel onto clean palms." },
+      { "step": 3, "title": "Apply Gently", "text": "Massage over face, neck, body, or hair strands until completely absorbed." },
+      { "step": 4, "title": "Feel the Hydration", "text": "Experience instant cooling relief, zero stickiness, and a dewy matte finish." }
+    ],
+    "suitableFor": "All skin and hair types, particularly sun-exposed, sensitive, acne-prone, or dehydrated skin.",
+    "certifications": [
+      "99% Pure Organic Aloe",
+      "Color Free & Fragrance Free",
+      "Non-Comedogenic",
+      "Cruelty Free"
+    ],
+    "faqs": [
+      {
+        "q": "Is this aloe vera gel artificially colored green?",
+        "a": "No, real aloe vera gel is naturally clear to translucent. We never add toxic synthetic green food coloring."
+      },
+      {
+        "q": "Can I apply it on my scalp?",
+        "a": "Yes! Aloe Vera has natural proteolytic enzymes that help repair dead skin cells on the scalp and condition hair."
       }
     ]
   }

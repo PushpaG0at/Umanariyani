@@ -433,7 +433,16 @@ function initFormSubmissions() {
         if (data.success && data.user) {
           if (resendTimer) clearInterval(resendTimer);
           localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
-          displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
+
+          // Stealth Admin RBAC: Redirect admin to /admin.html, customers to home '/'
+          const isAdmin = Boolean(data.role === 'admin' || data.redirectUrl === '/admin.html' || (data.user && data.user.role === 'admin'));
+          if (isAdmin) {
+            window.location.href = '/admin.html';
+            return;
+          }
+
+          window.location.href = '/';
+          return;
         } else {
           showAuthError(data.message || 'OTP verification failed. Please try again.');
         }

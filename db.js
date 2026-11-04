@@ -20,6 +20,14 @@ const pool = mysql.createPool({
 });
 
 /**
+ * Returns array of normalized designated admin email addresses
+ */
+function getAdminEmails() {
+  const envVal = process.env.ADMIN_EMAIL || 'raoa6526@gmail.com,singhpushpendra95734@gmail.com';
+  return envVal.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+}
+
+/**
  * Ensures users table has phone_number, is_verified, otp_code, and otp_expiry columns
  */
 async function ensureUserOtpColumns() {
@@ -43,6 +51,12 @@ async function ensureUserOtpColumns() {
       await pool.query('ALTER TABLE users ADD COLUMN otp_expiry DATETIME NULL AFTER otp_code');
       console.log(' [DB] Added otp_expiry column to users table.');
     }
+    if (!colNames.includes('role')) {
+      await pool.query("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'user' AFTER otp_expiry");
+      console.log(' [DB] Added role column to users table.');
+    } else {
+      await pool.query("ALTER TABLE users MODIFY COLUMN role VARCHAR(20) DEFAULT 'user'");
+    }
 
     // Allow email to be NULL in case user signs up exclusively via phone number
     const emailCol = cols.find(c => c.Field === 'email');
@@ -53,6 +67,13 @@ async function ensureUserOtpColumns() {
 
     // Ensure existing accounts are marked as verified so they can log in seamlessly
     await pool.query('UPDATE users SET is_verified = TRUE WHERE is_verified IS NULL');
+
+    // Automatically ensure designated ADMIN_EMAILs have role = 'admin', and everyone else has 'user'
+    const adminEmails = getAdminEmails();
+    if (adminEmails.length > 0) {
+      await pool.query("UPDATE users SET role = 'admin' WHERE LOWER(email) IN (?)", [adminEmails]);
+      await pool.query("UPDATE users SET role = 'user' WHERE (LOWER(email) NOT IN (?) OR email IS NULL) AND role = 'admin'", [adminEmails]);
+    }
   } catch (err) {
     console.warn('⚠️  [DB] Could not verify/alter users OTP schema:', err.message);
   }
@@ -166,15 +187,20 @@ async function verifyUserOtp(identifier, enteredOtp) {
     return { success: false, message: 'Invalid OTP code. Please check and try again.' };
   }
 
-  // OTP verified: mark user verified and clear OTP
+  // OTP verified: mark user verified, set role, and clear OTP
+  const adminEmails = getAdminEmails();
+  const isMatchAdmin = Boolean(user.email && adminEmails.includes(user.email.trim().toLowerCase()));
+  const targetRole = isMatchAdmin ? 'admin' : (user.role === 'admin' ? 'admin' : 'user');
+
   await pool.query(
-    'UPDATE users SET is_verified = TRUE, otp_code = NULL, otp_expiry = NULL WHERE id = ?',
-    [user.id]
+    'UPDATE users SET is_verified = TRUE, otp_code = NULL, otp_expiry = NULL, role = ? WHERE id = ?',
+    [targetRole, user.id]
   );
 
   user.is_verified = 1;
   user.otp_code = null;
   user.otp_expiry = null;
+  user.role = targetRole;
 
   return { success: true, user };
 }
@@ -196,4 +222,5 @@ module.exports = {
   saveUserOtp,
   verifyUserOtp,
   clearUserOtp,
+  getAdminEmails,
 };

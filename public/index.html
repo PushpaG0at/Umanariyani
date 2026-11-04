@@ -10,9 +10,8 @@
   <!-- Font Awesome Icons with Subresource Integrity (SRI) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
 
-  <!-- Core & Mandala Stylesheets -->
+  <!-- Core Stylesheets -->
   <link rel="stylesheet" href="css/style.css?v=2.5">
-  <link rel="stylesheet" href="css/revolving-mandala.css?v=2.5">
   <link rel="stylesheet" href="css/ai-consultant.css?v=2.5">
 </head>
 <body>
@@ -52,7 +51,6 @@
       <!-- Desktop Nav Menu -->
       <ul class="nav-links">
         <li class="nav-item active"><a href="index.html">Home</a></li>
-        <li class="nav-item"><a href="#mandalaShowcase">Herbal Core</a></li>
         <li class="nav-item"><a href="#productsSection">Products</a></li>
         <li class="nav-item"><a href="#aiSanctuarySection" style="color:var(--gold-deep); font-weight:700;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Consult</a></li>
         <li class="nav-item"><a href="#herbsPhilosophy">Herbology</a></li>
@@ -70,11 +68,6 @@
           <div id="searchResultsDropdown" class="search-results-dropdown" style="display:none;" role="listbox"></div>
         </div>
 
-        <!-- Add New Product Button (Extensibility) -->
-        <a href="admin.html" class="btn-add-product" title="Add More Products to Store">
-          <i class="fa-solid fa-circle-plus"></i> <span class="add-prod-text">Add Product</span>
-        </a>
-
         <!-- Sign-in Button -->
         <a href="signin.html" class="btn-signin" id="headerSignInBtn">
           <i class="fa-regular fa-user"></i>
@@ -90,60 +83,8 @@
     </div>
   </header>
 
-  <!-- ==================== HERO SECTION: REVOLVING HERBS AROUND BRAND LOGO ==================== -->
-  <section class="hero-section" id="mandalaShowcase" style="padding: 40px 0 60px;">
-    <div class="hero-pattern-bg"></div>
-    <div class="container" style="display:flex; flex-direction:column; align-items:center; text-align:center;">
-
-      <!-- Hero Header Text -->
-      <div class="hero-badge" style="margin-bottom: 12px;">
-        <i class="fa-solid fa-seedling" style="color:var(--green-sage);"></i>
-        <span>Ancient Indian Botanical Formulations</span>
-      </div>
-
-      <h1 class="hero-title" style="max-width: 880px; font-size: 2.9rem; margin-bottom: 12px;">
-        Pure Ayurvedic Harmony Rejuvenating <span class="highlight">Hair & Skin</span>
-      </h1>
-
-      <p class="hero-subtitle" style="max-width: 680px; margin-bottom: 24px;">
-        Watch the eight classical herbs of Umanarayani revolve around our sacred emblem. Hover on any ingredient to reveal its classical potency or drag the wheel to explore.
-      </p>
-
-      <!-- Trust Chips -->
-      <div class="hero-trust-chips" style="justify-content: center; margin-bottom: 24px;">
-        <span class="trust-chip"><i class="fa-solid fa-droplet" style="color:var(--green-mint);"></i> Classical Kshirapak Oil</span>
-        <span class="trust-chip"><i class="fa-solid fa-ban" style="color:var(--gold-deep);"></i> 100% Sulphate & Paraben Free</span>
-        <span class="trust-chip"><i class="fa-solid fa-heart" style="color:#E74C3C;"></i> Cruelty Free</span>
-        <span class="trust-chip"><i class="fa-solid fa-award" style="color:var(--gold-primary);"></i> Ayush Certified</span>
-      </div>
-
-      <!-- ==================== GRAND REVOLVING MANDALA CENTERPIECE ==================== -->
-      <!-- The 8 herbs revolve around this central UMANARAYANI logo/brand name with smooth popping -->
-      <div id="revolvingMandalaContainer" style="width: 100%; display: flex; justify-content: center;">
-        <!-- Rendered dynamically by revolving-mandala.js -->
-      </div>
-
-      <!-- Hero CTA Buttons -->
-      <div class="hero-cta-group" style="justify-content: center; margin-top: 16px; flex-wrap: wrap; gap: 12px;">
-        <a href="#productsSection" class="btn-primary-hero">
-          <span>Explore All Formulations</span>
-          <i class="fa-solid fa-arrow-down"></i>
-        </a>
-        <a href="#aiSanctuarySection" class="btn-secondary-hero" style="background:#FFFFFF; color:var(--green-primary); border:2px solid var(--green-forest); padding:12px 22px; border-radius:30px; text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--gold-deep);"></i>
-          <span>Ask AI Vaidya (Gemini)</span>
-        </a>
-        <a href="https://wa.me/918641033514?text=Hello%20Umanarayani!%20I%20would%20like%20to%20consult%20an%20Ayurvedic%20specialist." target="_blank" class="btn-whatsapp-hero">
-          <i class="fa-brands fa-whatsapp" style="font-size:1.3rem;"></i>
-          <span>WhatsApp Helpline (+91 8641033514)</span>
-        </a>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ==================== AYURVEDIC PRODUCT CATALOG (POPPING CARDS) ==================== -->
-  <section class="section-products" id="productsSection">
+  <!-- ==================== AYURVEDIC PRODUCT CATALOG ==================== -->
+  <section class="section-products" id="productsSection" style="padding-top: 45px;">
     <div class="container">
       <div class="section-header-wrap">
         <span class="section-tag">
@@ -151,15 +92,15 @@
         </span>
         <h2 class="section-title">Pure Nature, Pure Care.</h2>
         <p class="section-desc">
-          Crafted with pure herbal distillates and classical botanicals. Hover on any product card for an interactive smooth pop, or click to open our Amazon-style detailed product experience in a new window.
+          Crafted with pure herbal distillates and classical botanicals. Hover on any product card for an interactive smooth pop, or click to open our Amazon-style detailed product experience.
         </p>
       </div>
 
       <!-- Category Filter Tabs -->
       <div class="category-filter-tabs">
         <button class="cat-tab-btn active" data-cat="all">All Formulations</button>
-        <button class="cat-tab-btn" data-cat="hair-care">Hair Care (Oil & Shampoo)</button>
-        <button class="cat-tab-btn" data-cat="skin-care">Skin & Face Wash</button>
+        <button class="cat-tab-btn" data-cat="hair-care">Hair Care (Oil, Shampoo & Mehndi)</button>
+        <button class="cat-tab-btn" data-cat="skin-care">Skin Care (Face Wash, Ubtan & Aloe)</button>
         <button class="cat-tab-btn" data-cat="body-care">Body Care & Wellness</button>
       </div>
 
@@ -168,10 +109,10 @@
         <div class="active-search-banner-left">
           <span class="active-search-badge"><i class="fa-solid fa-magnifying-glass"></i> Top Search Priority</span>
           <h3 class="active-search-title">Showing products for: "<span id="activeSearchQueryText" class="query-highlight"></span>" (<span id="activeSearchCount">0</span> found)</h3>
-          <p class="active-search-sub">Herbal core cycle minimized. Showing relevant Ayurvedic formulations as first priority.</p>
+          <p class="active-search-sub">Showing relevant Ayurvedic formulations as first priority.</p>
         </div>
-        <button type="button" class="btn-clear-search-prominent" onclick="clearGlobalSearch()" title="Show all products and restore revolving herbal cycle">
-          <i class="fa-solid fa-arrow-left"></i> Clear &amp; Show Herbal Cycle
+        <button type="button" class="btn-clear-search-prominent" onclick="clearGlobalSearch()" title="Show all products">
+          <i class="fa-solid fa-arrow-left"></i> Clear &amp; Show All Products
         </button>
       </div>
 
@@ -597,7 +538,6 @@
           <ul class="footer-links-list">
             <li><a href="signin.html">Ayurvedic Profile / Sign In</a></li>
             <li><a href="cart.html">View Cart & Checkout</a></li>
-            <li><a href="admin.html">Add New Product</a></li>
             <li><a href="#herbsPhilosophy">Classical Herbology</a></li>
           </ul>
         </div>
@@ -689,16 +629,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="js/revolving-mandala.js?v=2.5"></script>
   <script src="js/main.js?v=2.5"></script>
   <script src="js/ai-consultant.js?v=2.5"></script>
-  <script>
-    // Initialize the Revolving Mandala Centerpiece
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.initRevolvingMandala && document.getElementById('revolvingMandalaContainer')) {
-        window.initRevolvingMandala('revolvingMandalaContainer');
-      }
-    });
-  </script>
 </body>
 </html>

@@ -131,6 +131,42 @@ app.use(compression());
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
+
+// Helper to retrieve all designated admin emails
+function getAdminEmails() {
+  const envVal = process.env.ADMIN_EMAIL || 'raoa6526@gmail.com,singhpushpendra95734@gmail.com';
+  return envVal.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+}
+
+// Stealth Admin Panel URL Protection: Redirect non-admin or unauthenticated visits directly to '/'
+app.get(['/admin', '/admin.html'], (req, res, next) => {
+  let token = null;
+  if (req.cookies && req.cookies.umanarayani_auth) {
+    token = req.cookies.umanarayani_auth;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    token = req.headers.authorization.slice(7);
+  }
+
+  if (!token) {
+    return res.redirect('/');
+  }
+
+  try {
+    const decoded = jwt.verify(token, SESSION_SECRET);
+    const adminEmails = getAdminEmails();
+    const userEmail = (decoded && decoded.email) ? decoded.email.trim().toLowerCase() : '';
+    const isAdmin = Boolean(decoded && (decoded.role === 'admin' || adminEmails.includes(userEmail)));
+
+    if (!isAdmin) {
+      return res.redirect('/');
+    }
+
+    return res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  } catch (err) {
+    return res.redirect('/');
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d',
   etag: true
@@ -418,13 +454,30 @@ function requireAdmin(req, res, next) {
     return next();
   }
 
-  if (req.user && req.user.role === 'admin') {
+  if (!req.user) {
+    let token = null;
+    if (req.cookies && req.cookies.umanarayani_auth) {
+      token = req.cookies.umanarayani_auth;
+    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.slice(7);
+    }
+    if (token) {
+      try {
+        req.user = jwt.verify(token, SESSION_SECRET);
+      } catch (_) {}
+    }
+  }
+
+  const adminEmails = getAdminEmails();
+  const userEmail = (req.user && req.user.email) ? req.user.email.trim().toLowerCase() : '';
+
+  if (req.user && (req.user.role === 'admin' || adminEmails.includes(userEmail))) {
     return next();
   }
 
   return res.status(403).json({
     success: false,
-    message: 'Access Denied: Administrator role privileges or valid admin credentials required.'
+    message: 'Access Denied: Administrator role privileges required.'
   });
 }
 
@@ -1087,7 +1140,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
         dosha: dosha || "Balanced Tridosha",
         hairType: hairType || "Normal",
         avatar: ["🌿", "🌸", "🍃", "✨", "🌺"][Math.floor(Math.random() * 5)],
-        role: 'customer',
+        role: isEmail && getAdminEmails().includes(identifier.trim().toLowerCase()) ? 'admin' : 'user',
         otp_code: hashedOtp,
         otp_expiry: otpExpiry
       };
@@ -1233,12 +1286,22 @@ async function handleVerifyOtp(req, res) {
 
     const user = verifyResult.user;
 
+    const adminEmails = getAdminEmails();
+    const userEmail = user.email ? user.email.trim().toLowerCase() : '';
+    const isMatchAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
+    const finalRole = isMatchAdmin ? 'admin' : (user.role === 'admin' ? 'admin' : 'user');
+
+    if (user.role !== finalRole) {
+      await db.query('UPDATE users SET role = ? WHERE id = ?', [finalRole, user.id]);
+      user.role = finalRole;
+    }
+
     const sessionToken = jwt.sign(
       {
         id: user.id,
         email: user.email,
         phone_number: user.phone_number,
-        role: user.role || 'customer',
+        role: finalRole,
         name: user.name
       },
       SESSION_SECRET,
@@ -1259,6 +1322,8 @@ async function handleVerifyOtp(req, res) {
       success: true,
       message: 'Namaste! Verification successful. Welcome to Ayurvedic Sanctuary.',
       token: sessionToken,
+      role: finalRole,
+      redirectUrl: finalRole === 'admin' ? '/admin.html' : '/',
       user: {
         id: user.id,
         name: user.name,
@@ -1267,7 +1332,7 @@ async function handleVerifyOtp(req, res) {
         dosha: user.dosha,
         hairType: user.hairType,
         avatar: user.avatar || "🌿",
-        role: user.role || "customer",
+        role: finalRole,
         is_verified: true
       },
       activeUsersCount: getActualActiveUserCount(),
@@ -1874,10 +1939,6 @@ app.get('/signin', (req, res) => {
 
 app.get('/cart', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'cart.html'));
-});
-
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // Fallback routing for SPA or direct page access

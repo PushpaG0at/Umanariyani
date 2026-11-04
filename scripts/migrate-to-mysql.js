@@ -39,7 +39,7 @@ async function migrate() {
       dosha VARCHAR(100) DEFAULT 'Balanced Tridosha',
       hairType VARCHAR(100) DEFAULT 'Normal',
       avatar VARCHAR(50) DEFAULT '🌿',
-      role VARCHAR(32) DEFAULT 'customer',
+      role VARCHAR(20) DEFAULT 'user',
       joinedDate DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

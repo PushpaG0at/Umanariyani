@@ -77,10 +77,41 @@ async function runTests() {
   });
 
   // 2. Products
-  await test('GET /api/products returns products list', async () => {
+  await test('GET /api/products returns updated 7 products with new pricing and weights', async () => {
     const res = await request('GET', '/api/products');
-    if (res.status !== 200 || !Array.isArray(res.data.products) || res.data.products.length === 0) {
-      throw new Error(`Invalid products list response`);
+    if (res.status !== 200 || !Array.isArray(res.data.products) || res.data.products.length < 7) {
+      throw new Error(`Expected at least 7 products in catalog, got: ${res.data.products ? res.data.products.length : 'none'}`);
+    }
+
+    const prods = res.data.products;
+    const oil = prods.find(p => p.id === 'ayurvedic-hair-oil');
+    const shampoo = prods.find(p => p.id === 'herbal-shampoo');
+    const facewash = prods.find(p => p.id === 'orange-face-wash');
+    const mehndi = prods.find(p => p.id === 'ayurvedic-mehndi');
+    const mehndiKit = prods.find(p => p.id === 'ayurvedic-mehndi-kit');
+    const ubtan = prods.find(p => p.id === 'ayurvedic-ubtan');
+    const aloe = prods.find(p => p.id === 'pure-aloe-vera-gel');
+
+    if (!oil || Number(oil.price) !== 649 || !oil.volume.includes('200')) {
+      throw new Error(`Oil product mismatch: price=${oil?.price}, volume=${oil?.volume}`);
+    }
+    if (!shampoo || Number(shampoo.price) !== 749 || !shampoo.volume.includes('500')) {
+      throw new Error(`Shampoo product mismatch: price=${shampoo?.price}, volume=${shampoo?.volume}`);
+    }
+    if (!facewash || Number(facewash.price) !== 599 || !facewash.volume.includes('200')) {
+      throw new Error(`Facewash product mismatch: price=${facewash?.price}, volume=${facewash?.volume}`);
+    }
+    if (!mehndi || Number(mehndi.price) !== 250 || !mehndi.volume.includes('500g')) {
+      throw new Error(`Mehndi product mismatch: price=${mehndi?.price}, volume=${mehndi?.volume}`);
+    }
+    if (!mehndiKit || Number(mehndiKit.price) !== 560) {
+      throw new Error(`Mehndi Kit product mismatch: price=${mehndiKit?.price}`);
+    }
+    if (!ubtan || Number(ubtan.price) !== 350 || !ubtan.volume.includes('500g')) {
+      throw new Error(`Ubtan product mismatch: price=${ubtan?.price}, volume=${ubtan?.volume}`);
+    }
+    if (!aloe || Number(aloe.price) !== 360 || !aloe.volume.includes('500g')) {
+      throw new Error(`Aloe Vera product mismatch: price=${aloe?.price}, volume=${aloe?.volume}`);
     }
   });
 
@@ -215,6 +246,12 @@ async function runTests() {
     if (res.status !== 200 || !res.data.success || !res.data.user) {
       throw new Error(`OTP Verification failed: ${JSON.stringify(res.data)}`);
     }
+    if (res.data.role !== 'user' && res.data.role !== 'customer') {
+      throw new Error(`Expected customer role, got: ${res.data.role}`);
+    }
+    if (res.data.redirectUrl !== '/') {
+      throw new Error(`Expected customer redirectUrl '/', got: ${res.data.redirectUrl}`);
+    }
     const setCookie = res.headers['set-cookie'];
     if (!setCookie || !setCookie.some(c => c.includes('umanarayani_auth') && c.includes('HttpOnly'))) {
       throw new Error(`Expected HttpOnly cookie 'umanarayani_auth' in response headers`);
@@ -293,14 +330,64 @@ async function runTests() {
     }
   });
 
-  // 8. HTML Pages
-  await test('HTML Pages (/product, /signin, /cart, /admin) serve correctly', async () => {
+  // 8. HTML Pages & Stealth Admin Protection
+  await test('HTML Pages (/product, /signin, /cart) serve correctly and /admin enforces stealth redirect for non-admins', async () => {
     const pRes = await request('GET', '/product');
     const sRes = await request('GET', '/signin');
     const cRes = await request('GET', '/cart');
-    const aRes = await request('GET', '/admin');
-    if (pRes.status !== 200 || sRes.status !== 200 || cRes.status !== 200 || aRes.status !== 200) {
-      throw new Error(`Failed to serve static HTML page routes`);
+    const unauthAdminRes = await request('GET', '/admin');
+    if (pRes.status !== 200 || sRes.status !== 200 || cRes.status !== 200) {
+      throw new Error(`Failed to serve storefront HTML page routes`);
+    }
+    if (unauthAdminRes.status !== 302 || unauthAdminRes.headers.location !== '/') {
+      throw new Error(`Expected /admin to redirect non-admin visitors with 302 to '/', got status: ${unauthAdminRes.status}`);
+    }
+  });
+
+  await test('Admin user (ADMIN_EMAIL) receives role: admin and redirectUrl: /admin.html on OTP verification', async () => {
+    const adminEmails = (process.env.ADMIN_EMAIL || 'raoa6526@gmail.com,singhpushpendra95734@gmail.com').split(',').map(e => e.trim().toLowerCase());
+    const adminEmail = adminEmails[0]; // raoa6526@gmail.com
+    const pushpendraAdminEmail = adminEmails[1] || 'singhpushpendra95734@gmail.com';
+    const existingAdmin = await db.findUserByIdentifier(adminEmail);
+    if (!existingAdmin) {
+      const hashPass = await bcrypt.hash('admin_secure_pass', 10);
+      await db.query(`
+        INSERT INTO users (id, name, email, password, role, is_verified, joinedDate)
+        VALUES ('usr_admin_test', 'Rao Admin', ?, ?, 'admin', TRUE, NOW())
+      `, [adminEmail, hashPass]);
+    } else {
+      await db.query(`UPDATE users SET role = 'admin' WHERE id = ?`, [existingAdmin.id]);
+    }
+
+    const testOtp = '849201';
+    const hashedOtp = await bcrypt.hash(testOtp, 10);
+    const expiry = new Date(Date.now() + 5 * 60 * 1000);
+    await db.saveUserOtp(adminEmail, hashedOtp, expiry);
+
+    const res = await request('POST', '/api/verify-otp', {
+      identifier: adminEmail,
+      otp: testOtp
+    });
+
+    if (res.status !== 200 || !res.data.success) {
+      throw new Error(`Admin OTP verification failed: ${JSON.stringify(res.data)}`);
+    }
+    if (res.data.role !== 'admin' || res.data.redirectUrl !== '/admin.html') {
+      throw new Error(`Expected role 'admin' and redirectUrl '/admin.html', got: ${JSON.stringify(res.data)}`);
+    }
+
+    const setCookie = res.headers['set-cookie'];
+    if (!setCookie) throw new Error('Missing admin auth cookie');
+    const adminCookie = setCookie[0].split(';')[0];
+    const adminPageRes = await request('GET', '/admin', null, { Cookie: adminCookie });
+    if (adminPageRes.status !== 200) {
+      throw new Error(`Expected authenticated admin GET /admin to return 200 OK, got: ${adminPageRes.status}`);
+    }
+
+    // Verify singhpushpendra95734@gmail.com also has role: admin
+    const pUser = await db.findUserByIdentifier(pushpendraAdminEmail);
+    if (!pUser || pUser.role !== 'admin') {
+      throw new Error(`Expected singhpushpendra95734@gmail.com to have role 'admin', got: ${pUser ? pUser.role : 'not found'}`);
     }
   });
 
