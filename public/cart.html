@@ -99,6 +99,12 @@
   </header>
 
   <main class="container">
+    <!-- Payment Failure Alert Banner (Visible when redirected with payment error) -->
+    <div id="paymentAlertBanner" style="display:none; max-width:1040px; margin:24px auto -16px; background:#FDEDEC; color:#922B21; border:1px solid #F5B7B1; border-radius:12px; padding:14px 20px; font-size:0.95rem; align-items:center; gap:12px;">
+      <i class="fa-solid fa-triangle-exclamation" style="font-size:1.3rem;"></i>
+      <span>Payment could not be completed or was cancelled. Your items remain safe in your herbal basket; please try again or order directly via WhatsApp.</span>
+    </div>
+
     <div class="cart-wrapper">
       <!-- Items List -->
       <div class="cart-items-card">
@@ -322,9 +328,56 @@
       window.open(`https://wa.me/${WHATSAPP_NO}?text=${text}`, '_blank');
     });
 
-    document.getElementById('btnProceedPayment').addEventListener('click', () => {
-      alert("Namaste! We are currently accepting express orders and address confirmations directly via our verified WhatsApp Business line (+91 8641033514). Redirecting to WhatsApp...");
-      document.getElementById('btnCheckoutWhatsApp').click();
+    // Check for payment error parameter from PhonePe redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('error') === 'payment_failed') {
+      const banner = document.getElementById('paymentAlertBanner');
+      if (banner) banner.style.display = 'flex';
+    }
+
+    // PhonePe Hosted Standard Checkout Integration
+    document.getElementById('btnProceedPayment').addEventListener('click', async () => {
+      const cart = JSON.parse(localStorage.getItem('umanarayani_cart') || '[]');
+      if (cart.length === 0) {
+        alert("Your herbal basket is empty. Please add items to proceed to payment.");
+        return;
+      }
+
+      const payBtn = document.getElementById('btnProceedPayment');
+      const originalHtml = payBtn.innerHTML;
+      payBtn.disabled = true;
+      payBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Secure PhonePe...`;
+
+      try {
+        const user = JSON.parse(localStorage.getItem('umanarayani_user') || '{}');
+        const res = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            items: cart,
+            customerName: user.name || "Ayurvedic Patron",
+            customerEmail: user.email || "patron@umanarayani.com",
+            customerPhone: "+91 8641033514",
+            shippingAddress: "Confirmed for Express Herbal Delivery"
+          })
+        });
+
+        const data = await res.json();
+        if (data && data.success && data.redirectUrl) {
+          // Redirect the user to PhonePe standard hosted payment page
+          window.location.href = data.redirectUrl;
+        } else {
+          alert(data?.message || 'Could not initiate PhonePe payment. Please try again or use WhatsApp order.');
+          payBtn.disabled = false;
+          payBtn.innerHTML = originalHtml;
+        }
+      } catch (err) {
+        console.error('PhonePe Checkout Error:', err);
+        alert('Network error connecting to payment gateway. Please check your connection or order via WhatsApp.');
+        payBtn.disabled = false;
+        payBtn.innerHTML = originalHtml;
+      }
     });
 
     checkUserState();

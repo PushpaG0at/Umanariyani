@@ -391,6 +391,43 @@ async function runTests() {
     }
   });
 
+  // 9. PhonePe Payment Gateway Integration
+  await test('POST /api/payment/create-order secures calculation against database prices and returns PhonePe redirect URL', async () => {
+    // Send tampered frontend price of 1 Rupee to ensure backend ignores it and queries MySQL
+    const res = await request('POST', '/api/payment/create-order', {
+      items: [
+        { id: 'ayurvedic-hair-oil', quantity: 2, price: 1.00 }, // DB price is 649
+        { id: 'orange-face-wash', quantity: 1, price: 5.00 }    // DB price is 599
+      ],
+      customerName: "Integration Test Patron",
+      customerEmail: "patron@example.com",
+      customerPhone: "+91 9876543210"
+    });
+
+    if (res.status !== 200 || !res.data.success) {
+      throw new Error(`PhonePe create-order failed: ${JSON.stringify(res.data)}`);
+    }
+
+    // Expected: (649 * 2) + 599 = 1298 + 599 = 1897
+    if (res.data.amount !== 1897) {
+      throw new Error(`Security calculation failure: expected 1897, got ${res.data.amount}. Backend must not trust frontend prices!`);
+    }
+
+    if (!res.data.redirectUrl || typeof res.data.redirectUrl !== 'string') {
+      throw new Error(`Expected valid redirectUrl in response, got: ${res.data.redirectUrl}`);
+    }
+
+    if (!res.data.merchantTransactionId || !res.data.merchantTransactionId.startsWith('MT_')) {
+      throw new Error(`Invalid merchantTransactionId: ${res.data.merchantTransactionId}`);
+    }
+
+    // Verify order was pre-inserted into MySQL as Pending
+    const [orderRows] = await db.query('SELECT * FROM orders WHERE id = ?', [res.data.merchantTransactionId]);
+    if (orderRows.length === 0 || orderRows[0].paymentStatus !== 'Pending') {
+      throw new Error(`Order ${res.data.merchantTransactionId} not found in MySQL or not marked as Pending`);
+    }
+  });
+
   console.log(`\n==================================================`);
   console.log(`RESULTS: ${passed} Passed, ${failed} Failed`);
   console.log(`==================================================\n`);

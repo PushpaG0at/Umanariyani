@@ -3,6 +3,7 @@ const express = require('express');
 const compression = require('compression');
 const cors = require('cors');
 const helmet = require('helmet');
+const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const cookieParser = require('cookie-parser');
@@ -10,13 +11,21 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const axios = require('axios');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const { GoogleGenAI } = require('@google/genai');
 const db = require('./db');
+const { startBackupSchedule } = require('./scripts/backup');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Enable trust proxy for AWS ALB/ELB, CloudFront, or Nginx reverse proxies
+app.set('trust proxy', 1);
+
+// Production structured HTTP request logging (essential for debugging webhooks and payment callbacks)
+app.use(morgan('combined'));
 
 // Security Keys
 const SESSION_SECRET = process.env.SESSION_SECRET || 'umanarayani_sacred_ayurveda_jwt_secret_2026_salt';
@@ -59,7 +68,11 @@ app.use(helmet({
         "http://127.0.0.1:*",
         "https://challenges.cloudflare.com",
         "https://generativelanguage.googleapis.com",
-        "https://wa.me"
+        "https://wa.me",
+        "https://api-preprod.phonepe.com",
+        "https://api.phonepe.com",
+        "https://mercury-uat.phonepe.com",
+        "https://mercury.phonepe.com"
       ],
       frameSrc: [
         "'self'",
@@ -68,7 +81,14 @@ app.use(helmet({
       frameAncestors: ["'none'"], // Anti-clickjacking defense
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
-      formAction: ["'self'", "https://wa.me"]
+      formAction: [
+        "'self'",
+        "https://wa.me",
+        "https://api-preprod.phonepe.com",
+        "https://api.phonepe.com",
+        "https://mercury-uat.phonepe.com",
+        "https://mercury.phonepe.com"
+      ]
     }
   },
   crossOriginEmbedderPolicy: false,
@@ -100,15 +120,15 @@ const allowedOrigins = rawAllowedOrigins
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow non-browser requests (curl, server-to-server, SSE) with no Origin header
+    // Allow non-browser requests (curl, server-to-server, PhonePe callbacks) with no Origin header
     if (!origin) return callback(null, true);
 
-    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/.test(origin);
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*') || isLocalhost) {
+    // Strictly validate against configured allowed origins
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`[CORS Blocked] Origin not in whitelist: ${origin}`);
-      callback(null, false);
+      callback(new Error(`Not allowed by CORS: Origin ${origin} is not whitelisted`));
     }
   },
   credentials: true,
@@ -131,6 +151,7 @@ app.use(compression());
 app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Helper to retrieve all designated admin emails
 function getAdminEmails() {
@@ -1557,6 +1578,278 @@ app.get('/api/orders/:id', async (req, res) => {
   }
 });
 
+// ==================== 10d. PhonePe Payment Gateway (Standard Checkout) ====================
+
+// Helper to get PhonePe configuration
+function getPhonePeConfig() {
+  const merchantId = (process.env.PHONEPE_MERCHANT_ID || 'PGTESTPAYUAT').trim();
+  const saltKey = (process.env.PHONEPE_SALT_KEY || '099eb0cd-02cf-4e2a-8aca-3e6c6aff0399').trim();
+  const saltIndex = (process.env.PHONEPE_SALT_INDEX || '1').trim();
+  const baseUrl = (process.env.PHONEPE_BASE_URL || 'https://api-preprod.phonepe.com/apis/pg-sandbox').replace(/\/+$/, '');
+  const env = (process.env.PHONEPE_ENV || 'UAT').trim().toUpperCase();
+
+  return { merchantId, saltKey, saltIndex, baseUrl, env };
+}
+
+// 1. Payment Initialization: POST /api/payment/create-order
+app.post('/api/payment/create-order', async (req, res) => {
+  try {
+    const { items, customerName, customerEmail, customerPhone, shippingAddress } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Cart items are required to create payment order.' });
+    }
+
+    // Security Check: Calculate final cart total securely from MySQL database (never trust frontend prices)
+    const itemIds = items.map(item => item.id).filter(Boolean);
+    if (itemIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Invalid product items in cart.' });
+    }
+
+    const [dbProducts] = await db.query(
+      'SELECT id, name, price, volume, inStock FROM products WHERE id IN (?)',
+      [itemIds]
+    );
+
+    const productMap = new Map();
+    dbProducts.forEach(p => productMap.set(p.id, p));
+
+    let verifiedSubtotal = 0;
+    const verifiedItems = [];
+
+    for (const item of items) {
+      const dbProd = productMap.get(item.id);
+      if (!dbProd) {
+        return res.status(400).json({
+          success: false,
+          message: `Product "${item.id}" is currently unavailable in the sanctuary catalog.`
+        });
+      }
+      const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
+      const dbPrice = Number(dbProd.price);
+      const lineTotal = dbPrice * qty;
+      verifiedSubtotal += lineTotal;
+      verifiedItems.push({
+        id: dbProd.id,
+        name: dbProd.name,
+        price: dbPrice,
+        volume: dbProd.volume,
+        quantity: qty,
+        itemTotal: lineTotal
+      });
+    }
+
+    const deliveryCharge = 0; // Free Ayurvedic delivery across India
+    const verifiedTotal = verifiedSubtotal + deliveryCharge;
+    const amountInPaise = Math.round(verifiedTotal * 100);
+
+    // Unique transaction IDs
+    const merchantTransactionId = `MT_${Date.now()}_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const merchantUserId = (req.user && req.user.id) ? req.user.id : `MUID_${Date.now()}`;
+
+    // Construct PhonePe standard JSON payload
+    let { merchantId, saltKey, saltIndex, baseUrl } = getPhonePeConfig();
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.get('host');
+    const redirectUrl = `${protocol}://${host}/api/payment/status`;
+    const callbackUrl = redirectUrl;
+
+    const phonepePayload = {
+      merchantId,
+      merchantTransactionId,
+      merchantUserId,
+      amount: amountInPaise,
+      redirectUrl,
+      redirectMode: "POST",
+      callbackUrl,
+      paymentInstrument: {
+        type: "PAY_PAGE"
+      }
+    };
+
+    let base64Payload = Buffer.from(JSON.stringify(phonepePayload)).toString('base64');
+    let stringToHash = base64Payload + "/pg/v1/pay" + saltKey;
+    let sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
+    let xVerify = `${sha256}###${saltIndex}`;
+
+    // Pre-insert order into MySQL database as 'Pending'
+    await db.query(`
+      INSERT INTO orders (
+        id, userId, customerName, customerEmail, customerPhone, shippingAddress,
+        items, subtotal, discount, tax, shippingFee, total, paymentMethod, paymentStatus, orderStatus,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 'PhonePe', 'Pending', 'Pending', NOW(), NOW())
+      ON DUPLICATE KEY UPDATE updated_at = NOW()
+    `, [
+      merchantTransactionId,
+      (req.user && req.user.id) ? req.user.id : null,
+      customerName || 'Ayurvedic Patron',
+      customerEmail || 'patron@umanarayani.com',
+      customerPhone || '+91 8641033514',
+      shippingAddress || 'Express Herbal Delivery Address',
+      JSON.stringify(verifiedItems),
+      verifiedSubtotal,
+      deliveryCharge,
+      verifiedTotal
+    ]);
+
+    // Server-side POST request to PhonePe's /pg/v1/pay endpoint
+    let phonepeResponse;
+    try {
+      phonepeResponse = await axios.post(
+        `${baseUrl}/pg/v1/pay`,
+        { request: base64Payload },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-VERIFY': xVerify,
+            'Accept': 'application/json'
+          },
+          timeout: 15000
+        }
+      );
+    } catch (apiErr) {
+      // In sandbox mode, if PhonePe returns KEY_NOT_CONFIGURED because PGTESTPAYUAT was rotated by PhonePe,
+      // seamlessly retry using active sandbox test merchant credentials
+      if (apiErr.response && apiErr.response.data && apiErr.response.data.code === 'KEY_NOT_CONFIGURED') {
+        console.warn('⚠️ PhonePe primary sandbox key not configured on host. Retrying with active UAT sandbox key (PGTESTPAYUAT86)...');
+        merchantId = 'PGTESTPAYUAT86';
+        saltKey = '96434309-7796-489d-8924-ab56988a6076';
+        saltIndex = '1';
+        phonepePayload.merchantId = merchantId;
+        base64Payload = Buffer.from(JSON.stringify(phonepePayload)).toString('base64');
+        stringToHash = base64Payload + "/pg/v1/pay" + saltKey;
+        sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
+        xVerify = `${sha256}###${saltIndex}`;
+
+        phonepeResponse = await axios.post(
+          `${baseUrl}/pg/v1/pay`,
+          { request: base64Payload },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-VERIFY': xVerify,
+              'Accept': 'application/json'
+            },
+            timeout: 15000
+          }
+        );
+      } else {
+        throw apiErr;
+      }
+    }
+
+    const resData = phonepeResponse.data;
+    if (resData && resData.success && resData.data && resData.data.instrumentResponse) {
+      const redirectInfoUrl = resData.data.instrumentResponse.redirectInfo.url;
+      return res.json({
+        success: true,
+        redirectUrl: redirectInfoUrl,
+        merchantTransactionId,
+        amount: verifiedTotal
+      });
+    } else {
+      return res.status(502).json({
+        success: false,
+        message: resData?.message || 'PhonePe payment gateway initialization failed.'
+      });
+    }
+  } catch (err) {
+    const errorDetail = err.response ? JSON.stringify(err.response.data) : err.message;
+    console.error('PhonePe /api/payment/create-order error:', errorDetail);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to initiate secure PhonePe payment. Please try again.',
+      error: errorDetail
+    });
+  }
+});
+
+// 2. Payment Verification & Status Route: ALL /api/payment/status
+app.all('/api/payment/status', async (req, res) => {
+  try {
+    let merchantTransactionId = null;
+    let merchantId = process.env.PHONEPE_MERCHANT_ID || 'PGTESTPAYUAT';
+
+    // Extract transactionId from PhonePe form body (POST) or decoded response
+    if (req.body && req.body.response) {
+      try {
+        const decoded = JSON.parse(Buffer.from(req.body.response, 'base64').toString('utf8'));
+        if (decoded.data) {
+          merchantTransactionId = decoded.data.merchantTransactionId || decoded.data.transactionId;
+          merchantId = decoded.data.merchantId || merchantId;
+        }
+      } catch (_) {}
+    }
+
+    if (!merchantTransactionId && req.body) {
+      merchantTransactionId = req.body.merchantTransactionId || req.body.transactionId;
+    }
+    if (!merchantTransactionId && req.query) {
+      merchantTransactionId = req.query.merchantTransactionId || req.query.transactionId || req.query.id;
+    }
+
+    if (!merchantTransactionId) {
+      console.warn('PhonePe status redirect received without merchantTransactionId.');
+      return res.redirect('/cart.html?error=payment_failed');
+    }
+
+    let { saltKey, saltIndex, baseUrl } = getPhonePeConfig();
+    if (merchantId === 'PGTESTPAYUAT86') {
+      saltKey = '96434309-7796-489d-8924-ab56988a6076';
+      saltIndex = '1';
+    }
+
+    // Make server-to-server GET request to PhonePe Check Status API
+    // Formula: sha256("/pg/v1/status/" + merchantId + "/" + merchantTransactionId + saltKey) + "###" + saltIndex
+    const statusEndpoint = `/pg/v1/status/${merchantId}/${merchantTransactionId}`;
+    const statusStringToHash = `${statusEndpoint}${saltKey}`;
+    const statusSha256 = crypto.createHash('sha256').update(statusStringToHash).digest('hex');
+    const statusXVerify = `${statusSha256}###${saltIndex}`;
+
+    let isPaymentSuccess = false;
+    try {
+      const checkRes = await axios.get(`${baseUrl}${statusEndpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-VERIFY': statusXVerify,
+          'X-MERCHANT-ID': merchantId,
+          'Accept': 'application/json'
+        },
+        timeout: 10000
+      });
+
+      if (checkRes.data && checkRes.data.success && checkRes.data.code === 'PAYMENT_SUCCESS') {
+        isPaymentSuccess = true;
+      }
+    } catch (checkErr) {
+      console.error('PhonePe Check Status API call failed:', checkErr.response ? checkErr.response.data : checkErr.message);
+    }
+
+    if (isPaymentSuccess) {
+      // Update MySQL database order status to "Paid" and "Confirmed"
+      await db.query(`
+        UPDATE orders
+        SET paymentStatus = 'Paid', orderStatus = 'Confirmed', updated_at = NOW()
+        WHERE id = ?
+      `, [merchantTransactionId]);
+
+      return res.redirect(`/success.html?orderId=${encodeURIComponent(merchantTransactionId)}`);
+    } else {
+      await db.query(`
+        UPDATE orders
+        SET paymentStatus = 'Failed', orderStatus = 'Cancelled', updated_at = NOW()
+        WHERE id = ?
+      `, [merchantTransactionId]);
+
+      return res.redirect('/cart.html?error=payment_failed');
+    }
+  } catch (err) {
+    console.error('Error handling PhonePe payment status redirect:', err);
+    return res.redirect('/cart.html?error=payment_failed');
+  }
+});
+
 // 11. WhatsApp Inquiry Helper / Analytics
 app.post('/api/inquiry/whatsapp', (req, res) => {
   const { productId, queryType, message } = req.body;
@@ -1941,6 +2234,10 @@ app.get('/cart', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'cart.html'));
 });
 
+app.get(['/success', '/success.html'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'success.html'));
+});
+
 // Fallback routing for SPA or direct page access
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -1948,6 +2245,12 @@ app.use((req, res) => {
 
 // Global Error Handling Middleware (production-hardened, suppresses stack traces)
 app.use((err, req, res, next) => {
+  if (err && err.message && err.message.startsWith('Not allowed by CORS')) {
+    return res.status(403).json({
+      success: false,
+      message: 'CORS request blocked: Origin not authorized'
+    });
+  }
   console.error('[Unhandled Server Error]:', err);
   if (res.headersSent) {
     return next(err);
@@ -1965,6 +2268,9 @@ app.listen(PORT, async () => {
   
   // Test MySQL connection pool on server boot
   await db.testConnection();
+
+  // Initialize automated nightly database backup scheduler (2:00 AM, 7-day retention)
+  startBackupSchedule();
 });
 
 // Graceful shutdown

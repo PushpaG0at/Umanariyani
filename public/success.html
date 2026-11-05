@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmed — UMANARAYANI AYURVEDA</title>
+  <link rel="icon" type="image/jpeg" href="images/logo.jpg">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="css/style.css?v=2.5">
+  <style>
+    .success-container {
+      max-width: 680px;
+      margin: 60px auto 100px;
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 44px 36px;
+      box-shadow: 0 12px 40px rgba(27, 67, 50, 0.08);
+      border: 1px solid var(--border-light);
+      text-align: center;
+    }
+    .success-icon-wrap {
+      width: 90px;
+      height: 90px;
+      background: #E8F5E9;
+      color: var(--green-primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 2.8rem;
+      border: 2px solid var(--green-sage);
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .order-id-pill {
+      display: inline-block;
+      background: #F4F7F5;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-family: monospace;
+      font-size: 0.95rem;
+      color: var(--green-forest);
+      font-weight: 700;
+      border: 1px solid var(--border-light);
+      margin: 14px 0 24px;
+    }
+    .perks-card {
+      background: #FAFCFA;
+      border: 1px dashed var(--green-sage);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 24px 0;
+      text-align: left;
+      font-size: 0.9rem;
+      color: var(--green-forest);
+    }
+    .action-btns-wrap {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body style="background: var(--bg-primary);">
+
+  <!-- Top Announcement Bar -->
+  <div class="top-bar">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>🌿 Ayush Certified &bull; 100% Natural Classical Formulations</span>
+      <a href="https://wa.me/918641033514" target="_blank" style="color:#A3E4D7; text-decoration:none;">
+        <i class="fa-brands fa-whatsapp"></i> Helpline: +91 8641033514
+      </a>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="main-header">
+    <div class="container nav-wrapper">
+      <a href="index.html" class="brand-link">
+        <img src="images/logo-center.png" alt="Umanarayani Logo" class="brand-logo-img">
+        <div class="brand-text-block">
+          <span class="brand-name">UMANARAYANI</span>
+          <span class="brand-tagline">Pure Nature, Pure Care.</span>
+        </div>
+      </a>
+      <a href="index.html" class="btn-card-details" style="padding: 8px 18px;">
+        &larr; Back to Home
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="success-container">
+      <div class="success-icon-wrap">
+        <i class="fa-solid fa-check"></i>
+      </div>
+
+      <span style="font-size:0.85rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--gold-deep);">
+        <i class="fa-solid fa-sparkles"></i> Payment Successful via PhonePe
+      </span>
+
+      <h1 style="font-family:'Playfair Display', serif; color:var(--green-primary); font-size:2.2rem; margin:10px 0 6px;">
+        Order Confirmed!
+      </h1>
+
+      <p style="color:var(--text-muted); font-size:1rem; line-height:1.6; margin-bottom:12px;">
+        Namaste! 🙏 Your payment has been securely verified. Our Vaidyas are preparing your classical Ayurvedic formulations with authentic botanical care.
+      </p>
+
+      <div>
+        <span style="font-size:0.85rem; color:var(--text-muted);">Transaction Reference:</span><br>
+        <span class="order-id-pill" id="orderIdText">Loading order...</span>
+      </div>
+
+      <div class="perks-card">
+        <div style="font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-gift" style="color:var(--gold-deep);"></i> Special Complimentary Inclusion
+        </div>
+        <p style="margin:0 0 8px 0; font-size:0.85rem; color:var(--text-main);">
+          Your package includes our complimentary <strong>Handcrafted Neem Wood Comb</strong> to assist in scalp circulation during your ritual.
+        </p>
+        <div style="font-size:0.8rem; color:var(--text-muted);">
+          <i class="fa-solid fa-truck-fast"></i> Estimated Express Delivery: <strong>3–5 Business Days</strong>
+        </div>
+      </div>
+
+      <div class="action-btns-wrap">
+        <a href="index.html#productsSection" class="btn-primary-hero" style="text-decoration:none; padding:12px 26px;">
+          <span>Continue Shopping</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
+        <a id="btnWhatsAppConfirm" href="#" target="_blank" class="btn-whatsapp-hero" style="text-decoration:none; padding:12px 24px;">
+          <i class="fa-brands fa-whatsapp" style="font-size:1.2rem;"></i>
+          <span>Track on WhatsApp</span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Clear cart upon confirmed payment
+      localStorage.removeItem('umanarayani_cart');
+
+      // 2. Extract Order ID from URL query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get('orderId') || 'CONFIRMED-' + Date.now();
+      const orderIdEl = document.getElementById('orderIdText');
+      if (orderIdEl) {
+        orderIdEl.textContent = orderId;
+      }
+
+      // 3. Configure WhatsApp notification button
+      const waBtn = document.getElementById('btnWhatsAppConfirm');
+      if (waBtn) {
+        const msg = encodeURIComponent(`Hello Umanarayani! I have completed my order payment via PhonePe. Transaction ID: ${orderId}. Please share updates on dispatch.`);
+        waBtn.href = `https://wa.me/918641033514?text=${msg}`;
+      }
+    });
+  </script>
+</body>
+</html>
+

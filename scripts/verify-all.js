@@ -7,7 +7,7 @@ console.log('🔍 Starting Comprehensive End-to-End System & Asset Verification.
 let errors = 0;
 
 // 1. Check all HTML files for asset integrity
-const htmlFiles = ['index.html', 'product.html', 'signin.html', 'cart.html', 'admin.html'];
+const htmlFiles = ['index.html', 'product.html', 'signin.html', 'cart.html', 'admin.html', 'success.html'];
 
 for (const file of htmlFiles) {
   const filePath = path.join(__dirname, '..', 'public', file);
