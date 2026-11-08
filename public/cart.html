@@ -60,6 +60,230 @@
     @media (max-width: 850px) {
       .cart-wrapper { grid-template-columns: 1fr; }
     }
+
+    /* ==================== UPI QR CODE PAYMENT MODAL STYLES ==================== */
+    .qr-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(10, 25, 18, 0.78);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    .qr-modal-card {
+      background: #FFFFFF;
+      border-radius: 18px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--green-sage);
+      animation: qrModalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes qrModalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(16px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .qr-modal-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid #EAEAEA;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #F8FAF8;
+      border-top-left-radius: 18px;
+      border-top-right-radius: 18px;
+    }
+    .qr-brand-pill {
+      background: #E8F5E9;
+      color: var(--green-primary);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid #C8E6C9;
+    }
+    .qr-close-btn {
+      background: #ECECEC;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.3rem;
+      line-height: 1;
+      color: #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .qr-close-btn:hover {
+      background: #C0392B;
+      color: #FFF;
+    }
+    .qr-modal-body {
+      padding: 22px;
+    }
+    .qr-amount-banner {
+      background: #E8F5E9;
+      border: 1px solid #C8E6C9;
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+      color: #1B5E20;
+    }
+    .qr-amount-val {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--green-primary);
+    }
+    .qr-badge-zero-fee {
+      background: #FFF;
+      color: #2E7D32;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1px solid #A5D6A7;
+    }
+    .qr-image-container {
+      background: #0B0E14;
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      margin-bottom: 16px;
+      border: 2px solid var(--green-light);
+    }
+    .qr-image {
+      max-width: 240px;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      margin: 0 auto 10px;
+      display: block;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+    }
+    .qr-merchant-name {
+      display: block;
+      color: #FFF;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 3px;
+    }
+    .qr-apps-tagline {
+      display: block;
+      color: #A0AEC0;
+      font-size: 0.78rem;
+    }
+    .qr-steps-list {
+      background: #FBFDFB;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+    }
+    .qr-step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: var(--text-dark);
+      line-height: 1.4;
+    }
+    .qr-step-item:last-child {
+      margin-bottom: 0;
+    }
+    .qr-step-num {
+      background: var(--green-primary);
+      color: #FFF;
+      min-width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .qr-alert-box {
+      background: #FDEDEC;
+      color: #922B21;
+      border: 1px solid #F5B7B1;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .qr-form-row {
+      margin-bottom: 14px;
+    }
+    .qr-label {
+      display: block;
+      font-size: 0.84rem;
+      color: var(--text-dark);
+      margin-bottom: 5px;
+    }
+    .qr-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #CBD5E0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .qr-input:focus {
+      border-color: var(--green-primary);
+      box-shadow: 0 0 0 3px rgba(30, 77, 43, 0.12);
+    }
+    .qr-utr-input {
+      font-family: monospace, monospace;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border: 2px solid var(--green-primary);
+      background: #FAFCFA;
+    }
+    .qr-help-text {
+      display: block;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .qr-grid-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .qr-grid-fields { grid-template-columns: 1fr; }
+      .qr-modal-card { max-height: 98vh; border-radius: 12px; }
+      .qr-modal-body { padding: 16px; }
+      .qr-image { max-width: 200px; }
+    }
   </style>
   <!-- Cloudflare Turnstile Bot Defense -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
@@ -152,22 +376,146 @@
           <span id="summaryTotal">₹0</span>
         </div>
 
-        <!-- WhatsApp Direct Checkout Button -->
-        <button id="btnCheckoutWhatsApp" class="btn-amazon-whatsapp" style="margin-bottom:10px;">
+        <!-- Primary Checkout: Scan & Pay with UPI QR Code (PhonePe, GPay, Paytm) -->
+        <button id="btnProceedPayment" class="btn-amazon-buy" style="margin-bottom:10px;">
+          <i class="fa-solid fa-qrcode"></i> Scan & Pay via UPI / PhonePe QR
+        </button>
+
+        <!-- Secondary Checkout: PhonePe Standard Gateway Redirect -->
+        <button id="btnProceedPhonePeHosted" class="btn-amazon-whatsapp" style="margin-bottom:10px; background:#F8FAF8; color:var(--green-primary); border:1px solid var(--green-sage);">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> PhonePe Gateway Redirect
+        </button>
+
+        <!-- WhatsApp Direct Order Button -->
+        <button id="btnCheckoutWhatsApp" class="btn-amazon-whatsapp" style="margin-bottom:16px;">
           <i class="fa-brands fa-whatsapp" style="font-size:1.3rem;"></i>
           <span>Order via WhatsApp (+91 8641033514)</span>
         </button>
 
         <!-- Cloudflare Turnstile Bot Mitigation Widget Hook -->
-        <div id="cartTurnstile" style="margin:12px auto; min-height:48px; display:flex; justify-content:center;"></div>
-
-        <button id="btnProceedPayment" class="btn-amazon-buy" style="margin-bottom:16px;">
-          <i class="fa-solid fa-lock"></i> Proceed to Pay Online
-        </button>
+        <div id="cartTurnstile" style="margin:8px auto; min-height:48px; display:flex; justify-content:center;"></div>
 
         <p style="font-size:0.75rem; color:var(--text-muted); text-align:center;">
           100% Secure Checkout &bull; Ayush Certified &bull; 7-Day Easy Return
         </p>
+      </div>
+    </div>
+
+    <!-- ==================== UPI QR CODE PAYMENT MODAL ==================== -->
+    <div id="qrPaymentModal" class="qr-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+      <div class="qr-modal-card">
+        <div class="qr-modal-header">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="qr-brand-pill"><i class="fa-solid fa-qrcode"></i> UPI Instant Pay</span>
+            <h3 id="qrModalTitle" style="margin:0; font-size:1.15rem; color:var(--green-primary);">Scan & Pay with Any UPI App</h3>
+          </div>
+          <button type="button" id="btnCloseQrModal" class="qr-close-btn" aria-label="Close Payment Modal">&times;</button>
+        </div>
+
+        <div class="qr-modal-body">
+          <!-- Dynamic Amount Callout Banner -->
+          <div class="qr-amount-banner">
+            <div>
+              <span style="font-size:0.85rem; color:#2E7D32;">Total Payable:</span><br>
+              <strong id="qrModalPayableAmount" class="qr-amount-val">₹0</strong>
+            </div>
+            <span class="qr-badge-zero-fee"><i class="fa-solid fa-shield-halved"></i> 100% Zero Convenience Fee</span>
+          </div>
+
+          <!-- Responsive QR Code Display Container -->
+          <div class="qr-image-container">
+            <img 
+              id="qrDisplayImage" 
+              src="images/phonepe-qr.jpg" 
+              alt="Scan PhonePe QR Code to Pay Pushpendra Singh" 
+              class="qr-image" 
+              loading="eager"
+            />
+            <div class="qr-merchant-info">
+              <span class="qr-merchant-name"><i class="fa-solid fa-circle-check" style="color:#2ECC71;"></i> Pushpendra Singh (PhonePe Verified)</span>
+              <span class="qr-apps-tagline">Scan with PhonePe, Google Pay, Paytm, CRED or any BHIM UPI App</span>
+            </div>
+          </div>
+
+          <!-- 3-Step Guided Payment Instructions -->
+          <div class="qr-steps-list">
+            <div class="qr-step-item">
+              <span class="qr-step-num">1</span>
+              <span>Open PhonePe, Google Pay, or Paytm and scan the QR code above.</span>
+            </div>
+            <div class="qr-step-item">
+              <span class="qr-step-num">2</span>
+              <span>Pay the exact total amount (<strong id="qrModalStepAmount">₹0</strong>) to <strong>Pushpendra Singh</strong>.</span>
+            </div>
+            <div class="qr-step-item">
+              <span class="qr-step-num">3</span>
+              <span>Copy the 12-digit <strong>UTR / UPI Transaction ID</strong> from your payment receipt and enter it below.</span>
+            </div>
+          </div>
+
+          <!-- Clean Client-Side Inline Alert Banner (Visible on validation error or server rejection) -->
+          <div id="qrModalAlert" class="qr-alert-box" style="display:none;" role="alert">
+            <i class="fa-solid fa-circle-exclamation" style="font-size:1.15rem; flex-shrink:0;"></i>
+            <span id="qrModalAlertMsg">Error details will appear here</span>
+          </div>
+
+          <!-- QR Verification & Customer Delivery Form -->
+          <form id="qrPaymentForm" onsubmit="return false;">
+            <div class="qr-form-row">
+              <label for="qrUtrInput" class="qr-label">
+                <strong>12-Digit UPI Transaction ID / UTR Number <span style="color:#C0392B;">*</span></strong>
+              </label>
+              <input 
+                type="text" 
+                id="qrUtrInput" 
+                name="transactionId" 
+                placeholder="e.g. 431289567012 or PhonePe Txn ID" 
+                maxlength="35" 
+                required 
+                class="qr-input qr-utr-input"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <small class="qr-help-text">
+                <i class="fa-regular fa-lightbulb"></i> You will find this 12-digit reference number under 'Payment Details' in your UPI app receipt.
+              </small>
+            </div>
+
+            <!-- Customer Details for Express Dispatch -->
+            <div class="qr-grid-fields">
+              <div class="qr-form-row">
+                <label for="qrCustomerName" class="qr-label">Full Name <span style="color:#C0392B;">*</span></label>
+                <input type="text" id="qrCustomerName" class="qr-input" placeholder="e.g. Rajesh Kumar" required />
+              </div>
+              <div class="qr-form-row">
+                <label for="qrCustomerPhone" class="qr-label">WhatsApp Number <span style="color:#C0392B;">*</span></label>
+                <input type="tel" id="qrCustomerPhone" class="qr-input" placeholder="e.g. 9876543210" required />
+              </div>
+            </div>
+
+            <div class="qr-form-row">
+              <label for="qrCustomerEmail" class="qr-label">Email Address (for order invoice & tracking updates)</label>
+              <input type="email" id="qrCustomerEmail" class="qr-input" placeholder="e.g. patron@example.com" />
+            </div>
+
+            <div class="qr-form-row">
+              <label for="qrShippingAddress" class="qr-label">Complete Shipping Address <span style="color:#C0392B;">*</span></label>
+              <textarea id="qrShippingAddress" class="qr-input" rows="2" placeholder="House/Flat No., Street, Landmark, City, State, PIN Code" required></textarea>
+            </div>
+
+            <!-- Submit Button with Spinner -->
+            <button type="submit" id="btnSubmitQrPayment" class="btn-amazon-buy" style="margin-top:10px; width:100%; font-size:1.05rem; padding:14px;">
+              <i class="fa-solid fa-circle-check"></i> Submit Transaction & Confirm Order
+            </button>
+          </form>
+
+          <!-- Security Assurance Footer -->
+          <div style="margin-top:16px; text-align:center; font-size:0.78rem; color:var(--text-muted); display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap;">
+            <span><i class="fa-solid fa-lock" style="color:var(--green-primary);"></i> 256-Bit SSL Secured</span>
+            <span><i class="fa-solid fa-truck-fast" style="color:var(--green-primary);"></i> Dispatched in 24 Hours</span>
+            <span><i class="fa-brands fa-whatsapp" style="color:#25D366;"></i> Instant WhatsApp Update</span>
+          </div>
+        </div>
       </div>
     </div>
   </main>
@@ -261,11 +609,214 @@
       updateTotals(totalMrp, totalPayable);
     }
 
+    let currentPayableTotal = 0;
+
     function updateTotals(mrp, payable) {
+      currentPayableTotal = payable;
       document.getElementById('summaryMrp').textContent = `₹${mrp}`;
       document.getElementById('summaryDiscount').textContent = `-₹${mrp - payable}`;
       document.getElementById('summaryTotal').textContent = `₹${payable}`;
+      const modalAmt = document.getElementById('qrModalPayableAmount');
+      const stepAmt = document.getElementById('qrModalStepAmount');
+      if (modalAmt) modalAmt.textContent = `₹${payable}`;
+      if (stepAmt) stepAmt.textContent = `₹${payable}`;
     }
+
+    function showQrAlert(msg) {
+      const alertBox = document.getElementById('qrModalAlert');
+      const alertMsg = document.getElementById('qrModalAlertMsg');
+      if (alertBox && alertMsg) {
+        alertMsg.textContent = msg;
+        alertBox.style.display = 'flex';
+      }
+    }
+
+    function hideQrAlert() {
+      const alertBox = document.getElementById('qrModalAlert');
+      if (alertBox) alertBox.style.display = 'none';
+    }
+
+    function openQrPaymentModal() {
+      const cart = JSON.parse(localStorage.getItem('umanarayani_cart') || '[]');
+      if (cart.length === 0) {
+        alert("Your herbal basket is empty. Please add items to proceed with payment.");
+        return;
+      }
+
+      hideQrAlert();
+
+      // Prefill user details if logged in
+      try {
+        const user = JSON.parse(localStorage.getItem('umanarayani_user') || '{}');
+        if (user.name) document.getElementById('qrCustomerName').value = user.name;
+        if (user.phone_number || user.phone) {
+          document.getElementById('qrCustomerPhone').value = user.phone_number || user.phone;
+        }
+        if (user.email) document.getElementById('qrCustomerEmail').value = user.email;
+      } catch (_) {}
+
+      const modalAmt = document.getElementById('qrModalPayableAmount');
+      const stepAmt = document.getElementById('qrModalStepAmount');
+      if (modalAmt) modalAmt.textContent = `₹${currentPayableTotal}`;
+      if (stepAmt) stepAmt.textContent = `₹${currentPayableTotal}`;
+
+      const modal = document.getElementById('qrPaymentModal');
+      if (modal) modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeQrPaymentModal() {
+      const modal = document.getElementById('qrPaymentModal');
+      if (modal) modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      hideQrAlert();
+    }
+
+    // Modal Triggers: Open on primary Pay button
+    document.getElementById('btnProceedPayment').addEventListener('click', openQrPaymentModal);
+
+    // Close button & backdrop click
+    document.getElementById('btnCloseQrModal').addEventListener('click', closeQrPaymentModal);
+    document.getElementById('qrPaymentModal').addEventListener('click', (e) => {
+      if (e.target.id === 'qrPaymentModal') closeQrPaymentModal();
+    });
+
+    // Handle QR Payment Submission
+    document.getElementById('qrPaymentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideQrAlert();
+
+      const cart = JSON.parse(localStorage.getItem('umanarayani_cart') || '[]');
+      if (cart.length === 0) {
+        showQrAlert("Your herbal basket is empty. Please add products to complete order.");
+        return;
+      }
+
+      const rawUtr = document.getElementById('qrUtrInput').value;
+      const cleanUtr = (rawUtr || '').trim().toUpperCase();
+      const customerName = document.getElementById('qrCustomerName').value.trim();
+      const customerPhone = document.getElementById('qrCustomerPhone').value.trim();
+      const customerEmail = document.getElementById('qrCustomerEmail').value.trim();
+      const shippingAddress = document.getElementById('qrShippingAddress').value.trim();
+
+      // Client-side validations
+      if (!cleanUtr) {
+        showQrAlert("Please enter the 12-digit UPI Transaction ID / UTR from your payment app.");
+        document.getElementById('qrUtrInput').focus();
+        return;
+      }
+
+      const utrRegex = /^[A-Z0-9_-]{8,35}$/;
+      if (!utrRegex.test(cleanUtr)) {
+        showQrAlert("Invalid Transaction ID format. Expected an 8 to 35 character reference number (e.g. 431289567012).");
+        document.getElementById('qrUtrInput').focus();
+        return;
+      }
+
+      if (!customerName || customerName.length < 2) {
+        showQrAlert("Please enter your full name for order delivery.");
+        document.getElementById('qrCustomerName').focus();
+        return;
+      }
+
+      if (!customerPhone || customerPhone.length < 8) {
+        showQrAlert("Please provide a valid contact/WhatsApp phone number.");
+        document.getElementById('qrCustomerPhone').focus();
+        return;
+      }
+
+      if (!shippingAddress || shippingAddress.length < 8) {
+        showQrAlert("Please enter a complete shipping address (House No, Street, City, State, PIN).");
+        document.getElementById('qrShippingAddress').focus();
+        return;
+      }
+
+      const submitBtn = document.getElementById('btnSubmitQrPayment');
+      const originalBtnHtml = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying Payment Reference...`;
+
+      try {
+        const payload = {
+          transactionId: cleanUtr,
+          customerName,
+          customerPhone,
+          customerEmail: customerEmail || "patron@umanarayani.com",
+          shippingAddress,
+          items: cart
+        };
+
+        const res = await fetch('/api/payment/verify-qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          // Success: Clear cart and redirect to order confirmation
+          localStorage.removeItem('umanarayani_cart');
+          window.location.href = `/success.html?orderId=${encodeURIComponent(data.orderId || cleanUtr)}&method=upi_qr`;
+        } else {
+          // Error response from server
+          const errMsg = data?.message || "Could not verify payment reference. Please check your UTR number or contact WhatsApp helpline.";
+          showQrAlert(errMsg);
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHtml;
+        }
+      } catch (networkErr) {
+        console.error('QR Payment verification network error:', networkErr);
+        showQrAlert("Network error communicating with payment verification server. Please verify your connection or order via WhatsApp.");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHtml;
+      }
+    });
+
+    // Optional PhonePe Hosted Standard Checkout Integration
+    document.getElementById('btnProceedPhonePeHosted').addEventListener('click', async () => {
+      const cart = JSON.parse(localStorage.getItem('umanarayani_cart') || '[]');
+      if (cart.length === 0) {
+        alert("Your herbal basket is empty. Please add items to proceed to payment.");
+        return;
+      }
+
+      const payBtn = document.getElementById('btnProceedPhonePeHosted');
+      const originalHtml = payBtn.innerHTML;
+      payBtn.disabled = true;
+      payBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Secure PhonePe...`;
+
+      try {
+        const user = JSON.parse(localStorage.getItem('umanarayani_user') || '{}');
+        const res = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            items: cart,
+            customerName: user.name || "Ayurvedic Patron",
+            customerEmail: user.email || "patron@umanarayani.com",
+            customerPhone: "+91 8641033514",
+            shippingAddress: "Confirmed for Express Herbal Delivery"
+          })
+        });
+
+        const data = await res.json();
+        if (data && data.success && data.redirectUrl) {
+          window.location.href = data.redirectUrl;
+        } else {
+          alert(data?.message || 'Could not initiate PhonePe payment. Please try again or use WhatsApp order.');
+          payBtn.disabled = false;
+          payBtn.innerHTML = originalHtml;
+        }
+      } catch (err) {
+        console.error('PhonePe Checkout Error:', err);
+        alert('Network error connecting to payment gateway. Please check your connection or order via WhatsApp.');
+        payBtn.disabled = false;
+        payBtn.innerHTML = originalHtml;
+      }
+    });
 
     window.changeQty = function(id, delta) {
       let cart = JSON.parse(localStorage.getItem('umanarayani_cart') || '[]');
@@ -334,51 +885,6 @@
       const banner = document.getElementById('paymentAlertBanner');
       if (banner) banner.style.display = 'flex';
     }
-
-    // PhonePe Hosted Standard Checkout Integration
-    document.getElementById('btnProceedPayment').addEventListener('click', async () => {
-      const cart = JSON.parse(localStorage.getItem('umanarayani_cart') || '[]');
-      if (cart.length === 0) {
-        alert("Your herbal basket is empty. Please add items to proceed to payment.");
-        return;
-      }
-
-      const payBtn = document.getElementById('btnProceedPayment');
-      const originalHtml = payBtn.innerHTML;
-      payBtn.disabled = true;
-      payBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Secure PhonePe...`;
-
-      try {
-        const user = JSON.parse(localStorage.getItem('umanarayani_user') || '{}');
-        const res = await fetch('/api/payment/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            items: cart,
-            customerName: user.name || "Ayurvedic Patron",
-            customerEmail: user.email || "patron@umanarayani.com",
-            customerPhone: "+91 8641033514",
-            shippingAddress: "Confirmed for Express Herbal Delivery"
-          })
-        });
-
-        const data = await res.json();
-        if (data && data.success && data.redirectUrl) {
-          // Redirect the user to PhonePe standard hosted payment page
-          window.location.href = data.redirectUrl;
-        } else {
-          alert(data?.message || 'Could not initiate PhonePe payment. Please try again or use WhatsApp order.');
-          payBtn.disabled = false;
-          payBtn.innerHTML = originalHtml;
-        }
-      } catch (err) {
-        console.error('PhonePe Checkout Error:', err);
-        alert('Network error connecting to payment gateway. Please check your connection or order via WhatsApp.');
-        payBtn.disabled = false;
-        payBtn.innerHTML = originalHtml;
-      }
-    });
 
     checkUserState();
     loadCart();

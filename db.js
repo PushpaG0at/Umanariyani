@@ -80,6 +80,23 @@ async function ensureUserOtpColumns() {
 }
 
 /**
+ * Ensures orders table has transactionId column with a unique index
+ */
+async function ensureOrderColumns() {
+  try {
+    const [cols] = await pool.query('DESCRIBE orders');
+    const colNames = cols.map(c => c.Field);
+
+    if (!colNames.includes('transactionId')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN transactionId VARCHAR(100) NULL UNIQUE AFTER paymentMethod');
+      console.log(' [DB] Added transactionId column (with UNIQUE index) to orders table.');
+    }
+  } catch (err) {
+    console.warn('⚠️  [DB] Could not verify/alter orders schema:', err.message);
+  }
+}
+
+/**
  * Helper to test the connection pool on startup
  */
 async function testConnection() {
@@ -88,6 +105,7 @@ async function testConnection() {
     console.log(' Connected to MySQL database via connection pool.');
     connection.release();
     await ensureUserOtpColumns();
+    await ensureOrderColumns();
     return true;
   } catch (error) {
     const detail = error.code ? `${error.code}${error.message ? `: ${error.message}` : ''}` : error.message || 'Connection error';
@@ -212,13 +230,119 @@ async function clearUserOtp(userId) {
   await pool.query('UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?', [userId]);
 }
 
+/**
+ * Finds an order by its unique UPI UTR / Transaction ID
+ */
+async function findOrderByTransactionId(transactionId) {
+  if (!transactionId) return null;
+  const [rows] = await pool.query(
+    'SELECT * FROM orders WHERE transactionId = ? LIMIT 1',
+    [transactionId.trim()]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Safely records a verified UPI QR code payment and order with race-condition defense
+ * Uses 100% parameterized queries (?) and handles ER_DUP_ENTRY gracefully
+ */
+async function recordQrPayment(orderData) {
+  const {
+    orderId,
+    userId,
+    customerName,
+    customerEmail,
+    customerPhone,
+    shippingAddress,
+    items,
+    subtotal,
+    discount,
+    tax,
+    shippingFee,
+    total,
+    transactionId
+  } = orderData;
+
+  const cleanTxId = (transactionId || '').toString().trim();
+
+  // Enforce mandatory field presence
+  if (!cleanTxId || !customerName || !customerEmail || !items || !total) {
+    throw new Error('Missing mandatory fields for QR payment record');
+  }
+
+  // Pre-emptive duplicate transaction check to avoid unnecessary insert attempts
+  const [existing] = await pool.query(
+    'SELECT id, customerName, total, created_at FROM orders WHERE transactionId = ? LIMIT 1',
+    [cleanTxId]
+  );
+
+  if (existing.length > 0) {
+    return {
+      success: false,
+      duplicate: true,
+      existingOrderId: existing[0].id,
+      message: `Transaction/UTR '${cleanTxId}' has already been processed for order ${existing[0].id}.`
+    };
+  }
+
+  try {
+    const sql = `
+      INSERT INTO orders (
+        id, userId, customerName, customerEmail, customerPhone, shippingAddress,
+        items, subtotal, discount, tax, shippingFee, total, paymentMethod, transactionId,
+        paymentStatus, orderStatus
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'UPI_QR', ?, 'Paid', 'Confirmed')
+    `;
+
+    const params = [
+      orderId,
+      userId || null,
+      customerName,
+      customerEmail,
+      customerPhone || '',
+      shippingAddress || '',
+      typeof items === 'string' ? items : JSON.stringify(items),
+      Number(subtotal || total),
+      Number(discount || 0),
+      Number(tax || 0),
+      Number(shippingFee || 0),
+      Number(total),
+      cleanTxId
+    ];
+
+    await pool.query(sql, params);
+
+    return {
+      success: true,
+      orderId,
+      transactionId: cleanTxId,
+      message: 'Order and QR payment recorded successfully'
+    };
+  } catch (err) {
+    // Gracefully catch MySQL duplicate entry error (ER_DUP_ENTRY / 1062) for concurrent submissions
+    if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
+      console.warn(`[DB Duplicate Prevented] Transaction ID collision detected: ${cleanTxId}`);
+      return {
+        success: false,
+        duplicate: true,
+        message: `Transaction reference '${cleanTxId}' was just recorded by another request.`
+      };
+    }
+    // Re-throw unexpected DB errors to be caught by route-level try/catch
+    throw err;
+  }
+}
+
 module.exports = {
   pool,
   query: (sql, params) => pool.query(sql, params),
   execute: (sql, params) => pool.execute(sql, params),
   testConnection,
   ensureUserOtpColumns,
+  ensureOrderColumns,
   findUserByIdentifier,
+  findOrderByTransactionId,
+  recordQrPayment,
   saveUserOtp,
   verifyUserOtp,
   clearUserOtp,

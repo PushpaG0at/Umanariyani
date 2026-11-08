@@ -428,6 +428,55 @@ async function runTests() {
     }
   });
 
+  await test('POST /api/payment/verify-qr validates UTR format, calculates DB price, and rejects duplicates', async () => {
+    // 1. Invalid short UTR should be rejected with 400
+    const invalidRes = await request('POST', '/api/payment/verify-qr', {
+      transactionId: 'bad',
+      items: [{ id: 'ayurvedic-hair-oil', quantity: 1 }]
+    });
+    if (invalidRes.status !== 400 || invalidRes.data.success !== false) {
+      throw new Error(`Expected 400 Bad Request for short UTR, got ${invalidRes.status}`);
+    }
+
+    // 2. Valid UTR with tampered frontend price (₹1) should calculate actual DB price (649 * 2 = 1298)
+    const testUtr = 'UTRTEST_' + Date.now();
+    const validRes = await request('POST', '/api/payment/verify-qr', {
+      transactionId: testUtr,
+      customerName: 'Integration Tester',
+      customerEmail: 'tester@umanarayani.com',
+      customerPhone: '9876543210',
+      shippingAddress: 'Ayurveda Marg 42, Jaipur',
+      items: [{ id: 'ayurvedic-hair-oil', quantity: 2, price: 1.00 }]
+    });
+
+    if (validRes.status !== 201 || !validRes.data.success) {
+      throw new Error(`Expected 201 Created for valid QR payment, got ${validRes.status}: ${JSON.stringify(validRes.data)}`);
+    }
+    if (validRes.data.amount !== 1298) {
+      throw new Error(`Expected secure amount 1298, got ${validRes.data.amount}`);
+    }
+
+    // 3. Verify order in MySQL with transactionId
+    const [dbOrder] = await db.query('SELECT * FROM orders WHERE transactionId = ?', [testUtr]);
+    if (dbOrder.length === 0 || dbOrder[0].paymentMethod !== 'UPI_QR' || dbOrder[0].paymentStatus !== 'Paid') {
+      throw new Error(`Order with transactionId ${testUtr} not found or not marked as Paid in MySQL`);
+    }
+
+    // 4. Duplicate submission with exact same UTR should be rejected with 409 Conflict
+    const dupRes = await request('POST', '/api/payment/verify-qr', {
+      transactionId: testUtr,
+      customerName: 'Concurrent User',
+      customerEmail: 'concurrent@example.com',
+      customerPhone: '9876543210',
+      shippingAddress: 'Duplicate St',
+      items: [{ id: 'ayurvedic-hair-oil', quantity: 1 }]
+    });
+
+    if (dupRes.status !== 409 || !dupRes.data.duplicate) {
+      throw new Error(`Expected 409 Conflict with duplicate: true for repeated UTR, got ${dupRes.status}`);
+    }
+  });
+
   console.log(`\n==================================================`);
   console.log(`RESULTS: ${passed} Passed, ${failed} Failed`);
   console.log(`==================================================\n`);
