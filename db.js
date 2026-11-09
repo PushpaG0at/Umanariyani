@@ -17,6 +17,7 @@ const pool = mysql.createPool({
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
   timezone: 'Z', // Enforce UTC timezone to prevent timestamp drift
+  charset: 'utf8mb4',
 });
 
 /**
@@ -67,6 +68,9 @@ async function ensureUserOtpColumns() {
 
     // Ensure existing accounts are marked as verified so they can log in seamlessly
     await pool.query('UPDATE users SET is_verified = TRUE WHERE is_verified IS NULL');
+
+    // Sanitize any corrupt question-mark avatars into botanical emblems
+    await pool.query("UPDATE users SET avatar = '🌿' WHERE avatar = '?' OR avatar IS NULL OR avatar = ''");
 
     // Automatically ensure designated ADMIN_EMAILs have role = 'admin', and everyone else has 'user'
     const adminEmails = getAdminEmails();

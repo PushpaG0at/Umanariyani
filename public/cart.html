@@ -286,6 +286,7 @@
     }
   </style>
   <!-- Cloudflare Turnstile Bot Defense -->
+  <script>window.TURNSTILE_SITE_KEY = '0x4AAAAAAF5yxm-iBychLJBe';</script>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
 <body style="background: var(--bg-primary);">
@@ -528,8 +529,9 @@
       if (!signinBtn) return;
       if (user && user.name) {
         const firstName = user.name.split(' ')[0];
+        const safeAvatar = (user.avatar && user.avatar !== '?' && !user.avatar.includes('?')) ? user.avatar : '🌿';
         signinBtn.innerHTML = `
-          <span style="font-size: 1rem;">${user.avatar || '🌿'}</span>
+          <span style="font-size: 1rem;">${safeAvatar}</span>
           <span class="user-btn-name">${firstName}</span>
         `;
         signinBtn.href = "signin.html";
@@ -886,6 +888,37 @@
       if (banner) banner.style.display = 'flex';
     }
 
+    // Initialize Cloudflare Turnstile for cart page
+    let currentCartTurnstileToken = '';
+    async function initCartTurnstile() {
+      const container = document.getElementById('cartTurnstile');
+      if (!container) return;
+      let siteKey = window.TURNSTILE_SITE_KEY;
+      if (!siteKey) {
+        try {
+          const res = await fetch('/api/config');
+          const cfg = await res.json();
+          if (cfg && cfg.turnstileSiteKey) siteKey = cfg.turnstileSiteKey;
+        } catch (_) {}
+      }
+      siteKey = siteKey || '0x4AAAAAAF5yxm-iBychLJBe';
+
+      const render = () => {
+        if (window.turnstile && container) {
+          try {
+            window.turnstile.render('#cartTurnstile', {
+              sitekey: siteKey,
+              theme: 'light',
+              callback: (token) => { currentCartTurnstileToken = token; }
+            });
+          } catch (_) {}
+        }
+      };
+      if (window.turnstile) render();
+      else window.addEventListener('load', () => setTimeout(render, 500));
+    }
+
+    initCartTurnstile();
     checkUserState();
     loadCart();
   </script>

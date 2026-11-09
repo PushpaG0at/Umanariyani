@@ -377,8 +377,9 @@ function updateUserHeaderButton(user) {
 
   if (user && user.name) {
     const firstName = user.name.split(' ')[0];
+    const safeAvatar = (user.avatar && user.avatar !== '?' && !user.avatar.includes('?')) ? user.avatar : '🌿';
     signinBtn.innerHTML = `
-      <span style="font-size: 1rem;">${user.avatar || '🌿'}</span>
+      <span style="font-size: 1rem;">${safeAvatar}</span>
       <span class="user-btn-name">${escapeHtml(firstName)}</span>
     `;
     signinBtn.href = "signin.html";

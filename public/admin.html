@@ -286,6 +286,277 @@
       border-color: var(--danger-red);
     }
 
+    .btn-edit-prod {
+      background: #E8F5E9;
+      color: #1B4332;
+      border: 1px solid #A3D9A5;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-right: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-edit-prod:hover {
+      background: #2D6A4F;
+      color: #FFFFFF;
+      border-color: #2D6A4F;
+    }
+
+    /* Multi-media File Upload and Previews */
+    .file-upload-box {
+      border: 2px dashed rgba(45, 106, 79, 0.35);
+      border-radius: 10px;
+      padding: 22px 18px;
+      text-align: center;
+      background: #F9FCFA;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .file-upload-box:hover, .file-upload-box.dragover {
+      border-color: #2D6A4F;
+      background: #EAF4EE;
+    }
+
+    .file-input-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    .file-upload-label {
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin: 0 !important;
+    }
+
+    .file-upload-icon {
+      font-size: 2.2rem;
+      color: #2D6A4F;
+    }
+
+    .file-upload-text {
+      font-size: 0.95rem;
+      color: #1B4332;
+    }
+
+    .file-upload-sub {
+      font-size: 0.78rem;
+      color: #666;
+    }
+
+    .media-preview-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .media-preview-item {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      border: 1px solid rgba(45, 106, 79, 0.25);
+      overflow: hidden;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .media-preview-item img, .media-preview-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .media-preview-item .badge-type {
+      position: absolute;
+      bottom: 3px;
+      right: 3px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #FFF;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .media-preview-item .btn-remove-media {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 22px;
+      height: 22px;
+      background: rgba(217, 4, 41, 0.95);
+      color: #FFFFFF;
+      border: 1px solid #FFFFFF;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      line-height: 1;
+      padding: 0;
+      transition: all 0.2s ease;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .media-preview-item .btn-remove-media:hover {
+      background: #D90429;
+      transform: scale(1.18);
+    }
+
+    .media-mode-toggle {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      background: #F4F9F5;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(45, 106, 79, 0.2);
+    }
+
+    .media-mode-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #1B4332;
+    }
+
+    .media-mode-label input[type="radio"] {
+      accent-color: #2D6A4F;
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+    }
+
+    /* Admin Modal Styles */
+    .admin-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 35, 25, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .admin-modal-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 820px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(45, 106, 79, 0.2);
+      overflow: hidden;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .admin-modal-header {
+      padding: 18px 24px;
+      background: #1B4332;
+      color: #FFFFFF;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .admin-modal-header h3 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-family: 'Playfair Display', serif;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .admin-modal-close {
+      background: transparent;
+      border: none;
+      color: #FFFFFF;
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .admin-modal-close:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .admin-modal-body {
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .modal-footer-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(45, 106, 79, 0.12);
+    }
+
+    .btn-modal-cancel {
+      background: #F4F7F4;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      color: #444;
+      transition: all 0.2s;
+    }
+
+    .btn-modal-cancel:hover {
+      background: #E5EDE6;
+      color: #111;
+    }
+
     /* Form Styles */
     .form-row {
       display: grid;
@@ -495,19 +766,16 @@
           </div>
 
           <div class="form-group">
-            <label for="pImage">Product Image URL / Asset Path</label>
-            <select id="pImage" class="admin-select">
-              <option value="/images/hair-oil.jpg">Hair Oil Poster (images/hair-oil.jpg)</option>
-              <option value="/images/hair-oil-bottle.jpg">Hair Oil Studio Bottle (images/hair-oil-bottle.jpg)</option>
-              <option value="/images/shampoo.jpg">Shampoo Poster (images/shampoo.jpg)</option>
-              <option value="/images/shampoo-bottle.jpg">Shampoo Studio Bottle (images/shampoo-bottle.jpg)</option>
-              <option value="/images/face-wash.jpg">Orange Face Wash Poster (images/face-wash.jpg)</option>
-              <option value="/images/face-wash-bottle.jpg">Orange Face Wash Studio Bottle (images/face-wash-bottle.jpg)</option>
-              <option value="/images/hair-oil.png">Hair Oil Bottle (images/hair-oil.png)</option>
-              <option value="/images/shampoo.png">Shampoo Bottle (images/shampoo.png)</option>
-              <option value="/images/face-wash.png">Orange Face Wash Bottle (images/face-wash.png)</option>
-              <option value="/images/ayurvedic_herbs_circle.jpg">Botanical Emblem (images/ayurvedic_herbs_circle.jpg)</option>
-            </select>
+            <label for="pImageFiles">Product Media Upload (Images & Videos) *</label>
+            <div class="file-upload-box" id="addDropZone">
+              <input type="file" id="pImageFiles" name="media" accept="image/*,video/*" multiple class="file-input-hidden">
+              <label for="pImageFiles" class="file-upload-label">
+                <i class="fa-solid fa-cloud-arrow-up file-upload-icon"></i>
+                <div class="file-upload-text"><strong>Click to select images/videos</strong> or drag & drop files here</div>
+                <span class="file-upload-sub">Supports JPG, PNG, WEBP, GIF, MP4, WEBM (Multiple files allowed, up to 50MB each)</span>
+              </label>
+            </div>
+            <div id="addMediaPreview" class="media-preview-strip"></div>
           </div>
 
           <div class="form-group">
@@ -550,8 +818,150 @@
     </div>
   </main>
 
+  <!-- ==================== EDIT PRODUCT MODAL ==================== -->
+  <div id="editProductModal" class="admin-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div class="admin-modal-card">
+      <div class="admin-modal-header">
+        <h3 id="editModalTitle"><i class="fa-solid fa-pen-to-square"></i> Edit Catalog Formulation & Media</h3>
+        <button type="button" class="admin-modal-close" onclick="closeEditProductModal()" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <form id="editProductForm" class="admin-modal-body">
+        <input type="hidden" id="editPId">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPName">Product Name *</label>
+            <input type="text" id="editPName" class="admin-input" required placeholder="e.g. UMANARAYANI BHRINGRAJ SCALP SERUM">
+          </div>
+          <div class="form-group">
+            <label for="editPSubtitle">Subtitle / Sub-headline</label>
+            <input type="text" id="editPSubtitle" class="admin-input" placeholder="e.g. Deep Follicle Revival & Anti-Thinning Care">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPCategory">Category *</label>
+            <select id="editPCategory" class="admin-select" required>
+              <option value="Hair Care">Hair Care (Oil, Shampoo, Serum)</option>
+              <option value="Skin Care">Skin Care (Face Wash, Gel, Ubtan)</option>
+              <option value="Body & Rituals">Body & Rituals</option>
+              <option value="Wellness & Teas">Wellness & Teas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editPVolume">Volume / Weight</label>
+            <input type="text" id="editPVolume" class="admin-input" placeholder="e.g. 200 ml or 500g">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPPrice">Price (₹) *</label>
+            <input type="number" id="editPPrice" class="admin-input" required min="1" placeholder="e.g. 349">
+          </div>
+          <div class="form-group">
+            <label for="editPMrp">M.R.P. (₹)</label>
+            <input type="number" id="editPMrp" class="admin-input" placeholder="e.g. 499">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPInStock">Availability Status</label>
+            <select id="editPInStock" class="admin-select">
+              <option value="true">In Stock (Available for ordering)</option>
+              <option value="false">Out of Stock</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editPStockCount">Stock Inventory Count</label>
+            <input type="number" id="editPStockCount" class="admin-input" placeholder="e.g. 50">
+          </div>
+        </div>
+
+        <!-- Current Media Preview Strip with individual delete buttons -->
+        <div class="form-group">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-photo-film" style="color:#2D6A4F;"></i> Current Product Media (<span id="editCurrentMediaCount">0</span> assets)</span>
+            <span style="font-size:0.75rem; color:#666; font-weight:normal;">Click &times; on any photo to remove it</span>
+          </label>
+          <div id="editCurrentMediaPreview" class="media-preview-strip"></div>
+        </div>
+
+        <!-- Add or Replace Media Option & File Upload Box -->
+        <div class="form-group" style="margin-top:20px;">
+          <label style="margin-bottom:8px;"><i class="fa-solid fa-cloud-arrow-up" style="color:#2D6A4F;"></i> Upload Images & Videos (Add or Replace)</label>
+          
+          <div class="media-mode-toggle">
+            <label class="media-mode-label">
+              <input type="radio" name="editMediaAction" value="add" checked id="radioMediaAdd">
+              <span><i class="fa-solid fa-circle-plus" style="color:#2D6A4F;"></i> <strong>Add Images & Videos</strong> (Keep existing & append new)</span>
+            </label>
+            <label class="media-mode-label">
+              <input type="radio" name="editMediaAction" value="replace" id="radioMediaReplace">
+              <span><i class="fa-solid fa-arrows-rotate" style="color:#C5A059;"></i> <strong>Replace All Media</strong> (Discard existing & replace with new)</span>
+            </label>
+          </div>
+
+          <div class="file-upload-box" id="editDropZone">
+            <input type="file" id="editMediaFiles" name="media" accept="image/*,video/*" multiple class="file-input-hidden">
+            <label for="editMediaFiles" class="file-upload-label">
+              <i class="fa-solid fa-cloud-arrow-up file-upload-icon" id="editUploadIcon"></i>
+              <div class="file-upload-text" id="editUploadMainText"><strong>Click to select new images or videos</strong> to ADD to this product</div>
+              <span class="file-upload-sub" id="editUploadSubText">(Leave empty if you don't wish to add or replace any files)</span>
+            </label>
+          </div>
+          <div id="editNewMediaPreview" class="media-preview-strip"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="editPShortDesc">Short Summary Description</label>
+          <textarea id="editPShortDesc" class="admin-textarea" rows="2" placeholder="Brief summary highlighted on catalog cards..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editPDescription">Full Formulation Story & Philosophy</label>
+          <textarea id="editPDescription" class="admin-textarea" rows="3" placeholder="Detailed Ayurvedic formulation story and philosophy..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editPBenefits">Key Benefits (One benefit per line)</label>
+          <textarea id="editPBenefits" class="admin-textarea" rows="3" placeholder="Deeply nourishes scalp and roots.&#10;Controls breakage and restores silkiness.&#10;100% free of artificial parabens and sulphates."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="editPIngredients">Featured Herbal Ingredients (Comma separated)</label>
+          <input type="text" id="editPIngredients" class="admin-input" placeholder="Brahmi, Bhringraj, Nagarmotha, Shikakai, Amla, Amarbel">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPHowToUse">Application Ritual (How to Use)</label>
+            <input type="text" id="editPHowToUse" class="admin-input" placeholder="Massage 5-10 ml onto scalp before bedtime or washing.">
+          </div>
+          <div class="form-group">
+            <label for="editPSuitableFor">Suitable For</label>
+            <input type="text" id="editPSuitableFor" class="admin-input" placeholder="All hair and scalp types, dry or frizzy hair.">
+          </div>
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn-modal-cancel" onclick="closeEditProductModal()">Cancel</button>
+          <button type="submit" class="btn-submit-form" id="btnSubmitEdit" style="width:auto; padding:12px 28px;">
+            <i class="fa-solid fa-check"></i> Update Product Formulation
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Client-side Logic -->
   <script>
+    // Global cache for catalog products
+    let catalogProductsCache = [];
+
     // Strict HTML escape
     function escapeHtml(str) {
       if (!str) return '';
@@ -596,6 +1006,159 @@
       }
     }
 
+    // Helper: Render media preview items
+    function renderFilesPreview(files, containerEl) {
+      containerEl.innerHTML = '';
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach(file => {
+        const item = document.createElement('div');
+        item.className = 'media-preview-item';
+        const url = URL.createObjectURL(file);
+
+        if (file.type.startsWith('video/')) {
+          item.innerHTML = `
+            <video src="${url}" muted autoplay loop playsinline></video>
+            <span class="badge-type"><i class="fa-solid fa-video"></i> Video</span>
+          `;
+        } else {
+          item.innerHTML = `
+            <img src="${url}" alt="${escapeHtml(file.name)}">
+            <span class="badge-type"><i class="fa-solid fa-image"></i> Image</span>
+          `;
+        }
+        containerEl.appendChild(item);
+      });
+    }
+
+    // Attach drag & drop & change listeners for media uploads
+    const addFileInput = document.getElementById('pImageFiles');
+    const addPreviewContainer = document.getElementById('addMediaPreview');
+    const addDropZone = document.getElementById('addDropZone');
+
+    if (addFileInput) {
+      addFileInput.addEventListener('change', (e) => {
+        renderFilesPreview(e.target.files, addPreviewContainer);
+      });
+    }
+
+    if (addDropZone && addFileInput) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        addDropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          addDropZone.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        addDropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          addDropZone.classList.remove('dragover');
+        });
+      });
+      addDropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+          addFileInput.files = e.dataTransfer.files;
+          renderFilesPreview(addFileInput.files, addPreviewContainer);
+        }
+      });
+    }
+
+    // Edit modal file upload preview
+    const editFileInput = document.getElementById('editMediaFiles');
+    const editPreviewContainer = document.getElementById('editNewMediaPreview');
+    const editDropZone = document.getElementById('editDropZone');
+    const radioMediaAdd = document.getElementById('radioMediaAdd');
+    const radioMediaReplace = document.getElementById('radioMediaReplace');
+    const editUploadMainText = document.getElementById('editUploadMainText');
+    const editUploadSubText = document.getElementById('editUploadSubText');
+    const editUploadIcon = document.getElementById('editUploadIcon');
+
+    function updateMediaUploadLabels() {
+      if (!editUploadMainText) return;
+      if (radioMediaReplace && radioMediaReplace.checked) {
+        editUploadMainText.innerHTML = '<strong>Click to select new files</strong> to REPLACE all media';
+        editUploadSubText.textContent = '(Existing photos and videos will be completely replaced by these new files)';
+        if (editUploadIcon) editUploadIcon.className = 'fa-solid fa-arrows-rotate file-upload-icon';
+      } else {
+        editUploadMainText.innerHTML = '<strong>Click to select new images or videos</strong> to ADD to this product';
+        editUploadSubText.textContent = '(New files will be appended to your current gallery)';
+        if (editUploadIcon) editUploadIcon.className = 'fa-solid fa-cloud-arrow-up file-upload-icon';
+      }
+    }
+
+    if (radioMediaAdd) radioMediaAdd.addEventListener('change', updateMediaUploadLabels);
+    if (radioMediaReplace) radioMediaReplace.addEventListener('change', updateMediaUploadLabels);
+
+    if (editFileInput) {
+      editFileInput.addEventListener('change', (e) => {
+        renderFilesPreview(e.target.files, editPreviewContainer);
+      });
+    }
+
+    if (editDropZone && editFileInput) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        editDropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          editDropZone.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        editDropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          editDropZone.classList.remove('dragover');
+        });
+      });
+      editDropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+          editFileInput.files = e.dataTransfer.files;
+          renderFilesPreview(editFileInput.files, editPreviewContainer);
+        }
+      });
+    }
+
+    // Current modal editing gallery state
+    let currentEditingGallery = [];
+
+    function renderCurrentEditingGallery() {
+      const currentMediaEl = document.getElementById('editCurrentMediaPreview');
+      const countEl = document.getElementById('editCurrentMediaCount');
+      if (countEl) countEl.textContent = currentEditingGallery.length;
+      if (!currentMediaEl) return;
+      currentMediaEl.innerHTML = '';
+
+      if (currentEditingGallery.length === 0) {
+        currentMediaEl.innerHTML = `<span style="font-size:0.85rem; color:#888; font-style:italic;">No media currently saved. Choose files below to add media.</span>`;
+        return;
+      }
+
+      currentEditingGallery.forEach((mUrl, index) => {
+        if (!mUrl) return;
+        const item = document.createElement('div');
+        item.className = 'media-preview-item';
+        const isVid = mUrl.endsWith('.mp4') || mUrl.endsWith('.webm') || mUrl.endsWith('.mov');
+        
+        item.innerHTML = `
+          <button type="button" class="btn-remove-media" title="Delete this asset from product" onclick="removeExistingMedia(${index})">&times;</button>
+          ${isVid 
+            ? `<video src="${escapeHtml(mUrl)}" muted autoplay loop playsinline></video><span class="badge-type"><i class="fa-solid fa-video"></i> Video</span>`
+            : `<img src="${escapeHtml(mUrl)}" alt="Product media ${index + 1}"><span class="badge-type"><i class="fa-solid fa-image"></i> Image</span>`
+          }
+        `;
+        currentMediaEl.appendChild(item);
+      });
+    }
+
+    window.removeExistingMedia = function(idx) {
+      if (idx >= 0 && idx < currentEditingGallery.length) {
+        currentEditingGallery.splice(idx, 1);
+        renderCurrentEditingGallery();
+      }
+    };
+
     // 2. Fetch and Render Catalog Table
     async function loadCatalogProducts() {
       const tbody = document.getElementById('productsTableBody');
@@ -605,6 +1168,7 @@
         const res = await fetch('/api/products');
         const data = await res.json();
         const products = data.products || [];
+        catalogProductsCache = products;
 
         badge.textContent = `${products.length} Products in Database`;
 
@@ -638,7 +1202,10 @@
               <td style="font-size:0.82rem; color:var(--text-muted);">
                 ${escapeHtml(herbs + extraHerbs) || 'Classical herbs'}
               </td>
-              <td style="text-align: right;">
+              <td style="text-align: right; white-space: nowrap;">
+                <button type="button" class="btn-edit-prod" onclick="openEditProductModal('${escapeHtml(p.id)}')">
+                  <i class="fa-solid fa-pen-to-square"></i> Edit
+                </button>
                 <button type="button" class="btn-delete-prod" onclick="handleDeleteProduct('${escapeHtml(p.id)}', '${escapeHtml(p.name)}')">
                   <i class="fa-solid fa-trash-can"></i> Delete
                 </button>
@@ -651,7 +1218,132 @@
       }
     }
 
-    // 3. Delete Product with Confirmation
+    // 3. Open and Close Edit Product Modal
+    window.openEditProductModal = function(id) {
+      const p = catalogProductsCache.find(item => String(item.id) === String(id));
+      if (!p) {
+        showAlert('Could not locate product record in memory. Refreshing catalog...', false);
+        loadCatalogProducts();
+        return;
+      }
+
+      document.getElementById('editPId').value = p.id;
+      document.getElementById('editPName').value = p.name || '';
+      document.getElementById('editPSubtitle').value = p.subtitle || '';
+      document.getElementById('editPCategory').value = p.category || 'Hair Care';
+      document.getElementById('editPVolume').value = p.volume || '';
+      document.getElementById('editPPrice').value = p.price || '';
+      document.getElementById('editPMrp').value = p.mrp || '';
+      document.getElementById('editPInStock').value = p.inStock ? 'true' : 'false';
+      document.getElementById('editPStockCount').value = p.stockCount !== undefined ? p.stockCount : 50;
+      document.getElementById('editPShortDesc').value = p.shortDescription || '';
+      document.getElementById('editPDescription').value = p.description || '';
+      
+      const benefitsArr = Array.isArray(p.keyBenefits) ? p.keyBenefits : [];
+      document.getElementById('editPBenefits').value = benefitsArr.join('\n');
+
+      const ingArr = Array.isArray(p.featuredIngredients) ? p.featuredIngredients : [];
+      document.getElementById('editPIngredients').value = ingArr.join(', ');
+
+      document.getElementById('editPHowToUse').value = p.howToUse || '';
+      document.getElementById('editPSuitableFor').value = p.suitableFor || '';
+
+      // Render current media previews with deletion capability
+      currentEditingGallery = Array.isArray(p.gallery) && p.gallery.length > 0 ? [...p.gallery] : [p.image || '/images/logo-center.png'];
+      renderCurrentEditingGallery();
+
+      // Reset radio option to 'add' by default
+      if (radioMediaAdd) radioMediaAdd.checked = true;
+      updateMediaUploadLabels();
+
+      // Clear newly chosen files in modal
+      if (editFileInput) editFileInput.value = '';
+      if (editPreviewContainer) editPreviewContainer.innerHTML = '';
+
+      document.getElementById('editProductModal').style.display = 'flex';
+    };
+
+    window.closeEditProductModal = function() {
+      document.getElementById('editProductModal').style.display = 'none';
+    };
+
+    // Close modal on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('editProductModal');
+        if (modal && modal.style.display === 'flex') {
+          closeEditProductModal();
+        }
+      }
+    });
+
+    // 4. Submit Edit Product Form (PUT /api/products/:id via FormData)
+    document.getElementById('editProductForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editPId').value;
+      const submitBtn = document.getElementById('btnSubmitEdit');
+      const origHtml = submitBtn.innerHTML;
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Updating Formulation...`;
+
+      try {
+        const formData = new FormData();
+        formData.append('name', document.getElementById('editPName').value.trim());
+        formData.append('subtitle', document.getElementById('editPSubtitle').value.trim());
+        formData.append('category', document.getElementById('editPCategory').value);
+        formData.append('volume', document.getElementById('editPVolume').value.trim());
+        formData.append('price', document.getElementById('editPPrice').value);
+        formData.append('mrp', document.getElementById('editPMrp').value || '');
+        formData.append('inStock', document.getElementById('editPInStock').value);
+        formData.append('stockCount', document.getElementById('editPStockCount').value || '50');
+        formData.append('shortDescription', document.getElementById('editPShortDesc').value.trim());
+        formData.append('description', document.getElementById('editPDescription').value.trim());
+
+        const benefits = document.getElementById('editPBenefits').value.split('\n').map(s => s.trim()).filter(Boolean);
+        formData.append('keyBenefits', JSON.stringify(benefits));
+
+        const ingredients = document.getElementById('editPIngredients').value.split(',').map(s => s.trim()).filter(Boolean);
+        formData.append('featuredIngredients', JSON.stringify(ingredients));
+
+        formData.append('howToUse', document.getElementById('editPHowToUse').value.trim());
+        formData.append('suitableFor', document.getElementById('editPSuitableFor').value.trim());
+
+        // Send media action ('add' to append or 'replace' to swap all) and retained existing gallery
+        const mediaAction = document.querySelector('input[name="editMediaAction"]:checked')?.value || 'add';
+        formData.append('mediaAction', mediaAction);
+        formData.append('existingGallery', JSON.stringify(currentEditingGallery));
+
+        // Append new media files if uploaded
+        if (editFileInput && editFileInput.files.length > 0) {
+          for (let i = 0; i < editFileInput.files.length; i++) {
+            formData.append('media', editFileInput.files[i]);
+          }
+        }
+
+        const res = await fetch(`/api/products/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          credentials: 'include',
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showAlert(`Success! Formulation for "${data.product.name}" has been updated in the database.`, true);
+          closeEditProductModal();
+          loadCatalogProducts();
+        } else {
+          showAlert(data.message || 'Failed to update formulation', false);
+        }
+      } catch (err) {
+        showAlert('Network or server error while updating product.', false);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origHtml;
+      }
+    });
+
+    // 5. Delete Product with Confirmation
     async function handleDeleteProduct(id, name) {
       if (!confirm(`Are you sure you want to remove "${name}" from the store catalog? This action will immediately remove it from the live store.`)) {
         return;
@@ -675,43 +1367,53 @@
       }
     }
 
-    // 4. Add Product Form Submission
+    // 6. Add Product Form Submission (POST /api/products via FormData)
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById('btnSubmitAdd');
       const origHtml = submitBtn.innerHTML;
 
-      const payload = {
-        name: document.getElementById('pName').value.trim(),
-        subtitle: document.getElementById('pSubtitle').value.trim(),
-        category: document.getElementById('pCategory').value,
-        volume: document.getElementById('pVolume').value.trim(),
-        price: Number(document.getElementById('pPrice').value),
-        mrp: document.getElementById('pMrp').value ? Number(document.getElementById('pMrp').value) : null,
-        image: document.getElementById('pImage').value,
-        shortDescription: document.getElementById('pShortDesc').value.trim(),
-        description: document.getElementById('pDescription').value.trim(),
-        keyBenefits: document.getElementById('pBenefits').value.split('\n').map(s => s.trim()).filter(Boolean),
-        featuredIngredients: document.getElementById('pIngredients').value.split(',').map(s => s.trim()).filter(Boolean),
-        howToUse: document.getElementById('pHowToUse').value.trim(),
-        suitableFor: document.getElementById('pSuitableFor').value.trim()
-      };
-
       submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving Formulation...`;
+      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading & Saving Formulation...`;
 
       try {
+        const formData = new FormData();
+        formData.append('name', document.getElementById('pName').value.trim());
+        formData.append('subtitle', document.getElementById('pSubtitle').value.trim());
+        formData.append('category', document.getElementById('pCategory').value);
+        formData.append('volume', document.getElementById('pVolume').value.trim());
+        formData.append('price', document.getElementById('pPrice').value);
+        formData.append('mrp', document.getElementById('pMrp').value || '');
+        formData.append('shortDescription', document.getElementById('pShortDesc').value.trim());
+        formData.append('description', document.getElementById('pDescription').value.trim());
+
+        const benefits = document.getElementById('pBenefits').value.split('\n').map(s => s.trim()).filter(Boolean);
+        formData.append('keyBenefits', JSON.stringify(benefits));
+
+        const ingredients = document.getElementById('pIngredients').value.split(',').map(s => s.trim()).filter(Boolean);
+        formData.append('featuredIngredients', JSON.stringify(ingredients));
+
+        formData.append('howToUse', document.getElementById('pHowToUse').value.trim());
+        formData.append('suitableFor', document.getElementById('pSuitableFor').value.trim());
+
+        // Append media files (photos and videos)
+        if (addFileInput && addFileInput.files.length > 0) {
+          for (let i = 0; i < addFileInput.files.length; i++) {
+            formData.append('media', addFileInput.files[i]);
+          }
+        }
+
         const res = await fetch('/api/products', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify(payload)
+          body: formData
         });
         const data = await res.json();
 
         if (data.success) {
-          showAlert(`Success! "${payload.name}" has been added to the catalog and is now live!`, true);
+          showAlert(`Success! "${data.product.name}" has been uploaded and launched to the store catalog!`, true);
           document.getElementById('addProductForm').reset();
+          if (addPreviewContainer) addPreviewContainer.innerHTML = '';
           loadCatalogProducts();
         } else {
           showAlert(data.message || 'Failed to save product', false);
@@ -724,7 +1426,7 @@
       }
     });
 
-    // 5. Sign Out
+    // 7. Sign Out
     document.getElementById('btnAdminLogout').addEventListener('click', async () => {
       try {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });

@@ -6,10 +6,49 @@
  */
 
 let currentTurnstileToken = 'cf_test_pass';
+let turnstileWidgetIds = {};
 let pendingAuthIdentifier = '';
 let resendTimer = null;
 let resendSecondsRemaining = 60;
 let lastDevOtp = '';
+
+function getActiveTurnstileToken(mode = 'login') {
+  let token = '';
+  if (window.turnstile && turnstileWidgetIds[mode] !== undefined) {
+    try {
+      token = window.turnstile.getResponse(turnstileWidgetIds[mode]);
+    } catch (_) {}
+  }
+  if (!token && window.turnstile) {
+    try {
+      token = window.turnstile.getResponse(`#${mode}Turnstile`) || window.turnstile.getResponse();
+    } catch (_) {}
+  }
+  if (!token && currentTurnstileToken && currentTurnstileToken !== 'cf_test_pass') {
+    token = currentTurnstileToken;
+  }
+  if (!token) {
+    const el = document.getElementById(`${mode}Turnstile`);
+    const hidden = el ? el.querySelector('[name="cf-turnstile-response"]') : document.querySelector('[name="cf-turnstile-response"]');
+    if (hidden && hidden.value) token = hidden.value;
+  }
+  return token || currentTurnstileToken || '';
+}
+
+function resetTurnstileWidget(mode = 'login') {
+  if (window.turnstile) {
+    try {
+      if (turnstileWidgetIds[mode] !== undefined) {
+        window.turnstile.reset(turnstileWidgetIds[mode]);
+      } else {
+        window.turnstile.reset(`#${mode}Turnstile`);
+      }
+    } catch (_) {
+      try { window.turnstile.reset(); } catch (_) {}
+    }
+  }
+  currentTurnstileToken = '';
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   initFloatingLeaves();
@@ -28,27 +67,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function initTurnstileWidgets() {
-  const siteKey = window.TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+async function initTurnstileWidgets() {
+  let siteKey = window.TURNSTILE_SITE_KEY;
+  if (!siteKey) {
+    try {
+      const res = await fetch('/api/config');
+      const cfg = await res.json();
+      if (cfg && cfg.turnstileSiteKey) {
+        siteKey = cfg.turnstileSiteKey;
+      }
+    } catch (_) {}
+  }
+  siteKey = siteKey || '0x4AAAAAAF5yxm-iBychLJBe';
+
   const renderWidget = () => {
     if (window.turnstile) {
       try {
-        if (document.getElementById('loginTurnstile')) {
-          window.turnstile.render('#loginTurnstile', {
+        if (document.getElementById('loginTurnstile') && turnstileWidgetIds['login'] === undefined) {
+          turnstileWidgetIds['login'] = window.turnstile.render('#loginTurnstile', {
             sitekey: siteKey,
             theme: 'light',
             callback: (token) => { currentTurnstileToken = token; }
           });
         }
-        if (document.getElementById('registerTurnstile')) {
-          window.turnstile.render('#registerTurnstile', {
+        if (document.getElementById('registerTurnstile') && turnstileWidgetIds['register'] === undefined) {
+          turnstileWidgetIds['register'] = window.turnstile.render('#registerTurnstile', {
             sitekey: siteKey,
             theme: 'light',
             callback: (token) => { currentTurnstileToken = token; }
           });
         }
-        if (document.getElementById('otpTurnstile')) {
-          window.turnstile.render('#otpTurnstile', {
+        if (document.getElementById('otpTurnstile') && turnstileWidgetIds['otp'] === undefined) {
+          turnstileWidgetIds['otp'] = window.turnstile.render('#otpTurnstile', {
             sitekey: siteKey,
             theme: 'light',
             callback: (token) => { currentTurnstileToken = token; }
@@ -304,11 +354,12 @@ function initFormSubmissions() {
       }
 
       try {
+        const token = getActiveTurnstileToken('login');
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ identifier, password, turnstileToken: currentTurnstileToken })
+          body: JSON.stringify({ identifier, password, turnstileToken: token })
         });
         const data = await res.json();
 
@@ -318,9 +369,11 @@ function initFormSubmissions() {
           localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
           displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
         } else {
+          resetTurnstileWidget('login');
           showAuthError(data.message || 'Login failed. Please verify credentials.');
         }
       } catch (err) {
+        resetTurnstileWidget('login');
         showAuthError('Unable to connect to Ayurvedic Sanctuary server. Please try again.');
       } finally {
         if (submitBtn) {
@@ -361,6 +414,7 @@ function initFormSubmissions() {
       }
 
       try {
+        const token = getActiveTurnstileToken('register');
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -372,7 +426,7 @@ function initFormSubmissions() {
             password,
             dosha: selectedDosha,
             hairType,
-            turnstileToken: currentTurnstileToken
+            turnstileToken: token
           })
         });
         const data = await res.json();
@@ -384,9 +438,11 @@ function initFormSubmissions() {
           localStorage.setItem('umanarayani_user', JSON.stringify(data.user));
           displayLoginSuccess(data.user, data.activeUsersCount, data.totalUsersCount);
         } else {
+          resetTurnstileWidget('register');
           showAuthError(data.message || 'Registration failed.');
         }
       } catch (err) {
+        resetTurnstileWidget('register');
         showAuthError('Unable to connect to server for registration. Please try again.');
       } finally {
         if (submitBtn) {
@@ -418,6 +474,7 @@ function initFormSubmissions() {
       }
 
       try {
+        const token = getActiveTurnstileToken('otp');
         const res = await fetch('/api/verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -425,7 +482,7 @@ function initFormSubmissions() {
           body: JSON.stringify({
             identifier: pendingAuthIdentifier,
             otp,
-            turnstileToken: currentTurnstileToken
+            turnstileToken: token
           })
         });
         const data = await res.json();
@@ -444,9 +501,11 @@ function initFormSubmissions() {
           window.location.href = '/';
           return;
         } else {
+          resetTurnstileWidget('otp');
           showAuthError(data.message || 'OTP verification failed. Please try again.');
         }
       } catch (err) {
+        resetTurnstileWidget('otp');
         showAuthError('Error verifying OTP with server. Please try again.');
       } finally {
         if (submitBtn) {
@@ -556,7 +615,14 @@ async function displayLoginSuccess(user, initialCount, initialTotal) {
   const doshaEl = document.getElementById('successUserDosha');
   if (doshaEl) doshaEl.textContent = `Ayurvedic Constitution: ${user.dosha || 'Pitta-Vata'}`;
   const avatarEl = document.getElementById('successAvatar');
-  if (avatarEl) avatarEl.textContent = user.avatar || '🌿';
+  if (avatarEl) {
+    const rawAvatar = (user.avatar || '').trim();
+    if (rawAvatar && rawAvatar !== '?' && !rawAvatar.includes('?')) {
+      avatarEl.textContent = rawAvatar;
+    } else {
+      avatarEl.innerHTML = '<i class="fa-solid fa-leaf" style="color:var(--emerald-primary, #154734);"></i>';
+    }
+  }
 
   if (typeof initialCount === 'number') {
     updateAuthBannerCount(initialCount, initialTotal);
@@ -638,6 +704,7 @@ async function checkExistingSession() {
   // 2. Fallback to cached local profile
   const user = JSON.parse(localStorage.getItem('umanarayani_user') || 'null');
   if (user) {
+    if (user.avatar === '?') user.avatar = '🌿';
     displayLoginSuccess(user);
   }
 }

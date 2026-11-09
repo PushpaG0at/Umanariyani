@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const express = require('express');
 const compression = require('compression');
 const cors = require('cors');
@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const axios = require('axios');
+const multer = require('multer');
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const { GoogleGenAI } = require('@google/genai');
@@ -32,91 +33,72 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'umanarayani_sacred_ayurved
 const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'umanarayani_admin_secret_key_2026';
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '1x0000000000000000000000000000000AA';
 
-// ==================== 1. HTTP HEADERS & SECURITY CONFIGURATION ====================
-// [TEMPORARILY DISABLED FOR RAW IP / HTTP AWS TESTING]:
-// Strict Helmet HSTS, CSP, and Cross-Origin isolation are commented out to prevent SSL protocol
-// errors (ERR_SSL_PROTOCOL_ERROR / SSL_ERROR_RX_RECORD_TOO_LONG) while testing on raw EC2 IP (e.g. http://13.127.4.94:3000).
-// Re-enable when deploying behind HTTPS with a custom domain SSL certificate.
-/*
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'",
-        "https://cdnjs.cloudflare.com",
-        "https://challenges.cloudflare.com"
-      ],
-      scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: [
-        "'self'",
-        "'unsafe-inline'",
-        "https://fonts.googleapis.com",
-        "https://cdnjs.cloudflare.com"
-      ],
-      fontSrc: [
-        "'self'",
-        "https://fonts.gstatic.com",
-        "https://cdnjs.cloudflare.com",
-        "data:"
-      ],
-      imgSrc: [
-        "'self'",
-        "data:",
-        "blob:",
-        "https:"
-      ],
-      connectSrc: [
-        "'self'",
-        "http://localhost:*",
-        "http://127.0.0.1:*",
-        "https://challenges.cloudflare.com",
-        "https://generativelanguage.googleapis.com",
-        "https://wa.me",
-        "https://api-preprod.phonepe.com",
-        "https://api.phonepe.com",
-        "https://mercury-uat.phonepe.com",
-        "https://mercury.phonepe.com"
-      ],
-      frameSrc: [
-        "'self'",
-        "https://challenges.cloudflare.com"
-      ],
-      frameAncestors: ["'none'"], // Anti-clickjacking defense
-      objectSrc: ["'none'"],
-      baseUri: ["'self'"],
-      formAction: [
-        "'self'",
-        "https://wa.me",
-        "https://api-preprod.phonepe.com",
-        "https://api.phonepe.com",
-        "https://mercury-uat.phonepe.com",
-        "https://mercury.phonepe.com"
-      ]
-    }
+// ==================== MULTER FILE UPLOAD CONFIGURATION ====================
+// Secure disk storage for catalog product media (photos, banners, and demo videos)
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
   },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const cleanBase = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1E6);
+    cb(null, `${cleanBase}-${unique}${ext}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.svg', '.mp4', '.webm', '.mov', '.m4v'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowedExts.includes(ext) || file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Unsupported file type: ${file.originalname}. Only image and video files are permitted.`));
+  }
+};
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB per file (accommodates high-res photos and video assets)
+    files: 10 // Up to 10 files per product
+  },
+  fileFilter
+});
+
+// ==================== 1. HTTP HEADERS & PRODUCTION SECURITY CONFIGURATION ====================
+// Production security headers configured via Helmet for AWS EC2 live deployment.
+// Note: HSTS is disabled (hsts: false) to preserve standard HTTP testing on raw EC2 IP (http://13.127.4.94:3000)
+// without causing browser SSL protocol errors. It will activate automatically if HTTPS is explicitly enforced.
+app.use(helmet({
+  contentSecurityPolicy: false, // Permissive CSP to prevent blocking inline scripts, CSS, and CDN assets
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  frameguard: {
-    action: 'deny'
-  },
-  referrerPolicy: {
-    policy: 'strict-origin-when-cross-origin'
-  }
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  dnsPrefetchControl: { allow: false },
+  frameguard: { action: 'deny' }, // Anti-clickjacking defense
+  hidePoweredBy: true, // Strips 'X-Powered-By: Express' signature
+  hsts: process.env.ENFORCE_HTTPS === 'true' ? { maxAge: 31536000, includeSubDomains: true } : false,
+  noSniff: true, // X-Content-Type-Options: nosniff MIME sniffing defense
+  originAgentCluster: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xssFilter: true
 }));
-*/
 
 // ==================== 2. CORS WHITELIST & RAW IP TESTING ====================
 const rawAllowedOrigins = process.env.ALLOWED_ORIGINS || '';
 const defaultAllowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
+  'http://13.127.4.94:3000',
+  'http://13.127.4.94',
+  'https://umanarayani.com',
+  'https://www.umanarayani.com',
   `http://localhost:${PORT}`,
   `http://127.0.0.1:${PORT}`
 ];
@@ -198,6 +180,7 @@ app.get(['/admin', '/admin.html'], (req, res, next) => {
 // ==================== STATIC FILE SERVING ====================
 // Properly configure static serving for public directory and explicit subdirectories
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
 app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
@@ -251,10 +234,21 @@ const orderLimiter = rateLimit({
 
 app.use('/api/', globalApiLimiter);
 
+// Public configuration endpoint (serves Turnstile Site Key dynamically to client-side widgets)
+app.get('/api/config', (req, res) => {
+  res.json({
+    success: true,
+    turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
+    env: process.env.NODE_ENV || 'development'
+  });
+});
+
 // ==================== 4. TURNSTILE BOT VERIFICATION HELPER ====================
 async function verifyTurnstile(token, req) {
+  const secretKey = (process.env.TURNSTILE_SECRET_KEY || TURNSTILE_SECRET_KEY || '').trim();
+
   if (!token) {
-    if (process.env.NODE_ENV !== 'production' || TURNSTILE_SECRET_KEY.startsWith('1x0000')) {
+    if (process.env.NODE_ENV !== 'production' || secretKey.startsWith('1x0000')) {
       return { success: true, mode: 'test_dev_bypass' };
     }
     return { success: false, message: 'Bot protection verification token is required' };
@@ -267,16 +261,19 @@ async function verifyTurnstile(token, req) {
 
   try {
     const formData = new URLSearchParams();
-    formData.append('secret', TURNSTILE_SECRET_KEY);
-    formData.append('response', token);
-    const remoteIp = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    if (remoteIp) formData.append('remoteip', remoteIp);
+    formData.append('secret', secretKey);
+    formData.append('response', token.trim());
+    // Note: Do not append remoteip. Omitting remoteip prevents false rejections behind AWS EC2, ALBs, or NATs.
 
     const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
       body: formData
     });
-    return await cfRes.json();
+    const result = await cfRes.json();
+    if (!result.success) {
+      console.warn('Turnstile siteverify rejected token:', result['error-codes'] || result);
+    }
+    return result;
   } catch (err) {
     console.warn('Turnstile verification network check skipped:', err.message);
     return { success: true, fallback: true };
@@ -733,8 +730,8 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-// 3. Add new product to MySQL (Protected by Admin RBAC)
-app.post('/api/products', authenticateToken(false), requireAdmin, async (req, res) => {
+// 3. Add new product to MySQL (Protected by Admin RBAC with Multer media uploads)
+const handleCreateProduct = async (req, res) => {
   try {
     const {
       name,
@@ -770,11 +767,48 @@ app.post('/api/products', authenticateToken(false), requireAdmin, async (req, re
       });
     }
 
-    const calculatedMrp = mrp || Math.round(Number(price) * 1.3);
-    const discountPercent = Math.round(((calculatedMrp - Number(price)) / calculatedMrp) * 100);
+    // Media paths handling: uploaded files take precedence
+    let finalImage = image || '/images/hair-oil.jpg';
+    let finalGallery = [finalImage];
+
+    if (req.files && req.files.length > 0) {
+      const mediaPaths = req.files.map(f => `/uploads/${f.filename}`);
+      finalImage = mediaPaths[0];
+      finalGallery = mediaPaths;
+    }
+
+    const calculatedMrp = mrp ? Number(mrp) : Math.round(Number(price) * 1.3);
+    const discountPercent = calculatedMrp > Number(price) ? Math.round(((calculatedMrp - Number(price)) / calculatedMrp) * 100) : 0;
 
     const [countRows] = await db.query('SELECT COUNT(*) AS total FROM products');
     const totalCount = countRows[0].total || 0;
+
+    // Normalize benefits and ingredients (support JSON strings from FormData or arrays)
+    let parsedBenefits = ["100% Herbal nourishment", "Safe & gentle for regular use"];
+    if (keyBenefits) {
+      if (Array.isArray(keyBenefits)) {
+        parsedBenefits = keyBenefits;
+      } else {
+        try {
+          parsedBenefits = JSON.parse(keyBenefits);
+        } catch (_) {
+          parsedBenefits = String(keyBenefits).split('\n').map(s => s.trim()).filter(Boolean);
+        }
+      }
+    }
+
+    let parsedIngredients = ["Ayurvedic Botanical Extracts"];
+    if (featuredIngredients) {
+      if (Array.isArray(featuredIngredients)) {
+        parsedIngredients = featuredIngredients;
+      } else {
+        try {
+          parsedIngredients = JSON.parse(featuredIngredients);
+        } catch (_) {
+          parsedIngredients = String(featuredIngredients).split(',').map(s => s.trim()).filter(Boolean);
+        }
+      }
+    }
 
     const newProduct = {
       id,
@@ -790,15 +824,15 @@ app.post('/api/products', authenticateToken(false), requireAdmin, async (req, re
       ratingCount: 1,
       badge: "New Launch",
       volume: volume || "200 ml",
-      image: image || "images/ayurvedic_herbs_circle.jpg",
-      gallery: [image || "images/ayurvedic_herbs_circle.jpg"],
+      image: finalImage,
+      gallery: finalGallery,
       inStock: true,
       stockCount: 50,
       asin: `B09AYURV${totalCount + 1}`,
       shortDescription: shortDescription || description || "Handcrafted traditional Ayurvedic formula.",
       description: description || shortDescription || "Handcrafted traditional Ayurvedic formula.",
-      keyBenefits: Array.isArray(keyBenefits) ? keyBenefits : (keyBenefits ? keyBenefits.split('\n').filter(Boolean) : ["100% Herbal nourishment", "Safe & gentle for regular use"]),
-      featuredIngredients: Array.isArray(featuredIngredients) ? featuredIngredients : (featuredIngredients ? featuredIngredients.split(',').map(s => s.trim()) : ["Ayurvedic Botanical Extracts"]),
+      keyBenefits: parsedBenefits,
+      featuredIngredients: parsedIngredients,
       ingredientsDetails: [],
       howToUse: howToUse || "Apply as directed on packaging. Suitable for daily use.",
       usageSteps: [],
@@ -856,63 +890,186 @@ app.post('/api/products', authenticateToken(false), requireAdmin, async (req, re
     });
   } catch (err) {
     console.error('Error inserting product into MySQL:', err);
-    res.status(500).json({ success: false, message: 'Database error adding product' });
+    res.status(500).json({ success: false, message: 'Database error adding product: ' + err.message });
   }
-});
+};
 
-// 3b. Update product (Protected by Admin RBAC)
-app.put('/api/products/:id', authenticateToken(false), requireAdmin, async (req, res) => {
+app.post('/api/products', authenticateToken(false), requireAdmin, upload.array('media', 10), handleCreateProduct);
+app.post('/api/admin/products', authenticateToken(false), requireAdmin, upload.array('media', 10), handleCreateProduct);
+
+// 3b. Update product (Protected by Admin RBAC with Multer media uploads)
+const handleUpdateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { price, mrp, inStock, stockCount, name, subtitle, category } = req.body;
-
     const [existing] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
     const current = existing[0];
-    const newPrice = price !== undefined ? Number(price) : Number(current.price);
-    const newMrp = mrp !== undefined ? Number(mrp) : Number(current.mrp);
-    const discountPercent = Math.round(((newMrp - newPrice) / newMrp) * 100);
+    const {
+      name,
+      subtitle,
+      tagline,
+      category,
+      volume,
+      price,
+      mrp,
+      inStock,
+      stockCount,
+      badge,
+      shortDescription,
+      description,
+      keyBenefits,
+      featuredIngredients,
+      howToUse,
+      suitableFor,
+      existingImage,
+      existingGallery
+    } = req.body;
+
+    const newPrice = (price !== undefined && price !== '') ? Number(price) : Number(current.price);
+    const newMrp = (mrp !== undefined && mrp !== '') ? Number(mrp) : (current.mrp ? Number(current.mrp) : Math.round(newPrice * 1.3));
+    const discountPercent = newMrp > newPrice ? Math.round(((newMrp - newPrice) / newMrp) * 100) : 0;
+
+    // Handle media updates: If mediaAction === 'replace', replace existing gallery with new uploads.
+    // If mediaAction === 'add' (default), keep existing gallery and append new uploads!
+    let finalGallery = [];
+    if (existingGallery !== undefined) {
+      try {
+        finalGallery = typeof existingGallery === 'string' ? JSON.parse(existingGallery) : existingGallery;
+      } catch (_) {
+        finalGallery = typeof current.gallery === 'string' ? JSON.parse(current.gallery) : (current.gallery || []);
+      }
+    } else {
+      try {
+        finalGallery = typeof current.gallery === 'string' ? JSON.parse(current.gallery) : (current.gallery || []);
+      } catch (_) {
+        finalGallery = [current.image];
+      }
+    }
+
+    if (!Array.isArray(finalGallery)) {
+      finalGallery = [current.image || '/images/logo-center.png'];
+    }
+
+    let finalImage = finalGallery.length > 0 ? finalGallery[0] : (current.image || '/images/logo-center.png');
+    if (existingImage) finalImage = existingImage;
+
+    const action = (req.body.mediaAction || 'add').toLowerCase();
+
+    if (req.files && req.files.length > 0) {
+      const newUploads = req.files.map(f => `/uploads/${f.filename}`);
+      if (action === 'replace') {
+        finalImage = newUploads[0];
+        finalGallery = newUploads;
+      } else {
+        // Default 'add': append to existing gallery!
+        finalGallery = [...finalGallery, ...newUploads];
+        if (!finalImage || finalImage === '/images/logo-center.png') {
+          finalImage = finalGallery[0];
+        }
+      }
+    }
+
+    // Ensure finalImage is valid
+    if (finalGallery.length > 0 && (!finalImage || !finalGallery.includes(finalImage))) {
+      finalImage = finalGallery[0];
+    }
+
+    // Parse array fields
+    let parsedBenefits = current.keyBenefits;
+    if (keyBenefits !== undefined) {
+      if (Array.isArray(keyBenefits)) {
+        parsedBenefits = keyBenefits;
+      } else {
+        try {
+          parsedBenefits = JSON.parse(keyBenefits);
+        } catch (_) {
+          parsedBenefits = String(keyBenefits).split('\n').map(s => s.trim()).filter(Boolean);
+        }
+      }
+    }
+
+    let parsedIngredients = current.featuredIngredients;
+    if (featuredIngredients !== undefined) {
+      if (Array.isArray(featuredIngredients)) {
+        parsedIngredients = featuredIngredients;
+      } else {
+        try {
+          parsedIngredients = JSON.parse(featuredIngredients);
+        } catch (_) {
+          parsedIngredients = String(featuredIngredients).split(',').map(s => s.trim()).filter(Boolean);
+        }
+      }
+    }
+
+    const categorySlug = category ? category.toLowerCase().replace(/\s+/g, '-') : current.categorySlug;
 
     await db.query(`
       UPDATE products SET
         name = COALESCE(?, name),
         subtitle = COALESCE(?, subtitle),
+        tagline = COALESCE(?, tagline),
         category = COALESCE(?, category),
+        categorySlug = COALESCE(?, categorySlug),
+        volume = COALESCE(?, volume),
         price = ?,
         mrp = ?,
         discountPercent = ?,
-        inStock = COALESCE(?, inStock),
-        stockCount = COALESCE(?, stockCount)
+        image = ?,
+        gallery = ?,
+        inStock = ?,
+        stockCount = ?,
+        badge = COALESCE(?, badge),
+        shortDescription = COALESCE(?, shortDescription),
+        description = COALESCE(?, description),
+        keyBenefits = ?,
+        featuredIngredients = ?,
+        howToUse = COALESCE(?, howToUse),
+        suitableFor = COALESCE(?, suitableFor)
       WHERE id = ?
     `, [
-      name || null,
-      subtitle || null,
-      category || null,
+      name ? name.toUpperCase() : null,
+      subtitle !== undefined ? subtitle : null,
+      tagline !== undefined ? tagline : null,
+      category !== undefined ? category : null,
+      categorySlug,
+      volume !== undefined ? volume : null,
       newPrice,
       newMrp,
       discountPercent,
-      inStock !== undefined ? Boolean(inStock) : null,
-      stockCount !== undefined ? Number(stockCount) : null,
+      finalImage,
+      JSON.stringify(Array.isArray(finalGallery) ? finalGallery : [finalImage]),
+      inStock !== undefined ? (inStock === 'true' || inStock === true || inStock === 1 || inStock === '1') : current.inStock,
+      stockCount !== undefined && stockCount !== '' ? Number(stockCount) : current.stockCount,
+      badge !== undefined ? badge : null,
+      shortDescription !== undefined ? shortDescription : null,
+      description !== undefined ? description : null,
+      JSON.stringify(Array.isArray(parsedBenefits) ? parsedBenefits : []),
+      JSON.stringify(Array.isArray(parsedIngredients) ? parsedIngredients : []),
+      howToUse !== undefined ? howToUse : null,
+      suitableFor !== undefined ? suitableFor : null,
       id
     ]);
 
     const [updated] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
     res.json({
       success: true,
-      message: 'Product updated successfully',
+      message: 'Product updated successfully in MySQL',
       product: formatProduct(updated[0])
     });
   } catch (err) {
-    console.error('Error updating product:', err);
-    res.status(500).json({ success: false, message: 'Database error updating product' });
+    console.error('Error updating product in MySQL:', err);
+    res.status(500).json({ success: false, message: 'Database error updating product: ' + err.message });
   }
-});
+};
+
+app.put('/api/products/:id', authenticateToken(false), requireAdmin, upload.array('media', 10), handleUpdateProduct);
+app.put('/api/admin/products/:id', authenticateToken(false), requireAdmin, upload.array('media', 10), handleUpdateProduct);
 
 // 3c. Delete product (Protected by Admin RBAC)
-app.delete('/api/products/:id', authenticateToken(false), requireAdmin, async (req, res) => {
+const handleDeleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await db.query('DELETE FROM products WHERE id = ?', [id]);
@@ -924,7 +1081,10 @@ app.delete('/api/products/:id', authenticateToken(false), requireAdmin, async (r
     console.error('Error deleting product:', err);
     res.status(500).json({ success: false, message: 'Database error deleting product' });
   }
-});
+};
+
+app.delete('/api/products/:id', authenticateToken(false), requireAdmin, handleDeleteProduct);
+app.delete('/api/admin/products/:id', authenticateToken(false), requireAdmin, handleDeleteProduct);
 
 // 4. Get revolving herbs
 app.get('/api/herbs', async (req, res) => {
@@ -1361,7 +1521,7 @@ async function handleVerifyOtp(req, res) {
         phone_number: user.phone_number,
         dosha: user.dosha,
         hairType: user.hairType,
-        avatar: user.avatar || "🌿",
+        avatar: (user.avatar && user.avatar !== '?' && !user.avatar.includes('?')) ? user.avatar : "🌿",
         role: finalRole,
         is_verified: true
       },
@@ -1437,10 +1597,15 @@ app.get('/api/auth/me', authenticateToken(false), async (req, res) => {
       return res.json({ success: true, authenticated: false, user: null });
     }
 
+    const userObj = { ...rows[0] };
+    if (!userObj.avatar || userObj.avatar === '?' || userObj.avatar.includes('?')) {
+      userObj.avatar = '🌿';
+    }
+
     res.json({
       success: true,
       authenticated: true,
-      user: rows[0]
+      user: userObj
     });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Database error fetching session user' });
