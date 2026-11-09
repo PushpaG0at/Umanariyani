@@ -198,7 +198,7 @@
       const avatar = document.createElement('div');
       avatar.className = 'msg-avatar';
       avatar.innerHTML = sender === 'bot' 
-        ? '<img src="images/logo-center.png" alt="AI Vaidya" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">' 
+        ? '<img src="/images/logo-center.png" alt="AI Vaidya" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">' 
         : '<i class="fa-solid fa-user" style="font-size:0.8rem; color:#1B4332;"></i>';
 
       const contentBox = document.createElement('div');
@@ -218,7 +218,7 @@
             <div class="suggested-items-row">
               ${suggestedProducts.map(p => `
                 <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" class="suggested-product-pill">
-                  <img src="${escapeHtml(p.image) || 'images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
+                  <img src="${escapeHtml(p.image) || '/images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
                   <span>${escapeHtml(p.name)} (₹${escapeHtml(p.price)})</span>
                   <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem; margin-left:2px;"></i>
                 </a>
@@ -255,7 +255,7 @@
       typingEl.className = 'chat-msg bot';
       typingEl.innerHTML = `
         <div class="msg-avatar">
-          <img src="images/logo-center.png" alt="AI Vaidya" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+          <img src="/images/logo-center.png" alt="AI Vaidya" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
         </div>
         <div class="typing-indicator">
           <div class="typing-dot"></div>
@@ -295,7 +295,7 @@
           botBubble.className = 'chat-msg bot';
           botBubble.innerHTML = `
             <div class="msg-avatar">
-              <img src="images/logo-center.png" alt="AI Vaidya" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+              <img src="/images/logo-center.png" alt="AI Vaidya" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
             </div>
             <div class="msg-content">
               <div class="msg-text-stream"><span class="ai-stream-cursor"></span></div>
@@ -327,7 +327,7 @@
                   <div class="suggested-items-row">
                     ${data.suggestedProducts.map(p => `
                       <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" class="suggested-product-pill">
-                        <img src="${escapeHtml(p.image) || 'images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
+                        <img src="${escapeHtml(p.image) || '/images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
                         <span>${escapeHtml(p.name)} (₹${escapeHtml(p.price)})</span>
                         <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7rem; margin-left:2px;"></i>
                       </a>
@@ -657,7 +657,7 @@
             <div class="suggested-items-row">
               ${suggestedProducts.map(p => `
                 <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" class="suggested-product-pill">
-                  <img src="${escapeHtml(p.image) || 'images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
+                  <img src="${escapeHtml(p.image) || '/images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
                   <span>${escapeHtml(p.name)} (₹${escapeHtml(p.price)})</span>
                 </a>
               `).join('')}
@@ -746,7 +746,7 @@
                   <div class="suggested-items-row">
                     ${data.suggestedProducts.map(p => `
                       <a href="product.html?id=${encodeURIComponent(p.id)}" target="_blank" class="suggested-product-pill">
-                        <img src="${escapeHtml(p.image) || 'images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
+                        <img src="${escapeHtml(p.image) || '/images/ayurvedic_herbs_circle.jpg'}" alt="${escapeHtml(p.name)}">
                         <span>${escapeHtml(p.name)} (₹${escapeHtml(p.price)})</span>
                       </a>
                     `).join('')}

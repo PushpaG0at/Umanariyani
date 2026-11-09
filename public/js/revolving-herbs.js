@@ -10,7 +10,7 @@ const HERBS_LIST = [
     name: "Amla",
     hindi: "अमला",
     botanical: "Phyllanthus emblica",
-    image: "images/herb-amla.png",
+    image: "/images/herb-amla.png",
     tagline: "The Supreme Rejuvenator (Rasayana)",
     role: "Rich in natural Vitamin C; fortifies hair roots, prevents premature graying, and enhances lustrous shine.",
     benefits: [
@@ -26,7 +26,7 @@ const HERBS_LIST = [
     name: "Reetha",
     hindi: "रीठा",
     botanical: "Sapindus mukorossi (Soapnut)",
-    image: "images/herb-reetha.png",
+    image: "/images/herb-reetha.png",
     tagline: "Nature's Pure Cleansing Saponin",
     role: "Produces mild natural lather that clears dirt and excess sebum without stripping delicate scalp lipids.",
     benefits: [
@@ -42,7 +42,7 @@ const HERBS_LIST = [
     name: "Shikakai",
     hindi: "शिकाकाई",
     botanical: "Acacia concinna",
-    image: "images/herb-shikakai.png",
+    image: "/images/herb-shikakai.png",
     tagline: "Fruit for the Hair (Keshya)",
     role: "Ancient herbal cleanser & detangler rich in vitamins A, C, D, and K, famous for soft manageability.",
     benefits: [
@@ -58,7 +58,7 @@ const HERBS_LIST = [
     name: "Brahmi",
     hindi: "ब्राह्मी",
     botanical: "Bacopa monnieri",
-    image: "images/herb-brahmi.png",
+    image: "/images/herb-brahmi.png",
     tagline: "Mind & Crown Nourisher",
     role: "Cools the mind, reduces stress-induced shedding, and revitalizes microcirculation at hair roots.",
     benefits: [
@@ -74,7 +74,7 @@ const HERBS_LIST = [
     name: "Kalonji",
     hindi: "कलौंजी",
     botanical: "Nigella sativa (Black Seed)",
-    image: "images/herb-kalonji.png",
+    image: "/images/herb-kalonji.png",
     tagline: "The Miracle Seed of Vitality",
     role: "Loaded with thymoquinone and essential fatty acids, it nourishes thinning hair and locks in deep moisture.",
     benefits: [
@@ -90,7 +90,7 @@ const HERBS_LIST = [
     name: "Jatamansi",
     hindi: "जटामांसी",
     botanical: "Nardostachys jatamansi",
-    image: "images/herb-jatamansi.png",
+    image: "/images/herb-jatamansi.png",
     tagline: "Sacred Calming Root for Follicle Growth",
     role: "Revered in Charaka Samhita for calming the nervous system and encouraging deep follicular revitalization.",
     benefits: [
@@ -106,7 +106,7 @@ const HERBS_LIST = [
     name: "Nagarmotha",
     hindi: "नागरमोथा",
     botanical: "Cyperus scariosus / rotundus",
-    image: "images/herb-nagarmotha.png",
+    image: "/images/herb-nagarmotha.png",
     tagline: "Microbiome Purifier & Root Anchor",
     role: "Controls excess sebum, alleviates persistent dandruff flakiness, and firmly anchors hair roots.",
     benefits: [
@@ -122,7 +122,7 @@ const HERBS_LIST = [
     name: "Amarbel",
     hindi: "अमरबेल",
     botanical: "Cuscuta reflexa (Golden Dodder)",
-    image: "images/herb-amarbel.png",
+    image: "/images/herb-amarbel.png",
     tagline: "Traditional Length & Density Booster",
     role: "A classical Indian botanical traditionally used to invigorate weak hair roots and promote longer, fuller growth.",
     benefits: [
@@ -172,7 +172,7 @@ class RevolvingHerbsOrbit {
 
       <!-- Center Logo Core -->
       <div class="orbit-center-core" id="orbitCenterCore" title="Umanarayani Ayurveda">
-        <img src="images/logo.jpg" alt="Umanarayani Logo" class="core-logo">
+        <img src="/images/logo.jpg" alt="Umanarayani Logo" class="core-logo">
         <span class="core-label">UMANARAYANI</span>
       </div>
 

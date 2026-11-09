@@ -15,7 +15,7 @@ class RevolvingMandalaEngine {
         name: "AMLA",
         hindi: "अमला",
         botanical: "Phyllanthus emblica",
-        image: "images/badge-amla.png",
+        image: "/images/badge-amla.png",
         tagline: "Rasayana & Vitamin C",
         micro: "Natural Vit-C & Shine",
         role: "Supreme rejuvenator rich in bioavailable Vitamin C that fortifies roots, deepens natural pigmentation, and imparts radiant luster.",
@@ -26,7 +26,7 @@ class RevolvingMandalaEngine {
         name: "REETHA",
         hindi: "रीठा",
         botanical: "Sapindus mukorossi",
-        image: "images/badge-reetha.png",
+        image: "/images/badge-reetha.png",
         tagline: "Natural Cleansing Saponin",
         micro: "Gentle Saponin Cleanser",
         role: "Hypoallergenic soapnut loaded with natural saponins that wash away impurities and excess sebum without stripping scalp lipids.",
@@ -37,7 +37,7 @@ class RevolvingMandalaEngine {
         name: "SHIKAKAI",
         hindi: "शिकाकाई",
         botanical: "Acacia concinna",
-        image: "images/badge-shikakai.png",
+        image: "/images/badge-shikakai.png",
         tagline: "Fruit for the Hair",
         micro: "Fruit for Hair & Silkiness",
         role: "Classical detangler and mild pH herbal cleanser rich in vitamins A, C, D, and K, famous for soft silkiness and manageability.",
@@ -48,7 +48,7 @@ class RevolvingMandalaEngine {
         name: "BRAHMI",
         hindi: "ब्राह्मी",
         botanical: "Bacopa monnieri",
-        image: "images/badge-brahmi.png",
+        image: "/images/badge-brahmi.png",
         tagline: "Mind & Crown Nourisher",
         micro: "Crown Calmer & Growth",
         role: "Cools crown heat (Pitta dosha), curbs stress-induced shedding, and revitalizes follicular microcirculation during champi massage.",
@@ -59,7 +59,7 @@ class RevolvingMandalaEngine {
         name: "KALONJI",
         hindi: "कलौंजी",
         botanical: "Nigella sativa",
-        image: "images/badge-kalonji.png",
+        image: "/images/badge-kalonji.png",
         tagline: "Miracle Seed of Vitality",
         micro: "Vitality & Follicle Density",
         role: "Loaded with thymoquinone and omega fatty acids to nourish thinning roots, curb breakage, and lock in deep moisture.",
@@ -70,7 +70,7 @@ class RevolvingMandalaEngine {
         name: "JATAMANSI",
         hindi: "जटामांसी",
         botanical: "Nardostachys jatamansi",
-        image: "images/badge-jatamansi.png",
+        image: "/images/badge-jatamansi.png",
         tagline: "Sacred Calming Root",
         micro: "Calming Root & Follicles",
         role: "Revered in Charaka Samhita for calming agitated scalp nerves, promoting anagen growth phase, and deep botanical conditioning.",
@@ -81,7 +81,7 @@ class RevolvingMandalaEngine {
         name: "NAGARMOTHA",
         hindi: "नागरमोथा",
         botanical: "Cyperus scariosus",
-        image: "images/badge-nagarmotha.png",
+        image: "/images/badge-nagarmotha.png",
         tagline: "Scalp Microbiome Purifier",
         micro: "Dandruff Defense & Anchor",
         role: "Purifies scalp microflora, regulates excess oil, eliminates flakiness and itching, and firmly anchors hair root shafts.",
@@ -92,7 +92,7 @@ class RevolvingMandalaEngine {
         name: "AMARBEL",
         hindi: "अमरबेल",
         botanical: "Cuscuta reflexa",
-        image: "images/badge-amarbel.png",
+        image: "/images/badge-amarbel.png",
         tagline: "Length Retention & Density",
         micro: "Length & Density Booster",
         role: "Classical golden vine botanical traditionally used to invigorate dormant hair roots and promote noticeably fuller, longer growth.",
@@ -147,7 +147,7 @@ class RevolvingMandalaEngine {
           <!-- CENTER BRAND ICON (The user's Umanarayani logo) -->
           <div class="center-brand-core" id="centerBrandCore" title="UMANARAYANI — Pure Nature, Pure Care">
             <div class="center-logo-disc">
-              <img src="images/logo-center.png" alt="UMANARAYANI Logo" class="center-logo-img">
+              <img src="/images/logo-center.png" alt="UMANARAYANI Logo" class="center-logo-img">
             </div>
             <div class="center-brand-name-pill">
               <i class="fa-solid fa-seedling"></i>

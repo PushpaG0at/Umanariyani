@@ -32,7 +32,12 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'umanarayani_sacred_ayurved
 const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'umanarayani_admin_secret_key_2026';
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '1x0000000000000000000000000000000AA';
 
-// ==================== 1. HTTP HEADERS, STRICT CSP & ANTI-SKIMMING ====================
+// ==================== 1. HTTP HEADERS & SECURITY CONFIGURATION ====================
+// [TEMPORARILY DISABLED FOR RAW IP / HTTP AWS TESTING]:
+// Strict Helmet HSTS, CSP, and Cross-Origin isolation are commented out to prevent SSL protocol
+// errors (ERR_SSL_PROTOCOL_ERROR / SSL_ERROR_RX_RECORD_TOO_LONG) while testing on raw EC2 IP (e.g. http://13.127.4.94:3000).
+// Re-enable when deploying behind HTTPS with a custom domain SSL certificate.
+/*
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -105,8 +110,9 @@ app.use(helmet({
     policy: 'strict-origin-when-cross-origin'
   }
 }));
+*/
 
-// ==================== 2. STRICT CORS WHITELIST ====================
+// ==================== 2. CORS WHITELIST & RAW IP TESTING ====================
 const rawAllowedOrigins = process.env.ALLOWED_ORIGINS || '';
 const defaultAllowedOrigins = [
   'http://localhost:3000',
@@ -123,8 +129,9 @@ const corsOptions = {
     // Allow non-browser requests (curl, server-to-server, PhonePe callbacks) with no Origin header
     if (!origin) return callback(null, true);
 
-    // Strictly validate against configured allowed origins
-    if (allowedOrigins.includes(origin)) {
+    // Permissive for testing on raw IP addresses (e.g., http://13.127.4.94:3000) and localhost
+    const isIpOrLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\d+\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin);
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*') || isIpOrLocalhost) {
       callback(null, true);
     } else {
       console.warn(`[CORS Blocked] Origin not in whitelist: ${origin}`);
@@ -188,10 +195,12 @@ app.get(['/admin', '/admin.html'], (req, res, next) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: '1d',
-  etag: true
-}));
+// ==================== STATIC FILE SERVING ====================
+// Properly configure static serving for public directory and explicit subdirectories
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
+app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
+app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 
 // ==================== 3. TIERED RATE LIMITERS ====================
 // Global API Limiter (Scraping and general volumetric protection)
@@ -1329,11 +1338,11 @@ async function handleVerifyOtp(req, res) {
       { expiresIn: '7d' }
     );
 
-    // Issue HttpOnly, Secure, SameSite=Strict cookie
+    // Issue HttpOnly cookie (adaptive: secure over HTTPS, permits plain HTTP for raw IP testing)
     res.cookie('umanarayani_auth', sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: Boolean(req.secure),
+      sameSite: req.secure ? 'strict' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -1442,8 +1451,8 @@ app.get('/api/auth/me', authenticateToken(false), async (req, res) => {
 app.post('/api/auth/logout', (req, res) => {
   res.clearCookie('umanarayani_auth', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
+    secure: Boolean(req.secure),
+    sameSite: req.secure ? 'strict' : 'lax'
   });
   res.json({ success: true, message: 'Logged out successfully from Ayurvedic Sanctuary' });
 });

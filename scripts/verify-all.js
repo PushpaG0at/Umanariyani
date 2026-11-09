@@ -22,8 +22,9 @@ for (const file of htmlFiles) {
   const cssRegex = /href=["']([^"']+\.css[^"']*)["']/g;
   let match;
   while ((match = cssRegex.exec(content)) !== null) {
-    const raw = match[1].split('?')[0];
+    let raw = match[1].split('?')[0];
     if (raw.startsWith('http://') || raw.startsWith('https://')) continue;
+    if (raw.startsWith('/')) raw = raw.slice(1);
     const fullPath = path.join(__dirname, '..', 'public', raw);
     if (!fs.existsSync(fullPath)) {
       console.error(`❌ [${file}] Missing CSS file: ${raw}`);
@@ -34,8 +35,9 @@ for (const file of htmlFiles) {
   // Check JS
   const jsRegex = /src=["']([^"']+\.js[^"']*)["']/g;
   while ((match = jsRegex.exec(content)) !== null) {
-    const raw = match[1].split('?')[0];
+    let raw = match[1].split('?')[0];
     if (raw.startsWith('http://') || raw.startsWith('https://')) continue;
+    if (raw.startsWith('/')) raw = raw.slice(1);
     const fullPath = path.join(__dirname, '..', 'public', raw);
     if (!fs.existsSync(fullPath)) {
       console.error(`❌ [${file}] Missing script file: ${raw}`);
@@ -44,9 +46,10 @@ for (const file of htmlFiles) {
   }
 
   // Check images
-  const imgRegex = /src=["'](images\/[^"']+)["']/g;
+  const imgRegex = /(?:src|href)=["'](?:\/)?(images\/[^"']+)["']/g;
   while ((match = imgRegex.exec(content)) !== null) {
-    const raw = match[1].split('?')[0];
+    let raw = match[1].split('?')[0];
+    if (raw.startsWith('/')) raw = raw.slice(1);
     const fullPath = path.join(__dirname, '..', 'public', raw);
     if (!fs.existsSync(fullPath)) {
       console.error(`❌ [${file}] Missing image file: ${raw}`);

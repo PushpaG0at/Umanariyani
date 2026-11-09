@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard — Umanarayani Ayurveda Catalog Manager</title>
-  <link rel="icon" type="image/png" href="images/logo-center.png">
+  <link rel="icon" type="image/png" href="/images/logo-center.png">
   
   <!-- Font Awesome Icons with Subresource Integrity (SRI) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="css/style.css?v=2.6">
+  <link rel="stylesheet" href="/css/style.css?v=2.6">
   
   <style>
     :root {
@@ -384,7 +384,7 @@
   <!-- Admin Navigation Bar -->
   <header class="admin-navbar">
     <div class="admin-brand">
-      <img src="images/logo-center.png" alt="Umanarayani Logo">
+      <img src="/images/logo-center.png" alt="Umanarayani Logo">
       <div>
         <span class="admin-brand-title">UMANARAYANI</span>
         <span class="admin-brand-tag"><i class="fa-solid fa-lock"></i> Admin Portal</span>
@@ -497,16 +497,16 @@
           <div class="form-group">
             <label for="pImage">Product Image URL / Asset Path</label>
             <select id="pImage" class="admin-select">
-              <option value="images/hair-oil.jpg">Hair Oil Poster (images/hair-oil.jpg)</option>
-              <option value="images/hair-oil-bottle.jpg">Hair Oil Studio Bottle (images/hair-oil-bottle.jpg)</option>
-              <option value="images/shampoo.jpg">Shampoo Poster (images/shampoo.jpg)</option>
-              <option value="images/shampoo-bottle.jpg">Shampoo Studio Bottle (images/shampoo-bottle.jpg)</option>
-              <option value="images/face-wash.jpg">Orange Face Wash Poster (images/face-wash.jpg)</option>
-              <option value="images/face-wash-bottle.jpg">Orange Face Wash Studio Bottle (images/face-wash-bottle.jpg)</option>
-              <option value="images/hair-oil.png">Hair Oil Bottle (images/hair-oil.png)</option>
-              <option value="images/shampoo.png">Shampoo Bottle (images/shampoo.png)</option>
-              <option value="images/face-wash.png">Orange Face Wash Bottle (images/face-wash.png)</option>
-              <option value="images/ayurvedic_herbs_circle.jpg">Botanical Emblem (images/ayurvedic_herbs_circle.jpg)</option>
+              <option value="/images/hair-oil.jpg">Hair Oil Poster (images/hair-oil.jpg)</option>
+              <option value="/images/hair-oil-bottle.jpg">Hair Oil Studio Bottle (images/hair-oil-bottle.jpg)</option>
+              <option value="/images/shampoo.jpg">Shampoo Poster (images/shampoo.jpg)</option>
+              <option value="/images/shampoo-bottle.jpg">Shampoo Studio Bottle (images/shampoo-bottle.jpg)</option>
+              <option value="/images/face-wash.jpg">Orange Face Wash Poster (images/face-wash.jpg)</option>
+              <option value="/images/face-wash-bottle.jpg">Orange Face Wash Studio Bottle (images/face-wash-bottle.jpg)</option>
+              <option value="/images/hair-oil.png">Hair Oil Bottle (images/hair-oil.png)</option>
+              <option value="/images/shampoo.png">Shampoo Bottle (images/shampoo.png)</option>
+              <option value="/images/face-wash.png">Orange Face Wash Bottle (images/face-wash.png)</option>
+              <option value="/images/ayurvedic_herbs_circle.jpg">Botanical Emblem (images/ayurvedic_herbs_circle.jpg)</option>
             </select>
           </div>
 
@@ -620,7 +620,7 @@
             <tr id="prod-row-${p.id}">
               <td>
                 <div class="prod-cell-main">
-                  <img src="${escapeHtml(p.image) || 'images/logo-center.png'}" alt="${escapeHtml(p.name)}" class="prod-thumb">
+                  <img src="${escapeHtml(p.image) || "/images/logo-center.png"}" alt="${escapeHtml(p.name)}" class="prod-thumb">
                   <div>
                     <div class="prod-info-title">${escapeHtml(p.name)}</div>
                     <div class="prod-info-subtitle">${escapeHtml(p.subtitle || p.shortDescription || '')}</div>
