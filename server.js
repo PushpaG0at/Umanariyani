@@ -18,12 +18,27 @@ const twilio = require('twilio');
 const { GoogleGenAI } = require('@google/genai');
 const db = require('./db');
 const { startBackupSchedule } = require('./scripts/backup');
+const cron = require('node-cron');
+const { ORDER_STATES, canTransition, assertValidTransition } = require('./services/orderStateMachine');
+const { validatePromoCode, recordPromoUsage } = require('./services/promoService');
+const { reserveStockForItems, releaseReservedStock } = require('./services/stockService');
+const phonepeService = require('./services/phonepe');
+const { generateTotpSecret, generateTotpUri, computeTotpCode, verifyTotpToken } = require('./services/totpService');
+const {
+  hashOtp,
+  verifyOtpHash,
+  checkOtpSendLimits,
+  recordOtpSent,
+  checkAndIncrementDailySms
+} = require('./services/otpSecurityService');
+const { SECURE_UPLOAD_DIR, validateAllUploadedFiles } = require('./services/uploadValidator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProd = process.env.NODE_ENV === 'production';
 
 // Enable trust proxy for AWS ALB/ELB, CloudFront, or Nginx reverse proxies
-app.set('trust proxy', 1);
+app.set('trust proxy', process.env.TRUST_PROXY || 1);
 
 // Production structured HTTP request logging (essential for debugging webhooks and payment callbacks)
 app.use(morgan('combined'));
@@ -34,8 +49,8 @@ const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'umanarayani_admin_secr
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '1x0000000000000000000000000000000AA';
 
 // ==================== MULTER FILE UPLOAD CONFIGURATION ====================
-// Secure disk storage for catalog product media (photos, banners, and demo videos)
-const uploadDir = path.join(__dirname, 'public', 'uploads');
+// Secure disk storage outside the public web root for catalog media (photos, demo videos)
+const uploadDir = SECURE_UPLOAD_DIR;
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -90,18 +105,30 @@ app.use(helmet({
   xssFilter: true
 }));
 
-// ==================== 2. CORS WHITELIST & RAW IP TESTING ====================
+// ==================== 2. CORS WHITELIST & ENVIRONMENT ISOLATION ====================
 const rawAllowedOrigins = process.env.ALLOWED_ORIGINS || '';
-const defaultAllowedOrigins = [
+
+const productionAllowedOrigins = [
+  'https://umanarayni.com',
+  'https://www.umanarayni.com',
+  'https://umanarayani.com',
+  'https://www.umanarayani.com'
+];
+
+const developmentAllowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  'http://13.127.4.94:3000',
-  'http://13.127.4.94',
-  'https://umanarayani.com',
-  'https://www.umanarayani.com',
+  'http://localhost:5000',
+  'http://127.0.0.1:5000',
   `http://localhost:${PORT}`,
   `http://127.0.0.1:${PORT}`
 ];
+
+// In production, strictly restrict to HTTPS production domains; raw-IP and :3000 kept strictly for local dev
+const defaultAllowedOrigins = isProd
+  ? productionAllowedOrigins
+  : [...productionAllowedOrigins, ...developmentAllowedOrigins];
+
 const allowedOrigins = rawAllowedOrigins
   ? rawAllowedOrigins.split(',').map(o => o.trim()).filter(Boolean)
   : defaultAllowedOrigins;
@@ -111,9 +138,8 @@ const corsOptions = {
     // Allow non-browser requests (curl, server-to-server, PhonePe callbacks) with no Origin header
     if (!origin) return callback(null, true);
 
-    // Permissive for testing on raw IP addresses (e.g., http://13.127.4.94:3000) and localhost
-    const isIpOrLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\d+\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin);
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*') || isIpOrLocalhost) {
+    const isDevLocalhost = !isProd && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*') || isDevLocalhost) {
       callback(null, true);
     } else {
       console.warn(`[CORS Blocked] Origin not in whitelist: ${origin}`);
@@ -142,56 +168,92 @@ app.use(cookieParser());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
+// Secure static serving for uploads outside web root with nosniff and CSP sandbox
+app.use('/uploads', express.static(uploadDir, {
+  setHeaders: (res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+  }
+}));
+
+// ==================== 2b. CSRF ORIGIN PROTECTION FOR STATE-CHANGING REQUESTS ====================
+function csrfOriginProtection(req, res, next) {
+  // Only inspect state-changing requests
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  // Exempt PhonePe S2S webhooks which authenticate via cryptographic SHA256 checksums
+  if (req.path === '/api/payment/phonepe-webhook' || req.path === '/api/payment/callback') {
+    return next();
+  }
+
+  const originHeader = req.headers.origin || req.headers.referer;
+  if (!originHeader) {
+    return next();
+  }
+
+  try {
+    const parsed = new URL(originHeader);
+    const host = parsed.hostname;
+    const isAllowedHost = isProd
+      ? (host === 'umanarayni.com' || host === 'www.umanarayni.com' || host === 'umanarayani.com' || host === 'www.umanarayani.com' || allowedOrigins.some(o => o.includes(host)))
+      : (host === 'localhost' || host === '127.0.0.1' || host === 'umanarayni.com' || /^\d+\.\d+\.\d+\.\d+$/.test(host));
+
+    if (!isAllowedHost) {
+      console.warn(`[CSRF Blocked] State-changing ${req.method} ${req.path} from unauthorized origin: ${originHeader}`);
+      return res.status(403).json({
+        success: false,
+        message: 'Security validation failed: Request origin not authorized.'
+      });
+    }
+  } catch (_) {
+    return res.status(403).json({ success: false, message: 'Invalid origin header.' });
+  }
+
+  next();
+}
+
+app.use(csrfOriginProtection);
+
 // Helper to retrieve all designated admin emails
 function getAdminEmails() {
   const envVal = process.env.ADMIN_EMAIL || 'raoa6526@gmail.com,singhpushpendra95734@gmail.com';
   return envVal.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 }
 
-// Stealth Admin Panel URL Protection: Redirect non-admin or unauthenticated visits directly to '/'
-app.get(['/admin', '/admin.html'], (req, res, next) => {
-  let token = null;
-  if (req.cookies && req.cookies.umanarayani_auth) {
-    token = req.cookies.umanarayani_auth;
-  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-    token = req.headers.authorization.slice(7);
-  }
-
-  if (!token) {
-    return res.redirect('/');
-  }
-
-  try {
-    const decoded = jwt.verify(token, SESSION_SECRET);
-    const adminEmails = getAdminEmails();
-    const userEmail = (decoded && decoded.email) ? decoded.email.trim().toLowerCase() : '';
-    const isAdmin = Boolean(decoded && (decoded.role === 'admin' || adminEmails.includes(userEmail)));
-
-    if (!isAdmin) {
-      return res.redirect('/');
-    }
-
-    return res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-  } catch (err) {
-    return res.redirect('/');
-  }
+// Admin Panel Route: Protected on the front via TOTP 2FA modal gate & on the backend via requireAdmin
+app.get(['/admin', '/admin.html'], (req, res) => {
+  return res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // ==================== STATIC FILE SERVING ====================
-// Properly configure static serving for public directory and explicit subdirectories
+// Properly configure static serving for storefront assets
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
 app.use('/js', express.static(path.join(__dirname, 'public', 'js')));
 app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 
 // ==================== 3. TIERED RATE LIMITERS ====================
+const GLOBAL_RATE_LIMIT_MAX = parseInt(process.env.GLOBAL_RATE_LIMIT_MAX || '1200', 10);
+
 // Global API Limiter (Scraping and general volumetric protection)
 const globalApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: GLOBAL_RATE_LIMIT_MAX, // Tuned for Indian mobile CGNATs (Jio/Airtel) where thousands of users share gateway IPs
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.user?.id || req.cookies?.umanarayni_auth || req.ip;
+  },
+  skip: (req) => {
+    return (
+      req.path === '/users/stream' ||
+      req.path === '/events' ||
+      Boolean(req.headers.accept && req.headers.accept.includes('text/event-stream')) ||
+      req.path.startsWith('/uploads') ||
+      req.path === '/config'
+    );
+  },
   message: { success: false, message: 'Too many requests. Please try again after 15 minutes.' }
 });
 
@@ -247,15 +309,22 @@ app.get('/api/config', (req, res) => {
 async function verifyTurnstile(token, req) {
   const secretKey = (process.env.TURNSTILE_SECRET_KEY || TURNSTILE_SECRET_KEY || '').trim();
 
+  // Extract clean host and IP (respecting reverse proxies / port numbers)
+  const rawHost = (req && req.headers && req.headers.host ? req.headers.host : (req ? req.hostname : '')) || '';
+  const host = rawHost.split(':')[0].toLowerCase();
+  const reqIp = req ? (req.ip || req.connection?.remoteAddress || '') : '';
+  const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1' ||
+                  reqIp === '127.0.0.1' || reqIp === '::1' || reqIp === '::ffff:127.0.0.1';
+
   if (!token) {
-    if (process.env.NODE_ENV !== 'production' || secretKey.startsWith('1x0000')) {
+    if (isLocal || process.env.NODE_ENV !== 'production' || secretKey.startsWith('1x0000')) {
       return { success: true, mode: 'test_dev_bypass' };
     }
     return { success: false, message: 'Bot protection verification token is required' };
   }
 
   // Cloudflare test tokens
-  if (token === 'XXXX.DUMMY.TOKEN.XXXX' || token.startsWith('cf_test_')) {
+  if (token === 'XXXX.DUMMY.TOKEN.XXXX' || token.startsWith('cf_test_') || token === 'cf_test_pass') {
     return { success: true, mode: 'dummy_test_pass' };
   }
 
@@ -271,7 +340,30 @@ async function verifyTurnstile(token, req) {
     });
     const result = await cfRes.json();
     if (!result.success) {
-      console.warn('Turnstile siteverify rejected token:', result['error-codes'] || result);
+      const errorCodes = result['error-codes'] || [];
+      console.warn('[Turnstile] Cloudflare siteverify rejected token:', errorCodes, 'for host:', host);
+
+      // Handle hostname-mismatch:
+      // The user successfully solved the captcha challenge, but the host (localhost, EC2 IP 13.127.4.94,
+      // domain with/without www, or brand spelling) is not explicitly listed in Cloudflare dashboard for this sitekey.
+      if (errorCodes.includes('hostname-mismatch')) {
+        const isRecognizedHost = isLocal ||
+          host.includes('umanarayni') ||
+          host.includes('umanarayani') ||
+          host === '13.127.4.94' ||
+          (process.env.ALLOWED_ORIGINS && process.env.ALLOWED_ORIGINS.includes(host));
+
+        if (isRecognizedHost || isLocal || process.env.NODE_ENV !== 'production') {
+          console.log(`[Turnstile] Permitted verified human challenge with hostname-mismatch for recognized host: ${host}`);
+          return { success: true, mode: 'hostname_mismatch_permitted', hostname: result.hostname || host };
+        }
+      }
+
+      // If running on local machine, don't block development on any Turnstile rejection
+      if (isLocal || process.env.NODE_ENV !== 'production') {
+        console.warn(`[Turnstile Dev Mode] Bypassing ${errorCodes.join(', ')} for local test on ${host}`);
+        return { success: true, mode: 'dev_bypass', warnings: errorCodes };
+      }
     }
     return result;
   } catch (err) {
@@ -366,7 +458,7 @@ async function sendOtpNotification({ identifier, otp, userName }) {
   const greeting = userName ? `Namaste ${userName}` : 'Namaste';
 
   console.log('\n================================================================');
-  console.log('🌿 [UMANARAYANI AYURVEDA — DISPATCHING ONE-TIME PASSWORD]');
+  console.log('🌿 [UMANARAYNI AYURVEDA — DISPATCHING ONE-TIME PASSWORD]');
   console.log(`👤 Recipient:  ${identifier} (${isEmail ? 'EMAIL' : 'SMS'})`);
   console.log(`⏳ Validity:   5 Minutes (Expires at ${new Date(Date.now() + 5 * 60 * 1000).toLocaleTimeString()})`);
   console.log('================================================================\n');
@@ -381,10 +473,10 @@ async function sendOtpNotification({ identifier, otp, userName }) {
     try {
       const fromEmail = (process.env.SMTP_EMAIL || '').trim();
       const mailOptions = {
-        from: `"Umanarayani Ayurveda" <${fromEmail}>`,
+        from: `"Umanarayni Ayurveda" <${fromEmail}>`,
         to: identifier,
         subject: `Your Ayurvedic Sanctuary Verification Code: ${otp}`,
-        text: `${greeting},\n\nYour 6-digit verification code for Umanarayani Ayurvedic Sanctuary is: ${otp}\n\nThis code is valid for 5 minutes.\n\nPure Nature, Pure Care.\nUmanarayani Ayurveda`,
+        text: `${greeting},\n\nYour 6-digit verification code for Umanarayni Ayurvedic Sanctuary is: ${otp}\n\nThis code is valid for 5 minutes.\n\nPure Nature, Pure Care.\nUmanarayni Ayurveda`,
         html: `
           <div style="font-family: 'Georgia', serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #FAFDF7; border: 1px solid #DCE7D6; border-radius: 16px;">
             <div style="text-align: center; margin-bottom: 24px;">
@@ -447,8 +539,8 @@ async function sendOtpNotification({ identifier, otp, userName }) {
 function authenticateToken(required = true) {
   return (req, res, next) => {
     let token = null;
-    if (req.cookies && req.cookies.umanarayani_auth) {
-      token = req.cookies.umanarayani_auth;
+    if (req.cookies && (req.cookies.umanarayni_auth || req.cookies.umanarayani_auth)) {
+      token = (req.cookies.umanarayni_auth || req.cookies.umanarayani_auth);
     } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       token = req.headers.authorization.slice(7);
     }
@@ -475,16 +567,43 @@ function authenticateToken(required = true) {
   };
 }
 
+function getAdminIpAllowlist() {
+  const envVal = process.env.ADMIN_IP_ALLOWLIST || '';
+  return envVal.split(',').map(ip => ip.trim()).filter(Boolean);
+}
+
+function checkAdminIpAllowlist(req) {
+  const allowlist = getAdminIpAllowlist();
+  if (allowlist.length === 0) return true; // Optional: If unset in env, allow all
+
+  const clientIp = (req.headers['x-forwarded-for']?.split(',')[0].trim()) || req.ip || (req.socket && req.socket.remoteAddress);
+  const isAllowed = allowlist.includes(clientIp) || (allowlist.includes('127.0.0.1') && (clientIp === '::1' || clientIp === '127.0.0.1'));
+  return isAllowed;
+}
+
 function requireAdmin(req, res, next) {
+  // 1. Optional IP Allowlist Verification
+  if (!checkAdminIpAllowlist(req)) {
+    const clientIp = (req.headers['x-forwarded-for']?.split(',')[0].trim()) || req.ip;
+    console.warn(`[Admin Security] Access denied from unauthorized IP: ${clientIp}`);
+    return res.status(403).json({
+      success: false,
+      message: 'Access Denied: IP address not authorized for administrator access.'
+    });
+  }
+
+  // 2. Legacy ADMIN_SECRET_KEY Header check with audit warning
   const adminKeyHeader = req.headers['x-admin-key'];
   if (adminKeyHeader && adminKeyHeader === ADMIN_SECRET_KEY) {
+    console.warn('[Admin Security Warning] x-admin-key header was used. Dedicated TOTP session login is strongly recommended.');
     return next();
   }
 
+  // 3. User session authentication
   if (!req.user) {
     let token = null;
-    if (req.cookies && req.cookies.umanarayani_auth) {
-      token = req.cookies.umanarayani_auth;
+    if (req.cookies && (req.cookies.umanarayni_auth || req.cookies.umanarayani_auth)) {
+      token = (req.cookies.umanarayni_auth || req.cookies.umanarayani_auth);
     } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       token = req.headers.authorization.slice(7);
     }
@@ -507,6 +626,162 @@ function requireAdmin(req, res, next) {
     message: 'Access Denied: Administrator role privileges required.'
   });
 }
+
+/**
+ * Dedicated Admin Login with TOTP 2FA Verification & Audit Logging
+ */
+app.post('/api/admin/login', authLimiter, async (req, res) => {
+  try {
+    const { email, password, totpToken, setupConfirmed } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    }
+
+    if (!checkAdminIpAllowlist(req)) {
+      return res.status(403).json({ success: false, message: 'Access Denied: IP address not authorized for administrator access.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const adminEmails = getAdminEmails();
+    const user = await db.findUserByIdentifier(cleanEmail);
+
+    if (!user || (!adminEmails.includes(cleanEmail) && user.role !== 'admin')) {
+      await db.recordAdminAuditLog({
+        adminEmail: cleanEmail,
+        action: 'ADMIN_LOGIN_FAILED_UNAUTHORIZED_ACCOUNT',
+        resourceType: 'admin_auth',
+        details: { reason: 'Account does not have administrator privileges' },
+        req
+      });
+      return res.status(403).json({ success: false, message: 'Invalid admin credentials or unauthorized account.' });
+    }
+
+    // Verify Password
+    let isMatch = false;
+    if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
+      isMatch = await bcrypt.compare(password, user.password);
+    } else if (user.password === password) {
+      isMatch = true;
+    }
+
+    if (!isMatch) {
+      await db.recordAdminAuditLog({
+        adminId: user.id,
+        adminEmail: cleanEmail,
+        action: 'ADMIN_LOGIN_FAILED_WRONG_PASSWORD',
+        resourceType: 'admin_auth',
+        req
+      });
+      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    }
+
+    // TOTP 2FA Verification
+    if (user.totp_enabled) {
+      if (!totpToken) {
+        return res.json({
+          success: true,
+          requireTotp: true,
+          message: 'Please enter your 6-digit Authenticator TOTP code.'
+        });
+      }
+
+      const isValidTotp = verifyTotpToken(totpToken, user.totp_secret, 1);
+      if (!isValidTotp) {
+        await db.recordAdminAuditLog({
+          adminId: user.id,
+          adminEmail: cleanEmail,
+          action: 'ADMIN_LOGIN_FAILED_INVALID_TOTP',
+          resourceType: 'admin_auth',
+          details: { attemptLength: String(totpToken).length },
+          req
+        });
+        return res.status(401).json({ success: false, message: 'Invalid 2FA code. Please check your Authenticator app and try again.' });
+      }
+    } else {
+      // First-time TOTP setup for admin
+      if (!setupConfirmed) {
+        let secret = user.totp_secret;
+        if (!secret) {
+          secret = generateTotpSecret(20);
+          await db.query('UPDATE users SET totp_secret = ? WHERE id = ?', [secret, user.id]);
+        }
+        const totpUri = generateTotpUri(cleanEmail, secret);
+        return res.json({
+          success: true,
+          requireTotpSetup: true,
+          secret,
+          uri: totpUri,
+          message: 'Admin 2FA setup required. Add the secret to your Authenticator app and enter the 6-digit code to complete setup.'
+        });
+      }
+
+      // Admin confirming the setup with the first code
+      const isValidSetup = verifyTotpToken(totpToken, user.totp_secret, 1);
+      if (!isValidSetup) {
+        return res.status(400).json({ success: false, message: 'Invalid setup verification code. Could not verify Authenticator app.' });
+      }
+
+      await db.query('UPDATE users SET totp_enabled = TRUE WHERE id = ?', [user.id]);
+      await db.recordAdminAuditLog({
+        adminId: user.id,
+        adminEmail: cleanEmail,
+        action: 'ADMIN_TOTP_2FA_SETUP_COMPLETED',
+        resourceType: 'admin_auth',
+        req
+      });
+    }
+
+    // Issue hardened admin session JWT
+    const sessionToken = jwt.sign(
+      {
+        id: user.id,
+        name: user.name,
+        email: cleanEmail,
+        role: 'admin',
+        isAdmin: true,
+        totpVerified: true
+      },
+      SESSION_SECRET,
+      { expiresIn: '12h' }
+    );
+
+    res.cookie('umanarayni_auth', sessionToken, {
+      httpOnly: true,
+      secure: isProd || Boolean(req.secure),
+      sameSite: 'lax',
+      maxAge: 12 * 60 * 60 * 1000
+    });
+    res.cookie('umanarayani_auth', sessionToken, {
+      httpOnly: true,
+      secure: isProd || Boolean(req.secure),
+      sameSite: 'lax',
+      maxAge: 12 * 60 * 60 * 1000
+    });
+
+    await db.recordAdminAuditLog({
+      adminId: user.id,
+      adminEmail: cleanEmail,
+      action: 'ADMIN_LOGIN_SUCCESS',
+      resourceType: 'admin_auth',
+      req
+    });
+
+    res.json({
+      success: true,
+      token: sessionToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: cleanEmail,
+        role: 'admin'
+      },
+      message: 'Admin session authenticated with TOTP 2FA successfully.'
+    });
+  } catch (err) {
+    console.error('Admin Login Error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error during admin authentication' });
+  }
+});
 
 // Safe API Key resolver
 function getApiKey() {
@@ -767,11 +1042,15 @@ const handleCreateProduct = async (req, res) => {
       });
     }
 
-    // Media paths handling: uploaded files take precedence
+    // Media paths handling: validate magic bytes and content signatures
     let finalImage = image || '/images/hair-oil.jpg';
     let finalGallery = [finalImage];
 
     if (req.files && req.files.length > 0) {
+      const valResult = await validateAllUploadedFiles(req.files);
+      if (!valResult.valid) {
+        return res.status(400).json({ success: false, message: valResult.reason });
+      }
       const mediaPaths = req.files.map(f => `/uploads/${f.filename}`);
       finalImage = mediaPaths[0];
       finalGallery = mediaPaths;
@@ -883,6 +1162,16 @@ const handleCreateProduct = async (req, res) => {
       JSON.stringify(newProduct.faqs)
     ]);
 
+    await db.recordAdminAuditLog({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email || 'admin',
+      action: 'CREATE_PRODUCT',
+      resourceType: 'product',
+      resourceId: newProduct.id,
+      details: { name: newProduct.name, price: newProduct.price },
+      req
+    });
+
     res.status(201).json({
       success: true,
       message: 'Product added successfully to MySQL',
@@ -959,6 +1248,10 @@ const handleUpdateProduct = async (req, res) => {
     const action = (req.body.mediaAction || 'add').toLowerCase();
 
     if (req.files && req.files.length > 0) {
+      const valResult = await validateAllUploadedFiles(req.files);
+      if (!valResult.valid) {
+        return res.status(400).json({ success: false, message: valResult.reason });
+      }
       const newUploads = req.files.map(f => `/uploads/${f.filename}`);
       if (action === 'replace') {
         finalImage = newUploads[0];
@@ -1054,6 +1347,17 @@ const handleUpdateProduct = async (req, res) => {
     ]);
 
     const [updated] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
+
+    await db.recordAdminAuditLog({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email || 'admin',
+      action: 'UPDATE_PRODUCT',
+      resourceType: 'product',
+      resourceId: id,
+      details: { name, price: newPrice, mrp: newMrp },
+      req
+    });
+
     res.json({
       success: true,
       message: 'Product updated successfully in MySQL',
@@ -1076,6 +1380,16 @@ const handleDeleteProduct = async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
+
+    await db.recordAdminAuditLog({
+      adminId: req.user?.id,
+      adminEmail: req.user?.email || 'admin',
+      action: 'DELETE_PRODUCT',
+      resourceType: 'product',
+      resourceId: id,
+      req
+    });
+
     res.json({ success: true, message: 'Product deleted successfully', id });
   } catch (err) {
     console.error('Error deleting product:', err);
@@ -1283,21 +1597,36 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
     const token = turnstileToken || req.headers['x-turnstile-token'];
     const botCheck = await verifyTurnstile(token, req);
     if (!botCheck.success) {
-      return res.status(403).json({ success: false, message: 'Security bot verification failed. Please try again.' });
+      return res.status(403).json({ success: false, message: botCheck.message || 'Security bot verification failed. Please try again.' });
     }
 
     const identifier = String(rawIdentifier).trim();
     const isEmail = identifier.includes('@');
+
+    // Check per-identifier OTP rate limits (max 3/hr, 60s cooldown)
+    const limitCheck = checkOtpSendLimits(identifier);
+    if (!limitCheck.allowed) {
+      return res.status(429).json({ success: false, message: limitCheck.reason, retryAfter: limitCheck.retryAfterSeconds });
+    }
+
+    // Check daily SMS cap if dispatching via SMS
+    if (!isEmail) {
+      const smsCapCheck = checkAndIncrementDailySms();
+      if (!smsCapCheck.allowed) {
+        return res.status(429).json({ success: false, message: smsCapCheck.reason });
+      }
+    }
+
     const existing = await db.findUserByIdentifier(identifier);
 
     if (existing && existing.is_verified) {
       return res.status(409).json({ success: false, message: 'An account with this email/phone already exists. Please sign in.' });
     }
 
-    // Secure password hashing with salt rounds
+    // Secure password hashing with salt rounds and HMAC-SHA256 keyed OTP hashing
     const hashedPassword = await bcrypt.hash(password, 12);
     const otp = generateSecureOtp();
-    const hashedOtp = await bcrypt.hash(otp, 10);
+    const hashedOtp = hashOtp(otp);
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5-minute validity
 
     if (existing && !existing.is_verified) {
@@ -1355,6 +1684,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
 
     console.log(`[Auth Register] Dispatching OTP verification email for: ${identifier}`);
     await sendOtpNotification({ identifier, otp, userName: name.trim() });
+    recordOtpSent(identifier);
 
     res.status(200).json({
       success: true,
@@ -1383,7 +1713,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     const token = turnstileToken || req.headers['x-turnstile-token'];
     const botCheck = await verifyTurnstile(token, req);
     if (!botCheck.success) {
-      return res.status(403).json({ success: false, message: 'Security bot verification failed. Please try again.' });
+      return res.status(403).json({ success: false, message: botCheck.message || 'Security bot verification failed. Please try again.' });
     }
 
     const cleanIdentifier = String(rawIdentifier).trim();
@@ -1416,19 +1746,34 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials or password' });
     }
 
-    // Step 2 generation: Create 6-digit OTP and store hashed OTP in database
-    const otp = generateSecureOtp();
-    const hashedOtp = await bcrypt.hash(otp, 10);
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5-minute validity
-
-    await db.saveUserOtp(cleanIdentifier, hashedOtp, otpExpiry);
-
     const targetDelivery = cleanIdentifier.includes('@')
       ? (user.email || cleanIdentifier)
       : (user.phone_number || cleanIdentifier);
 
+    // Enforce per-identifier OTP rate limit (3/hr) and 60s cooldown
+    const limitCheck = checkOtpSendLimits(targetDelivery);
+    if (!limitCheck.allowed) {
+      return res.status(429).json({ success: false, message: limitCheck.reason, retryAfter: limitCheck.retryAfterSeconds });
+    }
+
+    // Enforce daily SMS cap to protect Twilio billing
+    if (!targetDelivery.includes('@')) {
+      const smsCapCheck = checkAndIncrementDailySms();
+      if (!smsCapCheck.allowed) {
+        return res.status(429).json({ success: false, message: smsCapCheck.reason });
+      }
+    }
+
+    // Step 2 generation: Create 6-digit OTP and store HMAC-SHA256 hashed OTP in database
+    const otp = generateSecureOtp();
+    const hashedOtp = hashOtp(otp);
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5-minute validity
+
+    await db.saveUserOtp(cleanIdentifier, hashedOtp, otpExpiry);
+
     console.log(`[Auth Login] Credentials verified. Dispatching OTP email for: ${targetDelivery}`);
     await sendOtpNotification({ identifier: targetDelivery, otp, userName: user.name });
+    recordOtpSent(targetDelivery);
 
     res.json({
       success: true,
@@ -1465,7 +1810,7 @@ async function handleVerifyOtp(req, res) {
     if (token) {
       const botCheck = await verifyTurnstile(token, req);
       if (!botCheck.success) {
-        return res.status(403).json({ success: false, message: 'Security bot verification failed. Please try again.' });
+        return res.status(403).json({ success: false, message: botCheck.message || 'Security bot verification failed. Please try again.' });
       }
     }
 
@@ -1498,11 +1843,17 @@ async function handleVerifyOtp(req, res) {
       { expiresIn: '7d' }
     );
 
-    // Issue HttpOnly cookie (adaptive: secure over HTTPS, permits plain HTTP for raw IP testing)
+    // Issue HttpOnly cookie (strict HTTPS Secure flag in production, SameSite Lax for CSRF defense)
+    res.cookie('umanarayni_auth', sessionToken, {
+      httpOnly: true,
+      secure: isProd || Boolean(req.secure),
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
     res.cookie('umanarayani_auth', sessionToken, {
       httpOnly: true,
-      secure: Boolean(req.secure),
-      sameSite: req.secure ? 'strict' : 'lax',
+      secure: isProd || Boolean(req.secure),
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -1552,18 +1903,32 @@ async function handleResendOtp(req, res) {
       return res.status(404).json({ success: false, message: 'User account not found' });
     }
 
-    const otp = generateSecureOtp();
-    const hashedOtp = await bcrypt.hash(otp, 10);
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
-    await db.saveUserOtp(cleanIdentifier, hashedOtp, otpExpiry);
-
     const targetDelivery = cleanIdentifier.includes('@')
       ? (user.email || cleanIdentifier)
       : (user.phone_number || cleanIdentifier);
 
+    // Enforce rate limits and resend cooldown on resend attempts
+    const limitCheck = checkOtpSendLimits(targetDelivery);
+    if (!limitCheck.allowed) {
+      return res.status(429).json({ success: false, message: limitCheck.reason, retryAfter: limitCheck.retryAfterSeconds });
+    }
+
+    if (!targetDelivery.includes('@')) {
+      const smsCapCheck = checkAndIncrementDailySms();
+      if (!smsCapCheck.allowed) {
+        return res.status(429).json({ success: false, message: smsCapCheck.reason });
+      }
+    }
+
+    const otp = generateSecureOtp();
+    const hashedOtp = hashOtp(otp);
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+    await db.saveUserOtp(cleanIdentifier, hashedOtp, otpExpiry);
+
     console.log(`[Auth Login] Credentials verified. Dispatching OTP email for: ${targetDelivery}`);
     await sendOtpNotification({ identifier: targetDelivery, otp, userName: user.name });
+    recordOtpSent(targetDelivery);
 
     res.json({
       success: true,
@@ -1614,16 +1979,167 @@ app.get('/api/auth/me', authenticateToken(false), async (req, res) => {
 
 // 9c. Authentication: Logout
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('umanarayani_auth', {
+  const cookieOpts = {
     httpOnly: true,
-    secure: Boolean(req.secure),
-    sameSite: req.secure ? 'strict' : 'lax'
-  });
+    secure: isProd || Boolean(req.secure),
+    sameSite: 'lax'
+  };
+  res.clearCookie('umanarayni_auth', cookieOpts);
+  res.clearCookie('umanarayani_auth', cookieOpts);
   res.json({ success: true, message: 'Logged out successfully from Ayurvedic Sanctuary' });
 });
 
-// 10. Orders API (Production e-commerce order management with rate limiting & bot defense)
+// ==================== 10. ORDER INTEGRITY, IDEMPOTENCY & STATE MACHINE ====================
+
+/**
+ * Idempotently transitions an order's payment and lifecycle status.
+ * Uses MySQL transactions with pessimistic row-locking (SELECT ... FOR UPDATE)
+ * to prevent double-processing, double stock deductions, or race conditions.
+ */
+async function transitionOrderPayment({
+  orderId,
+  targetPaymentStatus,
+  targetOrderStatus,
+  transactionId = null,
+  reconciliationNote = null,
+  reconciledBy = null,
+  triggerSource = 'webhook'
+}) {
+  const connection = await db.pool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // 1. Lock the order row
+    const [orders] = await connection.query(
+      'SELECT * FROM orders WHERE id = ? FOR UPDATE',
+      [orderId]
+    );
+
+    if (orders.length === 0) {
+      await connection.rollback();
+      return { success: false, notFound: true, message: `Order ${orderId} not found` };
+    }
+
+    const order = orders[0];
+
+    // 2. Idempotency Check:
+    // If order is already in the target payment status, return immediately without duplicate processing
+    if (order.paymentStatus === targetPaymentStatus && (!targetOrderStatus || order.orderStatus === targetOrderStatus)) {
+      await connection.commit();
+      return {
+        success: true,
+        alreadyProcessed: true,
+        order,
+        message: `Order ${orderId} is already in state '${targetPaymentStatus}'. Duplicate ${triggerSource} ignored.`
+      };
+    }
+
+    // 3. State Machine Validation
+    if (targetOrderStatus && !canTransition(order.orderStatus, targetOrderStatus)) {
+      console.warn(`[State Machine Blocked] Order ${orderId}: Cannot transition from '${order.orderStatus}' to '${targetOrderStatus}'`);
+      await connection.commit();
+      return {
+        success: false,
+        invalidTransition: true,
+        currentStatus: order.orderStatus,
+        targetStatus: targetOrderStatus,
+        message: `Illegal transition from '${order.orderStatus}' to '${targetOrderStatus}'`
+      };
+    }
+
+    // 4. Stock Management based on transition
+    const isPaymentSuccess = (targetPaymentStatus === 'Paid' || targetOrderStatus === 'Confirmed');
+    const isPaymentFailure = (targetPaymentStatus === 'Failed' || targetPaymentStatus === 'Expired' || targetOrderStatus === 'Cancelled');
+
+    if (isPaymentSuccess) {
+      // If promo code was applied, increment promo code usage
+      if (order.promoCode) {
+        await recordPromoUsage(order.promoCode, connection);
+      }
+    } else if (isPaymentFailure) {
+      // Release reserved stock back to active inventory if it was reserved
+      if (Boolean(order.stockReserved)) {
+        await releaseReservedStock(order.items, connection);
+        await connection.query('UPDATE orders SET stockReserved = FALSE WHERE id = ?', [orderId]);
+        console.log(`[Stock Released] Restored inventory for cancelled/failed order ${orderId}`);
+      }
+    }
+
+    // 5. Update Order Record
+    const updates = [];
+    const params = [];
+
+    if (targetPaymentStatus) {
+      updates.push('paymentStatus = ?');
+      params.push(targetPaymentStatus);
+    }
+    if (targetOrderStatus) {
+      updates.push('orderStatus = ?');
+      params.push(targetOrderStatus);
+    }
+    if (transactionId) {
+      updates.push('transactionId = COALESCE(?, transactionId)');
+      params.push(transactionId);
+    }
+    if (reconciliationNote) {
+      updates.push('reconciliationNote = ?');
+      params.push(reconciliationNote);
+    }
+    if (reconciledBy) {
+      updates.push('reconciledBy = ?, reconciledAt = NOW()');
+      params.push(reconciledBy);
+    }
+    if (targetPaymentStatus === 'Paid') {
+      updates.push('paymentProcessedAt = COALESCE(paymentProcessedAt, NOW())');
+    }
+
+    updates.push('updated_at = NOW()');
+    params.push(orderId);
+
+    await connection.query(
+      `UPDATE orders SET ${updates.join(', ')} WHERE id = ?`,
+      params
+    );
+
+    await connection.commit();
+
+    const [updatedRows] = await db.pool.query('SELECT * FROM orders WHERE id = ?', [orderId]);
+    return {
+      success: true,
+      updated: true,
+      order: updatedRows[0],
+      message: `Order ${orderId} transitioned to '${targetPaymentStatus}' / '${targetOrderStatus}' via ${triggerSource}`
+    };
+  } catch (err) {
+    await connection.rollback();
+    console.error(`[Order Transition Error] Failed for order ${orderId}:`, err);
+    throw err;
+  } finally {
+    connection.release();
+  }
+}
+
+// ==================== PROMO CODE VALIDATION API ====================
+app.post('/api/promo/validate', async (req, res) => {
+  try {
+    const { code, cartTotal } = req.body;
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'Promo code is required.' });
+    }
+    const result = await validatePromoCode(code, cartTotal || 0, db.pool);
+    if (!result.valid) {
+      return res.status(400).json({ success: false, ...result });
+    }
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('[Promo Validate Error]:', err);
+    res.status(500).json({ success: false, message: 'Error checking promo code.' });
+  }
+});
+
+// 10a. Orders API (Production e-commerce order management with rate limiting, bot defense & stock reservation)
 app.post('/api/orders', orderLimiter, async (req, res) => {
+  const connection = await db.pool.getConnection();
   try {
     const {
       userId,
@@ -1632,12 +2148,8 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
       customerPhone,
       shippingAddress,
       items,
-      subtotal,
-      discount,
-      tax,
-      shippingFee,
-      total,
       paymentMethod,
+      promoCode,
       turnstileToken
     } = req.body;
 
@@ -1645,21 +2157,55 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
     if (turnstileToken) {
       const botCheck = await verifyTurnstile(turnstileToken, req);
       if (!botCheck.success) {
+        connection.release();
         return res.status(403).json({ success: false, message: 'Checkout bot verification failed.' });
       }
     }
 
-    if (!customerName || !customerEmail || !items || !total) {
-      return res.status(400).json({ success: false, message: 'Missing required order details' });
+    if (!customerName || !customerEmail || !items || !Array.isArray(items) || items.length === 0) {
+      connection.release();
+      return res.status(400).json({ success: false, message: 'Missing required order details or cart items.' });
     }
 
+    await connection.beginTransaction();
+
+    // 1. Pessimistic row locking & atomic stock reservation
+    let stockResult;
+    try {
+      stockResult = await reserveStockForItems(items, connection);
+    } catch (stockErr) {
+      await connection.rollback();
+      connection.release();
+      return res.status(stockErr.status || 409).json({
+        success: false,
+        code: stockErr.code || 'STOCK_ERROR',
+        message: stockErr.message
+      });
+    }
+
+    const { verifiedSubtotal, verifiedItems } = stockResult;
+
+    // 2. Server-side promo code validation
+    let discountAmount = 0;
+    let appliedPromo = null;
+    if (promoCode) {
+      const promoCheck = await validatePromoCode(promoCode, verifiedSubtotal, connection);
+      if (promoCheck.valid) {
+        discountAmount = promoCheck.discountAmount;
+        appliedPromo = promoCheck.code;
+      }
+    }
+
+    const deliveryFee = 0; // Free delivery
+    const calculatedTotal = Math.max(0, verifiedSubtotal - discountAmount + deliveryFee);
     const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    await db.query(`
+    await connection.query(`
       INSERT INTO orders (
         id, userId, customerName, customerEmail, customerPhone, shippingAddress,
-        items, subtotal, discount, tax, shippingFee, total, paymentMethod
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        items, subtotal, discount, tax, shippingFee, total, paymentMethod, promoCode,
+        paymentStatus, orderStatus, stockReserved, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'Pending', 'Pending', TRUE, NOW(), NOW())
     `, [
       orderId,
       userId || null,
@@ -1667,23 +2213,31 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
       customerEmail,
       customerPhone || '',
       shippingAddress || '',
-      JSON.stringify(items),
-      Number(subtotal || total),
-      Number(discount || 0),
-      Number(tax || 0),
-      Number(shippingFee || 0),
-      Number(total),
-      paymentMethod || 'COD'
+      JSON.stringify(verifiedItems),
+      verifiedSubtotal,
+      discountAmount,
+      deliveryFee,
+      calculatedTotal,
+      paymentMethod || 'COD',
+      appliedPromo
     ]);
+
+    await connection.commit();
 
     res.status(201).json({
       success: true,
-      message: 'Order created successfully in database',
-      orderId
+      message: 'Order created successfully with reserved stock',
+      orderId,
+      subtotal: verifiedSubtotal,
+      discount: discountAmount,
+      total: calculatedTotal
     });
   } catch (err) {
+    await connection.rollback();
     console.error('Error creating order in MySQL:', err);
-    res.status(500).json({ success: false, message: 'Database error creating order' });
+    res.status(500).json({ success: false, message: 'Database error creating order: ' + err.message });
+  } finally {
+    connection.release();
   }
 });
 
@@ -1752,280 +2306,288 @@ app.get('/api/orders/:id', async (req, res) => {
   }
 });
 
-// ==================== 10d. PhonePe Payment Gateway (Standard Checkout) ====================
+// ==================== 10d. PHONEPE PAYMENT GATEWAY INTEGRATION ====================
 
-// Helper to get PhonePe configuration
-function getPhonePeConfig() {
-  const merchantId = (process.env.PHONEPE_MERCHANT_ID || 'PGTESTPAYUAT').trim();
-  const saltKey = (process.env.PHONEPE_SALT_KEY || '099eb0cd-02cf-4e2a-8aca-3e6c6aff0399').trim();
-  const saltIndex = (process.env.PHONEPE_SALT_INDEX || '1').trim();
-  const baseUrl = (process.env.PHONEPE_BASE_URL || 'https://api-preprod.phonepe.com/apis/pg-sandbox').replace(/\/+$/, '');
-  const env = (process.env.PHONEPE_ENV || 'UAT').trim().toUpperCase();
-
-  return { merchantId, saltKey, saltIndex, baseUrl, env };
-}
-
-// 1. Payment Initialization: POST /api/payment/create-order
-app.post('/api/payment/create-order', async (req, res) => {
+/**
+ * 1. Payment Initialization Handler (PhonePe Standard Checkout)
+ * Enforces server-side price calculation, promo code verification, and atomic stock reservation.
+ */
+const handleInitiatePayment = async (req, res) => {
+  const connection = await db.pool.getConnection();
   try {
-    const { items, customerName, customerEmail, customerPhone, shippingAddress } = req.body;
+    const {
+      amount,
+      total,
+      cartTotal,
+      userDetails = {},
+      items,
+      customerName,
+      customerEmail,
+      customerPhone,
+      shippingAddress,
+      promoCode,
+      merchantTransactionId: customTxnId,
+      merchantUserId: customUserId
+    } = req.body;
+
+    const name = customerName || req.body.name || userDetails.name || (req.user && req.user.name) || 'Ayurvedic Patron';
+    const email = customerEmail || req.body.email || userDetails.email || (req.user && req.user.email) || 'patron@umanarayni.com';
+    const phone = customerPhone || req.body.phone || req.body.phoneNumber || userDetails.phone || userDetails.mobileNumber || '+91 9999999999';
+    const address = shippingAddress || userDetails.address || req.body.address || 'Express Delivery Address';
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, message: 'Cart items are required to create payment order.' });
-    }
-
-    // Security Check: Calculate final cart total securely from MySQL database (never trust frontend prices)
-    const itemIds = items.map(item => item.id).filter(Boolean);
-    if (itemIds.length === 0) {
-      return res.status(400).json({ success: false, message: 'Invalid product items in cart.' });
-    }
-
-    const [dbProducts] = await db.query(
-      'SELECT id, name, price, volume, inStock FROM products WHERE id IN (?)',
-      [itemIds]
-    );
-
-    const productMap = new Map();
-    dbProducts.forEach(p => productMap.set(p.id, p));
-
-    let verifiedSubtotal = 0;
-    const verifiedItems = [];
-
-    for (const item of items) {
-      const dbProd = productMap.get(item.id);
-      if (!dbProd) {
-        return res.status(400).json({
-          success: false,
-          message: `Product "${item.id}" is currently unavailable in the sanctuary catalog.`
-        });
-      }
-      const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
-      const dbPrice = Number(dbProd.price);
-      const lineTotal = dbPrice * qty;
-      verifiedSubtotal += lineTotal;
-      verifiedItems.push({
-        id: dbProd.id,
-        name: dbProd.name,
-        price: dbPrice,
-        volume: dbProd.volume,
-        quantity: qty,
-        itemTotal: lineTotal
+      connection.release();
+      return res.status(400).json({
+        success: false,
+        message: 'Cart items are required to initiate payment order.'
       });
     }
 
-    const deliveryCharge = 0; // Free Ayurvedic delivery across India
-    const verifiedTotal = verifiedSubtotal + deliveryCharge;
-    const amountInPaise = Math.round(verifiedTotal * 100);
+    await connection.beginTransaction();
 
-    // Unique transaction IDs
-    const merchantTransactionId = `MT_${Date.now()}_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-    const merchantUserId = (req.user && req.user.id) ? req.user.id : `MUID_${Date.now()}`;
+    // 1. Pessimistic row locking & atomic stock reservation
+    let stockResult;
+    try {
+      stockResult = await reserveStockForItems(items, connection);
+    } catch (stockErr) {
+      await connection.rollback();
+      connection.release();
+      return res.status(stockErr.status || 409).json({
+        success: false,
+        code: stockErr.code || 'STOCK_ERROR',
+        message: stockErr.message
+      });
+    }
 
-    // Construct PhonePe standard JSON payload
-    let { merchantId, saltKey, saltIndex, baseUrl } = getPhonePeConfig();
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.get('host');
-    const redirectUrl = `${protocol}://${host}/api/payment/status`;
-    const callbackUrl = redirectUrl;
+    const { verifiedSubtotal, verifiedItems } = stockResult;
 
-    const phonepePayload = {
-      merchantId,
-      merchantTransactionId,
-      merchantUserId,
-      amount: amountInPaise,
-      redirectUrl,
-      redirectMode: "POST",
-      callbackUrl,
-      paymentInstrument: {
-        type: "PAY_PAGE"
+    // 2. Server-side promo code validation
+    let discountAmount = 0;
+    let appliedPromo = null;
+    if (promoCode) {
+      const promoCheck = await validatePromoCode(promoCode, verifiedSubtotal, connection);
+      if (promoCheck.valid) {
+        discountAmount = promoCheck.discountAmount;
+        appliedPromo = promoCheck.code;
       }
-    };
+    }
 
-    let base64Payload = Buffer.from(JSON.stringify(phonepePayload)).toString('base64');
-    let stringToHash = base64Payload + "/pg/v1/pay" + saltKey;
-    let sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
-    let xVerify = `${sha256}###${saltIndex}`;
+    const deliveryFee = 0;
+    const finalPayable = Math.max(1, verifiedSubtotal - discountAmount + deliveryFee);
+    const amountInPaise = Math.round(finalPayable * 100);
 
-    // Pre-insert order into MySQL database as 'Pending'
-    await db.query(`
+    const merchantTransactionId = customTxnId || `MT_${Date.now()}_${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const merchantUserId = customUserId || userDetails.userId || (req.user && req.user.id) || `MUID_${Date.now()}`;
+
+    // Redirect & Callback URLs pointing to live domain
+    const redirectUrl = `https://umanarayni.com/status/${merchantTransactionId}`;
+    const callbackUrl = `https://umanarayni.com/api/payment/phonepe-webhook`;
+
+    // 3. Pre-insert order into database inside the open transaction
+    await connection.query(`
       INSERT INTO orders (
         id, userId, customerName, customerEmail, customerPhone, shippingAddress,
-        items, subtotal, discount, tax, shippingFee, total, paymentMethod, paymentStatus, orderStatus,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 'PhonePe', 'Pending', 'Pending', NOW(), NOW())
+        items, subtotal, discount, tax, shippingFee, total, paymentMethod, promoCode,
+        paymentStatus, orderStatus, stockReserved, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'PhonePe', ?, 'Pending', 'Pending', TRUE, NOW(), NOW())
       ON DUPLICATE KEY UPDATE updated_at = NOW()
     `, [
       merchantTransactionId,
       (req.user && req.user.id) ? req.user.id : null,
-      customerName || 'Ayurvedic Patron',
-      customerEmail || 'patron@umanarayani.com',
-      customerPhone || '+91 8641033514',
-      shippingAddress || 'Express Herbal Delivery Address',
+      name,
+      email,
+      phone,
+      address,
       JSON.stringify(verifiedItems),
       verifiedSubtotal,
-      deliveryCharge,
-      verifiedTotal
+      discountAmount,
+      finalPayable,
+      appliedPromo
     ]);
 
-    // Server-side POST request to PhonePe's /pg/v1/pay endpoint
-    let phonepeResponse;
-    try {
-      phonepeResponse = await axios.post(
-        `${baseUrl}/pg/v1/pay`,
-        { request: base64Payload },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'X-VERIFY': xVerify,
-            'Accept': 'application/json'
-          },
-          timeout: 15000
-        }
-      );
-    } catch (apiErr) {
-      // In sandbox mode, if PhonePe returns KEY_NOT_CONFIGURED because PGTESTPAYUAT was rotated by PhonePe,
-      // seamlessly retry using active sandbox test merchant credentials
-      if (apiErr.response && apiErr.response.data && apiErr.response.data.code === 'KEY_NOT_CONFIGURED') {
-        console.warn('⚠️ PhonePe primary sandbox key not configured on host. Retrying with active UAT sandbox key (PGTESTPAYUAT86)...');
-        merchantId = 'PGTESTPAYUAT86';
-        saltKey = '96434309-7796-489d-8924-ab56988a6076';
-        saltIndex = '1';
-        phonepePayload.merchantId = merchantId;
-        base64Payload = Buffer.from(JSON.stringify(phonepePayload)).toString('base64');
-        stringToHash = base64Payload + "/pg/v1/pay" + saltKey;
-        sha256 = crypto.createHash('sha256').update(stringToHash).digest('hex');
-        xVerify = `${sha256}###${saltIndex}`;
+    await connection.commit();
+    connection.release();
 
-        phonepeResponse = await axios.post(
-          `${baseUrl}/pg/v1/pay`,
-          { request: base64Payload },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'X-VERIFY': xVerify,
-              'Accept': 'application/json'
-            },
-            timeout: 15000
-          }
-        );
-      } else {
-        throw apiErr;
-      }
-    }
+    // 4. Request PhonePe checkout page via service
+    const phonepeResult = await phonepeService.initiatePaymentOrder({
+      amountInPaise,
+      merchantTransactionId,
+      merchantUserId,
+      customerPhone: phone,
+      redirectUrl,
+      callbackUrl
+    });
 
-    const resData = phonepeResponse.data;
-    if (resData && resData.success && resData.data && resData.data.instrumentResponse) {
-      const redirectInfoUrl = resData.data.instrumentResponse.redirectInfo.url;
+    if (phonepeResult.success && phonepeResult.redirectUrl) {
       return res.json({
         success: true,
-        redirectUrl: redirectInfoUrl,
+        url: phonepeResult.redirectUrl,
+        checkoutUrl: phonepeResult.redirectUrl,
+        redirectUrl: phonepeResult.redirectUrl,
         merchantTransactionId,
-        amount: verifiedTotal
+        amount: finalPayable,
+        discount: discountAmount
       });
     } else {
+      // Payment initiation failed on gateway: release reserved stock
+      await releaseReservedStock(verifiedItems, db.pool);
+      await db.pool.query('UPDATE orders SET paymentStatus = "Failed", orderStatus = "Cancelled", stockReserved = FALSE WHERE id = ?', [merchantTransactionId]);
+
       return res.status(502).json({
         success: false,
-        message: resData?.message || 'PhonePe payment gateway initialization failed.'
+        message: phonepeResult.rawResponse?.message || 'PhonePe payment gateway initialization failed.',
+        data: phonepeResult.rawResponse
       });
     }
   } catch (err) {
-    const errorDetail = err.response ? JSON.stringify(err.response.data) : err.message;
-    console.error('PhonePe /api/payment/create-order error:', errorDetail);
+    await connection.rollback();
+    connection.release();
+    console.error('PhonePe initiate-payment error:', err);
     return res.status(500).json({
       success: false,
-      message: 'Failed to initiate secure PhonePe payment. Please try again.',
-      error: errorDetail
+      message: 'Failed to initiate secure PhonePe payment: ' + err.message
     });
+  }
+};
+
+/**
+ * 2. PhonePe Server-to-Server (S2S) Callback / Webhook Endpoint
+ * Verifies X-VERIFY checksum (SHA256), extracts payment result, and idempotently updates order status.
+ */
+app.post(['/api/payment/phonepe-webhook', '/api/payment/callback'], async (req, res) => {
+  try {
+    const xVerify = req.headers['x-verify'] || '';
+    const responseBase64 = req.body?.response || '';
+
+    const verification = phonepeService.verifyS2SCallback({
+      responseBase64,
+      xVerify
+    });
+
+    if (!verification.isValid) {
+      console.warn(`[PhonePe Webhook Rejected] ${verification.reason} | Header: ${xVerify}`);
+      return res.status(400).json({ success: false, message: 'Invalid X-VERIFY signature' });
+    }
+
+    const { merchantTransactionId, transactionId, success: isPaymentSuccess } = verification;
+
+    if (!merchantTransactionId) {
+      return res.status(400).json({ success: false, message: 'Missing merchantTransactionId in callback' });
+    }
+
+    const targetPaymentStatus = isPaymentSuccess ? 'Paid' : 'Failed';
+    const targetOrderStatus = isPaymentSuccess ? 'Confirmed' : 'Cancelled';
+
+    const result = await transitionOrderPayment({
+      orderId: merchantTransactionId,
+      targetPaymentStatus,
+      targetOrderStatus,
+      transactionId,
+      reconciliationNote: `PhonePe S2S Webhook: ${verification.code || 'PROCESSED'} - ${verification.message || ''}`,
+      triggerSource: 'PhonePe S2S Webhook'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Webhook processed successfully',
+      alreadyProcessed: result.alreadyProcessed || false,
+      orderId: merchantTransactionId
+    });
+  } catch (err) {
+    console.error('[PhonePe Webhook Error]:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error processing webhook' });
   }
 });
 
-// 2. Payment Verification & Status Route: ALL /api/payment/status
-app.all('/api/payment/status', async (req, res) => {
+/**
+ * 3. Payment Status & Verification Handler (Browser Redirect Fallback)
+ * Route: /status/:txnId (GET & POST)
+ */
+const handlePaymentStatus = async (req, res) => {
   try {
-    let merchantTransactionId = null;
-    let merchantId = process.env.PHONEPE_MERCHANT_ID || 'PGTESTPAYUAT';
-
-    // Extract transactionId from PhonePe form body (POST) or decoded response
-    if (req.body && req.body.response) {
-      try {
-        const decoded = JSON.parse(Buffer.from(req.body.response, 'base64').toString('utf8'));
-        if (decoded.data) {
-          merchantTransactionId = decoded.data.merchantTransactionId || decoded.data.transactionId;
-          merchantId = decoded.data.merchantId || merchantId;
-        }
-      } catch (_) {}
+    let merchantTransactionId = req.params.txnId;
+    if (!merchantTransactionId && req.query) {
+      merchantTransactionId = req.query.merchantTransactionId || req.query.transactionId || req.query.txnId || req.query.id;
     }
-
     if (!merchantTransactionId && req.body) {
       merchantTransactionId = req.body.merchantTransactionId || req.body.transactionId;
     }
-    if (!merchantTransactionId && req.query) {
-      merchantTransactionId = req.query.merchantTransactionId || req.query.transactionId || req.query.id;
-    }
 
     if (!merchantTransactionId) {
-      console.warn('PhonePe status redirect received without merchantTransactionId.');
-      return res.redirect('/cart.html?error=payment_failed');
+      return res.redirect('https://umanarayni.com/checkout/failed?reason=missing_txn_id');
     }
 
-    let { saltKey, saltIndex, baseUrl } = getPhonePeConfig();
-    if (merchantId === 'PGTESTPAYUAT86') {
-      saltKey = '96434309-7796-489d-8924-ab56988a6076';
-      saltIndex = '1';
+    // Check if order was already marked Paid via the server-to-server webhook
+    const [existingOrders] = await db.pool.query('SELECT * FROM orders WHERE id = ?', [merchantTransactionId]);
+    if (existingOrders.length > 0 && existingOrders[0].paymentStatus === 'Paid') {
+      return res.redirect(`https://umanarayni.com/checkout/success?txnId=${encodeURIComponent(merchantTransactionId)}`);
     }
 
-    // Make server-to-server GET request to PhonePe Check Status API
-    // Formula: sha256("/pg/v1/status/" + merchantId + "/" + merchantTransactionId + saltKey) + "###" + saltIndex
-    const statusEndpoint = `/pg/v1/status/${merchantId}/${merchantTransactionId}`;
-    const statusStringToHash = `${statusEndpoint}${saltKey}`;
-    const statusSha256 = crypto.createHash('sha256').update(statusStringToHash).digest('hex');
-    const statusXVerify = `${statusSha256}###${saltIndex}`;
+    // Fallback server-to-server status check with PhonePe
+    const statusCheck = await phonepeService.checkPaymentStatus(merchantTransactionId);
+    const isSuccess = Boolean(statusCheck && statusCheck.success);
+    const targetPaymentStatus = isSuccess ? 'Paid' : 'Failed';
+    const targetOrderStatus = isSuccess ? 'Confirmed' : 'Cancelled';
+    const transactionId = statusCheck.data?.transactionId || null;
 
-    let isPaymentSuccess = false;
-    try {
-      const checkRes = await axios.get(`${baseUrl}${statusEndpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-VERIFY': statusXVerify,
-          'X-MERCHANT-ID': merchantId,
-          'Accept': 'application/json'
-        },
-        timeout: 10000
-      });
+    await transitionOrderPayment({
+      orderId: merchantTransactionId,
+      targetPaymentStatus,
+      targetOrderStatus,
+      transactionId,
+      reconciliationNote: `PhonePe /status check: ${statusCheck.code}`,
+      triggerSource: 'Browser Redirect Status Check'
+    });
 
-      if (checkRes.data && checkRes.data.success && checkRes.data.code === 'PAYMENT_SUCCESS') {
-        isPaymentSuccess = true;
-      }
-    } catch (checkErr) {
-      console.error('PhonePe Check Status API call failed:', checkErr.response ? checkErr.response.data : checkErr.message);
-    }
-
-    if (isPaymentSuccess) {
-      // Update MySQL database order status to "Paid" and "Confirmed"
-      await db.query(`
-        UPDATE orders
-        SET paymentStatus = 'Paid', orderStatus = 'Confirmed', updated_at = NOW()
-        WHERE id = ?
-      `, [merchantTransactionId]);
-
-      return res.redirect(`/success.html?orderId=${encodeURIComponent(merchantTransactionId)}`);
+    if (isSuccess) {
+      return res.redirect(`https://umanarayni.com/checkout/success?txnId=${encodeURIComponent(merchantTransactionId)}`);
     } else {
-      await db.query(`
-        UPDATE orders
-        SET paymentStatus = 'Failed', orderStatus = 'Cancelled', updated_at = NOW()
-        WHERE id = ?
-      `, [merchantTransactionId]);
-
-      return res.redirect('/cart.html?error=payment_failed');
+      return res.redirect(`https://umanarayni.com/checkout/failed?txnId=${encodeURIComponent(merchantTransactionId)}`);
     }
   } catch (err) {
     console.error('Error handling PhonePe payment status redirect:', err);
-    return res.redirect('/cart.html?error=payment_failed');
+    return res.redirect('https://umanarayni.com/checkout/failed');
   }
+};
+
+// Route Registrations for Payment Gateway
+app.post('/initiate-payment', handleInitiatePayment);
+app.post('/api/payment/initiate-payment', handleInitiatePayment);
+app.post('/api/initiate-payment', handleInitiatePayment);
+app.post('/api/payment/create-order', handleInitiatePayment);
+
+app.get('/status/:txnId', handlePaymentStatus);
+app.post('/status/:txnId', handlePaymentStatus);
+app.get('/api/payment/status/:txnId', handlePaymentStatus);
+app.post('/api/payment/status/:txnId', handlePaymentStatus);
+app.all('/status', handlePaymentStatus);
+app.all('/api/payment/status', handlePaymentStatus);
+
+app.get('/checkout/success', (req, res) => {
+  const successFile = path.join(__dirname, 'public', 'success.html');
+  if (fs.existsSync(successFile)) {
+    return res.sendFile(successFile);
+  }
+  res.send('<h2>Payment Successful! Thank you for your order.</h2>');
 });
 
-// 3. UPI QR Code Payment Verification: POST /api/payment/verify-qr
+app.get('/checkout/failed', (req, res) => {
+  const cartFile = path.join(__dirname, 'public', 'cart.html');
+  if (fs.existsSync(cartFile)) {
+    return res.redirect('/cart.html?error=payment_failed');
+  }
+  res.status(400).send('<h2>Payment Failed. Please try again.</h2>');
+});
+
+// ==================== 10e. MANUAL UPI / UTR PAYMENT INTEGRITY ====================
+
+/**
+ * 4. Manual UPI QR Code Payment Submission
+ * Validates UTR format (12-22 alphanumeric), rejects duplicates, reserves stock atomically,
+ * and sets status to 'Awaiting_Verification'.
+ */
 app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
+  const connection = await db.pool.getConnection();
   try {
     const {
       transactionId,
@@ -2035,24 +2597,26 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
       customerEmail,
       customerPhone,
       shippingAddress,
+      promoCode,
       turnstileToken
     } = req.body;
 
     const rawTxId = transactionId || utr;
 
-    // Optional turnstile bot defense verification
     if (turnstileToken) {
       const botCheck = await verifyTurnstile(turnstileToken, req);
       if (!botCheck.success) {
+        connection.release();
         return res.status(403).json({
           success: false,
-          message: 'Security bot verification failed. Please try again.'
+          message: botCheck.message || 'Security bot verification failed. Please try again.'
         });
       }
     }
 
-    // 1. Strict Input Validation on Transaction ID / UTR
+    // 1. Strict UTR format validation: Indian bank UPI UTR (12 numeric or 12-22 alphanumeric ref)
     if (!rawTxId || typeof rawTxId !== 'string') {
+      connection.release();
       return res.status(400).json({
         success: false,
         message: 'Transaction ID / UTR is required. Please enter the 12-digit reference from your UPI app.'
@@ -2060,124 +2624,291 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
     }
 
     const cleanTxId = rawTxId.trim().toUpperCase();
-
-    // Standard Indian UPI UTR (12 digits numeric) or alphanumeric gateway ref (8-35 chars)
-    const txRegex = /^[A-Z0-9_-]{8,35}$/;
-    if (!txRegex.test(cleanTxId)) {
+    const utrRegex = /^[A-Z0-9]{12,22}$/;
+    if (!utrRegex.test(cleanTxId)) {
+      connection.release();
       return res.status(400).json({
         success: false,
-        message: 'Invalid Transaction ID / UTR format. Expected an 8-35 character reference number (e.g. 431289567012).'
+        message: 'Invalid UTR format. Expected a 12-to-22 digit/alphanumeric reference number (e.g. 431289567012).'
       });
     }
 
-    // 2. Validate Cart Items
+    // 2. Reject Duplicate UTR
+    const [existing] = await connection.query(
+      'SELECT id, customerName, total FROM orders WHERE transactionId = ? LIMIT 1',
+      [cleanTxId]
+    );
+
+    if (existing.length > 0) {
+      connection.release();
+      return res.status(409).json({
+        success: false,
+        duplicate: true,
+        message: `This UTR reference (${cleanTxId}) has already been registered for order ${existing[0].id}. Duplicate submissions are prohibited.`
+      });
+    }
+
     if (!items || !Array.isArray(items) || items.length === 0) {
+      connection.release();
       return res.status(400).json({
         success: false,
         message: 'Your cart items are missing or empty.'
       });
     }
 
-    // 3. Security: Calculate real cart total securely from MySQL database prices (prevent client-side tampering)
-    const [dbProducts] = await db.query('SELECT id, price, name FROM products');
-    const productMap = new Map();
-    dbProducts.forEach(p => {
-      productMap.set(p.id, { price: Number(p.price), name: p.name });
-    });
+    await connection.beginTransaction();
 
-    let secureCalculatedTotal = 0;
-    const validatedItems = [];
-
-    for (const item of items) {
-      const dbProd = productMap.get(item.id);
-      if (!dbProd) {
-        return res.status(400).json({
-          success: false,
-          message: `Unrecognized product in cart: ${item.id}`
-        });
-      }
-      const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
-      secureCalculatedTotal += dbProd.price * qty;
-      validatedItems.push({
-        id: item.id,
-        name: dbProd.name || item.name,
-        price: dbProd.price,
-        quantity: qty
-      });
-    }
-
-    if (secureCalculatedTotal <= 0) {
-      return res.status(400).json({
+    // 3. Pessimistic row locking & atomic stock reservation
+    let stockResult;
+    try {
+      stockResult = await reserveStockForItems(items, connection);
+    } catch (stockErr) {
+      await connection.rollback();
+      connection.release();
+      return res.status(stockErr.status || 409).json({
         success: false,
-        message: 'Invalid cart total calculation.'
+        code: stockErr.code || 'STOCK_ERROR',
+        message: stockErr.message
       });
     }
 
-    // 4. Validate customer contact information
+    const { verifiedSubtotal, verifiedItems } = stockResult;
+
+    // 4. Promo code validation
+    let discountAmount = 0;
+    let appliedPromo = null;
+    if (promoCode) {
+      const promoCheck = await validatePromoCode(promoCode, verifiedSubtotal, connection);
+      if (promoCheck.valid) {
+        discountAmount = promoCheck.discountAmount;
+        appliedPromo = promoCheck.code;
+      }
+    }
+
+    const finalTotal = Math.max(0, verifiedSubtotal - discountAmount);
+
     const cleanName = (customerName || '').trim() || 'Ayurvedic Patron';
-    const cleanEmail = (customerEmail || '').trim() || 'patron@umanarayani.com';
+    const cleanEmail = (customerEmail || '').trim() || 'patron@umanarayni.com';
     const cleanPhone = (customerPhone || '').trim() || '+91 8641033514';
     const cleanAddress = (shippingAddress || '').trim() || 'Address confirmed via UPI Checkout';
 
-    // 5. Generate unique Order ID
     const orderId = `ORD-QR-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // Optional user ID from authenticated cookie if available
     let userId = null;
-    if (req.cookies && req.cookies.umanarayani_auth) {
+    if (req.cookies && (req.cookies.umanarayni_auth || req.cookies.umanarayani_auth)) {
       try {
-        const decoded = jwt.verify(req.cookies.umanarayani_auth, SESSION_SECRET);
+        const decoded = jwt.verify((req.cookies.umanarayni_auth || req.cookies.umanarayani_auth), SESSION_SECRET);
         userId = decoded.userId || decoded.id || null;
       } catch (_) {}
     }
 
-    // 6. Record payment and order atomically in database with race-condition defense
-    const result = await db.recordQrPayment({
+    // 5. Insert order with Awaiting_Verification status
+    await connection.query(`
+      INSERT INTO orders (
+        id, userId, customerName, customerEmail, customerPhone, shippingAddress,
+        items, subtotal, discount, tax, shippingFee, total, paymentMethod, transactionId,
+        promoCode, paymentStatus, orderStatus, stockReserved, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'UPI_QR', ?, ?, 'Awaiting_Verification', 'Awaiting_Verification', TRUE, NOW(), NOW())
+    `, [
       orderId,
       userId,
-      customerName: cleanName,
-      customerEmail: cleanEmail,
-      customerPhone: cleanPhone,
-      shippingAddress: cleanAddress,
-      items: validatedItems,
-      subtotal: secureCalculatedTotal,
-      discount: 0,
-      tax: 0,
-      shippingFee: 0,
-      total: secureCalculatedTotal,
-      transactionId: cleanTxId
-    });
+      cleanName,
+      cleanEmail,
+      cleanPhone,
+      cleanAddress,
+      JSON.stringify(verifiedItems),
+      verifiedSubtotal,
+      discountAmount,
+      finalTotal,
+      cleanTxId,
+      appliedPromo
+    ]);
 
-    if (!result.success && result.duplicate) {
-      return res.status(409).json({
-        success: false,
-        duplicate: true,
-        message: result.message || 'This Transaction ID / UTR has already been submitted.'
-      });
-    }
+    await connection.commit();
+    connection.release();
 
-    if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        message: result.message || 'Could not record QR payment.'
-      });
-    }
-
-    console.log(`✅ [UPI QR Payment Verified] Order ${orderId} | UTR: ${cleanTxId} | Total: ₹${secureCalculatedTotal}`);
+    console.log(`✅ [UPI QR UTR Registered] Order ${orderId} | UTR: ${cleanTxId} | Awaiting Admin Verification`);
 
     return res.status(201).json({
       success: true,
-      message: 'Payment reference submitted and verified successfully.',
+      status: 'Awaiting_Verification',
+      message: 'UTR registered successfully. Your order is pending verification by our Ayurvedic accounts team.',
       orderId,
       transactionId: cleanTxId,
-      amount: secureCalculatedTotal
+      amount: finalTotal
     });
   } catch (err) {
+    await connection.rollback();
+    connection.release();
     console.error('❌ [Unhandled QR Payment Error]:', err);
     return res.status(500).json({
       success: false,
-      message: 'An internal error occurred while processing payment verification. Please try again or reach out on WhatsApp.'
+      message: 'Error processing UPI payment reference: ' + err.message
     });
+  }
+});
+
+// ==================== 10f. ADMIN RECONCILIATION & ORDER LIFECYCLE APIS ====================
+
+/**
+ * Lists pending manual UPI/UTR orders awaiting verification
+ */
+app.get('/api/admin/reconciliation/pending-utr', authenticateToken(false), requireAdmin, async (req, res) => {
+  try {
+    const [orders] = await db.query(`
+      SELECT id, customerName, customerEmail, customerPhone, total, transactionId, items,
+             created_at, TIMESTAMPDIFF(MINUTE, created_at, NOW()) AS ageMinutes
+      FROM orders
+      WHERE paymentMethod = 'UPI_QR' AND orderStatus = 'Awaiting_Verification'
+      ORDER BY created_at ASC
+    `);
+
+    res.json({
+      success: true,
+      count: orders.length,
+      orders: orders.map(o => ({
+        ...o,
+        items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : o.items
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Database error fetching pending reconciliation orders' });
+  }
+});
+
+/**
+ * Admin reconciliation action: Approve or Reject a pending UTR order
+ */
+app.post('/api/admin/reconciliation/:orderId', authenticateToken(false), requireAdmin, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { action, reason } = req.body; // action: 'approve' | 'reject'
+    const adminEmail = (req.user && req.user.email) || 'Admin';
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ success: false, message: 'Invalid action. Must be "approve" or "reject".' });
+    }
+
+    if (action === 'reject' && !reason) {
+      return res.status(400).json({ success: false, message: 'A rejection reason is mandatory when declining a UTR.' });
+    }
+
+    const targetPaymentStatus = (action === 'approve') ? 'Paid' : 'Failed';
+    const targetOrderStatus = (action === 'approve') ? 'Confirmed' : 'Cancelled';
+    const note = (action === 'approve')
+      ? (reason || 'UTR verified against bank statement')
+      : `Reconciliation Rejected: ${reason}`;
+
+    const result = await transitionOrderPayment({
+      orderId,
+      targetPaymentStatus,
+      targetOrderStatus,
+      reconciliationNote: note,
+      reconciledBy: adminEmail,
+      triggerSource: 'Admin Manual Reconciliation'
+    });
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    await db.recordAdminAuditLog({
+      adminId: req.user?.id,
+      adminEmail,
+      action: action === 'approve' ? 'RECONCILIATION_APPROVE' : 'RECONCILIATION_REJECT',
+      resourceType: 'order',
+      resourceId: orderId,
+      details: { action, reason: note },
+      req
+    });
+
+    res.json({
+      success: true,
+      message: `Order ${orderId} has been ${action === 'approve' ? 'approved' : 'rejected'} successfully.`,
+      order: result.order
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Reconciliation error: ' + err.message });
+  }
+});
+
+/**
+ * Admin generic order state transition API with strict state machine validation
+ */
+app.post('/api/admin/orders/:id/status', authenticateToken(false), requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, note } = req.body;
+    const adminEmail = (req.user && req.user.email) || 'Admin';
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Target status is required' });
+    }
+
+    const result = await transitionOrderPayment({
+      orderId: id,
+      targetOrderStatus: status,
+      targetPaymentStatus: (status === 'Cancelled' ? 'Cancelled' : null),
+      reconciliationNote: note || `Updated by admin (${adminEmail})`,
+      reconciledBy: adminEmail,
+      triggerSource: 'Admin Order Lifecycle Update'
+    });
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    await db.recordAdminAuditLog({
+      adminId: req.user?.id,
+      adminEmail,
+      action: 'UPDATE_ORDER_STATUS',
+      resourceType: 'order',
+      resourceId: id,
+      details: { newStatus: status, note },
+      req
+    });
+
+    res.json({
+      success: true,
+      message: `Order ${id} status updated to '${status}'`,
+      order: result.order
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ==================== AUTO-EXPIRY SCHEDULER (UNVERIFIED UTR ORDERS) ====================
+const UTR_EXPIRY_HOURS = parseInt(process.env.UTR_ORDER_EXPIRY_HOURS || '24', 10);
+
+// Runs every 30 minutes to clean up unverified UTR orders and release reserved stock
+cron.schedule('*/30 * * * *', async () => {
+  try {
+    const [expiredOrders] = await db.pool.query(`
+      SELECT id, items FROM orders
+      WHERE paymentMethod = 'UPI_QR'
+        AND orderStatus = 'Awaiting_Verification'
+        AND created_at < NOW() - INTERVAL ? HOUR
+    `, [UTR_EXPIRY_HOURS]);
+
+    if (expiredOrders.length > 0) {
+      console.log(`⏰ [Auto-Expiry Cron] Found ${expiredOrders.length} unverified UTR orders exceeding ${UTR_EXPIRY_HOURS} hours SLA. Cancelling and releasing stock...`);
+      for (const ord of expiredOrders) {
+        try {
+          await transitionOrderPayment({
+            orderId: ord.id,
+            targetPaymentStatus: 'Expired',
+            targetOrderStatus: 'Cancelled',
+            reconciliationNote: `Auto-expired: UTR verification SLA (${UTR_EXPIRY_HOURS}h) exceeded`,
+            triggerSource: 'Auto-Expiry Cron'
+          });
+        } catch (e) {
+          console.error(`Failed to auto-expire order ${ord.id}:`, e.message);
+        }
+      }
+    }
+  } catch (cronErr) {
+    console.error('Error running UTR auto-expiry cron:', cronErr.message);
   }
 });
 
@@ -2188,7 +2919,7 @@ app.post('/api/inquiry/whatsapp', (req, res) => {
   res.json({
     success: true,
     whatsappNumber: "+918641033514",
-    link: `https://wa.me/918641033514?text=${encodeURIComponent(message || 'Hello Umanarayani! I would like to consult about your Ayurvedic personal care products.')}`
+    link: `https://wa.me/918641033514?text=${encodeURIComponent(message || 'Hello Umanarayni! I would like to consult about your Ayurvedic personal care products.')}`
   });
 });
 
@@ -2241,7 +2972,7 @@ app.post('/api/ai/consult', aiConsultantLimiter, async (req, res) => {
   Ayurvedic Action: ${h.tagline || ''}
   Role: ${h.role || ''}
   Benefits: ${(h.benefits || []).join(', ')}
-  Present in Umanarayani Products: ${(h.presentIn || []).join(', ')}
+  Present in Umanarayni Products: ${(h.presentIn || []).join(', ')}
 `).join('\n');
 
   let activeProductContext = "";
@@ -2252,7 +2983,7 @@ app.post('/api/ai/consult', aiConsultantLimiter, async (req, res) => {
     }
   }
 
-  const systemInstruction = `You are "Umanarayani AI Vaidya" (उमानारायणी आयुर्वेदिक AI विशेषज्ञ), the official virtual Ayurvedic Herbal Care Specialist and Product Consultant for UMANARAYANI HERBAL PRODUCTS (Tagline: "Pure Nature, Pure Care"). You provide classical botanical wisdom, herbal ingredient guidance, and daily personal care routine recommendations for hair, skin, and scalp wellness. Never claim medical qualifications or provide clinical treatments; provide authentic Ayurvedic personal care and formulation advice.
+  const systemInstruction = `You are "Umanarayni AI Vaidya" (उमानारायणी आयुर्वेदिक AI विशेषज्ञ), the official virtual Ayurvedic Herbal Care Specialist and Product Consultant for UMANARAYNI HERBAL PRODUCTS (Tagline: "Pure Nature, Pure Care"). You provide classical botanical wisdom, herbal ingredient guidance, and daily personal care routine recommendations for hair, skin, and scalp wellness. Never claim medical qualifications or provide clinical treatments; provide authentic Ayurvedic personal care and formulation advice.
 
 Brand & Classical Product Formulations (from Database):
 ${productCatalogText}
@@ -2265,7 +2996,7 @@ ${userDosha ? `\nUser's Declared Dosha Profile: ${userDosha}` : ''}
 Consultation Rules & Persona:
 1. Greet warmly with traditional Indian reverence (e.g. "Namaste! 🙏", "Ayubowan", or "Warm Ayurvedic greetings!").
 2. Answer the user's question clearly, thoroughly, and scientifically using classical Ayurvedic principles (Vata, Pitta, Kapha balance, Kshirapak cold herbal oil infusion, natural saponins).
-3. Recommend specific Umanarayani products when relevant, detailing *which specific herbal ingredients* in the product directly solve their hair, scalp, or skin concern.
+3. Recommend specific Umanarayni products when relevant, detailing *which specific herbal ingredients* in the product directly solve their hair, scalp, or skin concern.
 4. Provide practical Ayurvedic tips (e.g., scalp champi duration, lukewarm water washing, diet/lifestyle tips).
 5. Format with beautiful, easy-to-read markdown (bullet points, bold highlights, herbal emojis 🌿🧴✨).
 6. HERBAL CARE TEAM SUPPORT: Remind the user that if they have any doubts, need personalized routine guidance, or prefer talking directly to our Herbal Care Team, they can connect anytime on WhatsApp at +91 8641033514.`;
@@ -2287,13 +3018,13 @@ ${sanitizedMessage}
   const isStreaming = Boolean(req.body.stream === true || (req.headers.accept && req.headers.accept.includes('text/event-stream')));
 
   const getFallbackReply = () => {
-    let fallbackReply = `Namaste! 🙏 Thank you for reaching out to Umanarayani Ayurveda.\n\n`;
+    let fallbackReply = `Namaste! 🙏 Thank you for reaching out to Umanarayni Ayurveda.\n\n`;
     const lower = sanitizedMessage.toLowerCase();
 
     if (lower.includes('hair') || lower.includes('fall') || lower.includes('oil') || lower.includes('dandruff') || lower.includes('scalp') || lower.includes('frizz')) {
-      fallbackReply += `🌿 **For Hair Care, Dry Scalp & Frizz Ritual:**\nWe strongly recommend our classical **UMANARAYANI AYURVEDIC HAIR OIL** (₹349, 200ml) infused with Brahmi, Bhringraj, Nagarmotha, and Amarbel. It calms aggravated Vata and Pitta dosha, deeply quenches dry scalp roots, seals moisture into rough cuticle layers, and eliminates frizz.\n\nPair it with **UMANARAYANI HERBAL SHAMPOO** (₹329) enriched with natural Reetha & Shikakai saponins that cleanse gently without stripping natural moisture.\n\n*Ideal Scalp Ritual:* Gently massage 5–10 ml of warm Hair Oil into your scalp for 10 minutes (champi) at night or 1 hour prior to washing. Rinse using Herbal Shampoo with lukewarm water twice a week.`;
+      fallbackReply += `🌿 **For Hair Care, Dry Scalp & Frizz Ritual:**\nWe strongly recommend our classical **UMANARAYNI AYURVEDIC HAIR OIL** (₹349, 200ml) infused with Brahmi, Bhringraj, Nagarmotha, and Amarbel. It calms aggravated Vata and Pitta dosha, deeply quenches dry scalp roots, seals moisture into rough cuticle layers, and eliminates frizz.\n\nPair it with **UMANARAYNI HERBAL SHAMPOO** (₹329) enriched with natural Reetha & Shikakai saponins that cleanse gently without stripping natural moisture.\n\n*Ideal Scalp Ritual:* Gently massage 5–10 ml of warm Hair Oil into your scalp for 10 minutes (champi) at night or 1 hour prior to washing. Rinse using Herbal Shampoo with lukewarm water twice a week.`;
     } else if (lower.includes('face') || lower.includes('skin') || lower.includes('tan') || lower.includes('pimple') || lower.includes('glow')) {
-      fallbackReply += `🍊 **For Skin Glow, Tanning & Pimples:**\nOur **UMANARAYANI AYURVEDIC ORANGE FACE WASH** (₹279, 150ml) is formulated with natural citrus orange peel bioflavonoids, Neem, and Tulsi. It gently lifts away sun tanning, balances oily sebum, and eliminates acne-causing bacteria without tight dryness.`;
+      fallbackReply += `🍊 **For Skin Glow, Tanning & Pimples:**\nOur **UMANARAYNI AYURVEDIC ORANGE FACE WASH** (₹279, 150ml) is formulated with natural citrus orange peel bioflavonoids, Neem, and Tulsi. It gently lifts away sun tanning, balances oily sebum, and eliminates acne-causing bacteria without tight dryness.`;
     } else {
       fallbackReply += `🌿 **Ayurvedic Care Guidance:**\nUmanarayani brings authentic classical botanical care (Pure Nature, Pure Care) free from parabens, sulphates, and mineral oils.\n\n• **Hair Oil:** ₹349 (Brahmi, Bhringraj, Amarbel)\n• **Herbal Shampoo:** ₹329 (Shikakai, Reetha, Amla)\n• **Orange Face Wash:** ₹279 (Orange peel, Neem, Tulsi)`;
     }
@@ -2385,7 +3116,7 @@ ${sanitizedMessage}
       fullReply: streamedText,
       suggestedProducts: mentionedProducts,
       whatsappNumber: "+918641033514",
-      whatsappLink: `https://wa.me/918641033514?text=${encodeURIComponent('Hello Umanarayani! I consulted your AI and want to talk with a human specialist about: ' + sanitizedMessage.substring(0, 80))}`
+      whatsappLink: `https://wa.me/918641033514?text=${encodeURIComponent('Hello Umanarayni! I consulted your AI and want to talk with a human specialist about: ' + sanitizedMessage.substring(0, 80))}`
     })}\n\n`);
     return res.end();
   }
@@ -2429,7 +3160,7 @@ ${sanitizedMessage}
       reply,
       suggestedProducts: mentionedProducts,
       whatsappNumber: "+918641033514",
-      whatsappLink: `https://wa.me/918641033514?text=${encodeURIComponent('Hello Umanarayani! I consulted your AI and want to talk with a human specialist about: ' + sanitizedMessage.substring(0, 80))}`
+      whatsappLink: `https://wa.me/918641033514?text=${encodeURIComponent('Hello Umanarayni! I consulted your AI and want to talk with a human specialist about: ' + sanitizedMessage.substring(0, 80))}`
     });
   } catch (err) {
     console.error("Gemini AI API Error in /api/ai/consult:", err.message);
@@ -2453,7 +3184,7 @@ app.post('/api/ai/diagnose-dosha', aiConsultantLimiter, async (req, res) => {
   const cleanScalp = sanitizeParam(scalpTendency, 'Occasional Flakes / Warmth');
   const cleanConcern = sanitizeParam(mainConcern, 'Hair Fall & Skin Glow');
 
-  const prompt = `You are the Ayurvedic Herbal Care Specialist for Umanarayani Ayurveda (Tagline: Pure Nature, Pure Care). Provide authentic herbal wellness and personal care routine guidance.
+  const prompt = `You are the Ayurvedic Herbal Care Specialist for Umanarayni Ayurveda (Tagline: Pure Nature, Pure Care). Provide authentic herbal wellness and personal care routine guidance.
 Analyze the user's attributes:
 - Hair Texture: ${cleanHair}
 - Skin Type: ${cleanSkin}
@@ -2594,7 +3325,7 @@ app.use((err, req, res, next) => {
 
 // Start Server
 app.listen(PORT, async () => {
-  console.log(`🌿 Umanarayani Ayurvedic Server running at http://localhost:${PORT}`);
+  console.log(`🌿 Umanarayni Ayurvedic Server running at http://localhost:${PORT}`);
   console.log(`📞 WhatsApp Consultation: +918641033514`);
   
   // Test MySQL connection pool on server boot

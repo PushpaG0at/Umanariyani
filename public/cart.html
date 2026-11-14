@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Herbal Basket — UMANARAYANI</title>
+  <title>Your Herbal Basket — UMANARAYNI</title>
   <link rel="icon" type="image/jpeg" href="/images/logo.jpg">
   <!-- Font Awesome Icons with Subresource Integrity (SRI) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -307,7 +307,7 @@
       <a href="index.html" class="brand-link">
         <img src="/images/logo-center.png" alt="Logo" class="brand-logo-img">
         <div class="brand-text-block">
-          <span class="brand-name">UMANARAYANI</span>
+          <span class="brand-name">UMANARAYNI</span>
           <span class="brand-tagline">Pure Nature, Pure Care.</span>
         </div>
       </a>
@@ -363,9 +363,26 @@
           <span id="summaryDiscount">-₹0</span>
         </div>
 
+        <div id="summaryCouponRow" style="display:none; justify-content:space-between; margin-bottom:10px; font-size:0.9rem; color:#007600;">
+          <span>Coupon (<span id="appliedCouponCode"></span>):</span>
+          <span id="summaryCouponDiscount">-₹0</span>
+        </div>
+
         <div style="display:flex; justify-content:space-between; margin-bottom:14px; font-size:0.9rem;">
           <span style="color:var(--text-muted);">Delivery Charge:</span>
           <span style="color:#007600; font-weight:700;">FREE</span>
+        </div>
+
+        <!-- Promo Code Input Box -->
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-dark); margin-bottom:6px;">
+            <i class="fa-solid fa-ticket" style="color:var(--gold-secondary);"></i> Have a Promo Code?
+          </label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="promoCodeInput" placeholder="e.g. AYUR10, WELCOME50" style="flex:1; padding:8px 12px; border:1px solid #CCC; border-radius:6px; font-size:0.85rem; text-transform:uppercase;">
+            <button type="button" id="btnApplyPromo" style="padding:8px 14px; background:var(--green-primary); color:#FFF; border:none; border-radius:6px; font-size:0.85rem; font-weight:600; cursor:pointer;">Apply</button>
+          </div>
+          <div id="promoCodeStatus" style="font-size:0.8rem; margin-top:6px; display:none;"></div>
         </div>
 
         <div style="background:#F2F8F4; padding:10px; border-radius:8px; border:1px dashed var(--green-sage); margin-bottom:16px; font-size:0.8rem; color:var(--green-primary);">
@@ -612,17 +629,87 @@
     }
 
     let currentPayableTotal = 0;
+    let currentRawSubtotal = 0;
+    let appliedPromo = null;
 
     function updateTotals(mrp, payable) {
-      currentPayableTotal = payable;
+      currentRawSubtotal = payable;
+      let finalPayable = payable;
+
+      if (appliedPromo) {
+        if (payable < (appliedPromo.minCartSubtotal || 0)) {
+          appliedPromo = null;
+          showPromoStatus('Cart subtotal fell below minimum coupon requirement. Coupon removed.', false);
+        } else {
+          let discount = 0;
+          if (appliedPromo.discountType === 'percent') {
+            discount = Math.round((payable * appliedPromo.discountValue) / 100);
+            if (appliedPromo.maxDiscount && discount > appliedPromo.maxDiscount) {
+              discount = appliedPromo.maxDiscount;
+            }
+          } else {
+            discount = appliedPromo.discountValue;
+          }
+          discount = Math.min(discount, payable);
+          finalPayable = Math.max(0, payable - discount);
+
+          const couponRow = document.getElementById('summaryCouponRow');
+          if (couponRow) couponRow.style.display = 'flex';
+          const codeEl = document.getElementById('appliedCouponCode');
+          if (codeEl) codeEl.textContent = appliedPromo.code;
+          const discEl = document.getElementById('summaryCouponDiscount');
+          if (discEl) discEl.textContent = `-₹${discount}`;
+        }
+      }
+
+      if (!appliedPromo) {
+        const couponRow = document.getElementById('summaryCouponRow');
+        if (couponRow) couponRow.style.display = 'none';
+      }
+
+      currentPayableTotal = finalPayable;
       document.getElementById('summaryMrp').textContent = `₹${mrp}`;
       document.getElementById('summaryDiscount').textContent = `-₹${mrp - payable}`;
-      document.getElementById('summaryTotal').textContent = `₹${payable}`;
+      document.getElementById('summaryTotal').textContent = `₹${finalPayable}`;
       const modalAmt = document.getElementById('qrModalPayableAmount');
       const stepAmt = document.getElementById('qrModalStepAmount');
-      if (modalAmt) modalAmt.textContent = `₹${payable}`;
-      if (stepAmt) stepAmt.textContent = `₹${payable}`;
+      if (modalAmt) modalAmt.textContent = `₹${finalPayable}`;
+      if (stepAmt) stepAmt.textContent = `₹${finalPayable}`;
     }
+
+    function showPromoStatus(msg, isSuccess) {
+      const el = document.getElementById('promoCodeStatus');
+      if (!el) return;
+      el.style.display = 'block';
+      el.style.color = isSuccess ? '#007600' : '#DC2626';
+      el.textContent = msg;
+    }
+
+    document.getElementById('btnApplyPromo').addEventListener('click', async () => {
+      const input = document.getElementById('promoCodeInput');
+      const code = input ? input.value.trim().toUpperCase() : '';
+      if (!code) {
+        showPromoStatus('Please enter a coupon code.', false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/promo/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, cartSubtotal: currentRawSubtotal })
+        });
+        const data = await res.json();
+        if (data.valid && data.promo) {
+          appliedPromo = data.promo;
+          showPromoStatus(`Coupon "${data.promo.code}" applied! You save ₹${data.promo.discountAmount}`, true);
+          loadCart();
+        } else {
+          showPromoStatus(data.message || 'Invalid or expired promo code.', false);
+        }
+      } catch (err) {
+        showPromoStatus('Unable to validate promo code. Please try again.', false);
+      }
+    });
 
     function showQrAlert(msg) {
       const alertBox = document.getElementById('qrModalAlert');
@@ -745,7 +832,8 @@
           customerPhone,
           customerEmail: customerEmail || "patron@umanarayani.com",
           shippingAddress,
-          items: cart
+          items: cart,
+          promoCode: appliedPromo ? appliedPromo.code : undefined
         };
 
         const res = await fetch('/api/payment/verify-qr', {
@@ -791,22 +879,24 @@
 
       try {
         const user = JSON.parse(localStorage.getItem('umanarayani_user') || '{}');
-        const res = await fetch('/api/payment/create-order', {
+        const res = await fetch('/api/payment/initiate-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
             items: cart,
             customerName: user.name || "Ayurvedic Patron",
-            customerEmail: user.email || "patron@umanarayani.com",
+            customerEmail: user.email || "patron@umanarayni.com",
             customerPhone: "+91 8641033514",
-            shippingAddress: "Confirmed for Express Herbal Delivery"
+            shippingAddress: "Confirmed for Express Herbal Delivery",
+            promoCode: appliedPromo ? appliedPromo.code : undefined
           })
         });
 
         const data = await res.json();
-        if (data && data.success && data.redirectUrl) {
-          window.location.href = data.redirectUrl;
+        const payUrl = data?.url || data?.redirectUrl || data?.checkoutUrl;
+        if (data && data.success && payUrl) {
+          window.location.href = payUrl;
         } else {
           alert(data?.message || 'Could not initiate PhonePe payment. Please try again or use WhatsApp order.');
           payBtn.disabled = false;
@@ -848,7 +938,7 @@
         return;
       }
 
-      let text = `*New Order Request — Umanarayani Ayurveda*%0A%0A`;
+      let text = `*New Order Request — Umanarayni Ayurveda*%0A%0A`;
       let total = 0;
       cart.forEach((item, idx) => {
         text += `${idx + 1}. *${item.name}* x ${item.quantity} = ₹${item.price * item.quantity}%0A`;

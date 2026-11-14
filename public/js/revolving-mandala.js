@@ -1,6 +1,6 @@
 /**
- * UMANARAYANI AYURVEDA — REVOLVING HERBS MANDALA ENGINE
- * Rotates the 8 sacred Ayurvedic herbs dynamically around the central Umanarayani brand icon.
+ * UMANARAYNI AYURVEDA — REVOLVING HERBS MANDALA ENGINE
+ * Rotates the 8 sacred Ayurvedic herbs dynamically around the central Umanarayni brand icon.
  * Features 60fps physics, interactive cursor popping, drag-to-spin momentum, and herb modals.
  */
 
@@ -144,14 +144,14 @@ class RevolvingMandalaEngine {
           <div class="mandala-outer-ring"></div>
           <div class="mandala-inner-ring"></div>
 
-          <!-- CENTER BRAND ICON (The user's Umanarayani logo) -->
-          <div class="center-brand-core" id="centerBrandCore" title="UMANARAYANI — Pure Nature, Pure Care">
+          <!-- CENTER BRAND ICON (The user's Umanarayni logo) -->
+          <div class="center-brand-core" id="centerBrandCore" title="UMANARAYNI — Pure Nature, Pure Care">
             <div class="center-logo-disc">
-              <img src="/images/logo-center.png" alt="UMANARAYANI Logo" class="center-logo-img">
+              <img src="/images/logo-center.png" alt="UMANARAYNI Logo" class="center-logo-img">
             </div>
             <div class="center-brand-name-pill">
               <i class="fa-solid fa-seedling"></i>
-              <span>UMANARAYANI</span>
+              <span>UMANARAYNI</span>
             </div>
           </div>
 

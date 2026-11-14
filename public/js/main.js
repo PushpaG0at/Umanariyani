@@ -1,5 +1,5 @@
 /**
- * UMANARAYANI AYURVEDA — MAIN HOMEPAGE SCRIPT
+ * UMANARAYNI AYURVEDA — MAIN HOMEPAGE SCRIPT
  * Orchestrates product catalog, smooth card pops, live user counter SSE,
  * WhatsApp consultation drawer, search, and session state.
  */
@@ -125,7 +125,7 @@ function renderProductsGrid(products) {
   grid.innerHTML = products.map(product => {
     const starsHtml = '★'.repeat(Math.floor(product.rating)) + (product.rating % 1 !== 0 ? '½' : '');
     const productDetailUrl = `product.html?id=${encodeURIComponent(product.id)}`;
-    const whatsappQuery = `Hello Umanarayani! I have a question regarding *${product.name}* (₹${product.price}). Could you please guide me?`;
+    const whatsappQuery = `Hello Umanarayni! I have a question regarding *${product.name}* (₹${product.price}). Could you please guide me?`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappQuery)}`;
 
     return `

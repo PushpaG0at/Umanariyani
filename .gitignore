@@ -5,4 +5,6 @@ node_modules/
 backups/
 public/uploads/*
 !public/uploads/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
 

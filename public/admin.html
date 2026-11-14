@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard — Umanarayani Ayurveda Catalog Manager</title>
+  <title>Admin Dashboard — Umanarayni Ayurveda Catalog Manager</title>
   <link rel="icon" type="image/png" href="/images/logo-center.png">
   
   <!-- Font Awesome Icons with Subresource Integrity (SRI) -->
@@ -306,6 +306,45 @@
       background: #2D6A4F;
       color: #FFFFFF;
       border-color: #2D6A4F;
+    }
+
+    .btn-approve-utr {
+      background: #D8F3DC;
+      color: #1B4332;
+      border: 1px solid #74C69D;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-approve-utr:hover {
+      background: #2D6A4F;
+      color: #FFF;
+    }
+
+    .btn-reject-utr {
+      background: #FEE2E2;
+      color: var(--danger-red);
+      border: 1px solid #FCA5A5;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-reject-utr:hover {
+      background: #DC2626;
+      color: #FFF;
     }
 
     /* Multi-media File Upload and Previews */
@@ -655,9 +694,9 @@
   <!-- Admin Navigation Bar -->
   <header class="admin-navbar">
     <div class="admin-brand">
-      <img src="/images/logo-center.png" alt="Umanarayani Logo">
+      <img src="/images/logo-center.png" alt="Umanarayni Logo">
       <div>
-        <span class="admin-brand-title">UMANARAYANI</span>
+        <span class="admin-brand-title">UMANARAYNI</span>
         <span class="admin-brand-tag"><i class="fa-solid fa-lock"></i> Admin Portal</span>
       </div>
     </div>
@@ -717,6 +756,39 @@
         </div>
       </section>
 
+      <!-- SECTION: UPI / UTR Payment Reconciliation -->
+      <section class="admin-card" id="reconciliationSection">
+        <div class="card-header-row">
+          <div>
+            <h3><i class="fa-solid fa-receipt"></i> UPI / UTR Payment Reconciliation</h3>
+            <span style="font-size:0.85rem; color:var(--text-muted);">Verify incoming manual UPI/QR customer orders against bank statements.</span>
+          </div>
+          <span class="count-badge" id="reconcileCountBadge" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D;">Loading...</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>UTR / Ref Number</th>
+                <th>Age / Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="reconcileTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Checking for pending manual UPI payments...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- SECTION 2: Add New Formulation Form -->
       <section class="admin-card">
         <div class="card-header-row">
@@ -730,7 +802,7 @@
           <div class="form-row">
             <div class="form-group">
               <label for="pName">Product Name *</label>
-              <input type="text" id="pName" class="admin-input" placeholder="e.g. UMANARAYANI BHRINGRAJ SCALP SERUM" required>
+              <input type="text" id="pName" class="admin-input" placeholder="e.g. UMANARAYNI BHRINGRAJ SCALP SERUM" required>
             </div>
             <div class="form-group">
               <label for="pSubtitle">Subtitle / Sub-headline</label>
@@ -832,7 +904,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="editPName">Product Name *</label>
-            <input type="text" id="editPName" class="admin-input" required placeholder="e.g. UMANARAYANI BHRINGRAJ SCALP SERUM">
+            <input type="text" id="editPName" class="admin-input" required placeholder="e.g. UMANARAYNI BHRINGRAJ SCALP SERUM">
           </div>
           <div class="form-group">
             <label for="editPSubtitle">Subtitle / Sub-headline</label>
@@ -957,6 +1029,46 @@
     </div>
   </div>
 
+  <!-- Dedicated Admin TOTP 2FA Login Modal -->
+  <div id="adminLoginModal" style="display:none; position:fixed; inset:0; background:rgba(18,36,25,0.85); backdrop-filter:blur(6px); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:#FFF; width:90%; max-width:440px; border-radius:14px; padding:32px; box-shadow:0 20px 40px rgba(0,0,0,0.3); border:1px solid #D8F3DC; text-align:center;">
+      <div style="font-size:2.5rem; margin-bottom:12px;">🌿</div>
+      <h2 style="color:#1B4332; font-size:1.4rem; margin-bottom:6px;">Admin Authentication</h2>
+      <p style="color:#666; font-size:0.85rem; margin-bottom:20px;">Protected with Time-based One-Time Password (TOTP 2FA)</p>
+
+      <div id="adminLoginAlert" style="display:none; padding:10px; border-radius:6px; font-size:0.85rem; margin-bottom:16px;"></div>
+
+      <div id="adminTotpSetupBox" style="display:none; background:#F0FDF4; border:1px dashed #74C69D; padding:12px; border-radius:8px; margin-bottom:16px; text-align:left; font-size:0.82rem;">
+        <strong>First-time 2FA Setup:</strong><br>
+        Add this secret to your Authenticator app (Google Authenticator, Authy, or 1Password):
+        <div id="adminSetupSecret" style="font-family:monospace; font-weight:700; background:#FFF; padding:6px; border-radius:4px; margin:6px 0; word-break:break-all;"></div>
+        Then enter the generated 6-digit code below to finish setup.
+      </div>
+
+      <form id="adminLoginForm" style="text-align:left;">
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:0.8rem; font-weight:600; color:#1B4332; margin-bottom:4px;">Admin Email *</label>
+          <input type="email" id="adminLoginEmail" required placeholder="admin@umanarayni.com" style="width:100%; padding:10px; border:1px solid #CCC; border-radius:6px; font-size:0.9rem;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:0.8rem; font-weight:600; color:#1B4332; margin-bottom:4px;">Password *</label>
+          <input type="password" id="adminLoginPassword" required placeholder="Enter admin password" style="width:100%; padding:10px; border:1px solid #CCC; border-radius:6px; font-size:0.9rem;">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:0.8rem; font-weight:600; color:#1B4332; margin-bottom:4px;">
+            <i class="fa-solid fa-shield-halved" style="color:#2D6A4F;"></i> 6-Digit Authenticator Code (TOTP)
+          </label>
+          <input type="text" id="adminLoginTotp" maxlength="6" pattern="[0-9]{6}" placeholder="e.g. 123456" style="width:100%; padding:10px; border:1px solid #CCC; border-radius:6px; font-size:1.1rem; letter-spacing:4px; text-align:center; font-weight:700;">
+          <small style="display:block; color:#888; font-size:0.75rem; margin-top:4px;">Open Google Authenticator or 1Password on your device.</small>
+        </div>
+
+        <button type="submit" id="btnAdminLoginSubmit" style="width:100%; padding:12px; background:#2D6A4F; color:#FFF; border:none; border-radius:8px; font-size:0.95rem; font-weight:700; cursor:pointer;">
+          <i class="fa-solid fa-lock"></i> Verify & Access Admin Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Client-side Logic -->
   <script>
     // Global cache for catalog products
@@ -985,13 +1097,35 @@
       }, 6000);
     }
 
-    // 1. Mandatory Admin Security Gatekeeper
+    let isSettingUpTotp = false;
+
+    function showAdminLoginModal() {
+      const modal = document.getElementById('adminLoginModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function hideAdminLoginModal() {
+      const modal = document.getElementById('adminLoginModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function showAdminLoginAlert(msg, isSuccess = false) {
+      const el = document.getElementById('adminLoginAlert');
+      if (!el) return;
+      el.style.display = 'block';
+      el.style.background = isSuccess ? '#D1FAE5' : '#FEE2E2';
+      el.style.color = isSuccess ? '#065F46' : '#991B1B';
+      el.style.border = `1px solid ${isSuccess ? '#6EE7B7' : '#FCA5A5'}`;
+      el.textContent = msg;
+    }
+
+    // 1. Mandatory Admin Security Gatekeeper with TOTP 2FA
     async function verifyAdminAuth() {
       try {
         const res = await fetch('/api/auth/me', { credentials: 'include' });
         const data = await res.json();
         if (!data || !data.authenticated || !data.user || data.user.role !== 'admin') {
-          window.location.replace('/');
+          showAdminLoginModal();
           return false;
         }
 
@@ -999,11 +1133,71 @@
         const emailEl = document.getElementById('adminUserEmail');
         if (nameEl) nameEl.textContent = data.user.name || 'Administrator';
         if (emailEl) emailEl.textContent = data.user.email || '';
+        hideAdminLoginModal();
         return true;
       } catch (err) {
-        window.location.replace('/');
+        showAdminLoginModal();
         return false;
       }
+    }
+
+    // Admin TOTP Login Form Submission Listener
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    if (adminLoginForm) {
+      adminLoginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('adminLoginEmail').value.trim();
+        const password = document.getElementById('adminLoginPassword').value;
+        const totpToken = document.getElementById('adminLoginTotp').value.trim();
+        const submitBtn = document.getElementById('btnAdminLoginSubmit');
+        const origBtnHtml = submitBtn.innerHTML;
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Authenticating with 2FA...`;
+
+        try {
+          const res = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              email,
+              password,
+              totpToken: totpToken || undefined,
+              setupConfirmed: isSettingUpTotp
+            })
+          });
+
+          const data = await res.json();
+
+          if (data.requireTotpSetup) {
+            isSettingUpTotp = true;
+            document.getElementById('adminTotpSetupBox').style.display = 'block';
+            document.getElementById('adminSetupSecret').textContent = data.secret;
+            showAdminLoginAlert(data.message, true);
+            document.getElementById('adminLoginTotp').focus();
+          } else if (data.requireTotp) {
+            showAdminLoginAlert('Password verified. Enter your 6-digit Authenticator code to continue.', true);
+            document.getElementById('adminLoginTotp').focus();
+          } else if (data.success && data.user) {
+            hideAdminLoginModal();
+            showAlert(`Welcome, ${data.user.name}! Authenticated with TOTP 2FA.`, true);
+            const nameEl = document.getElementById('adminUserName');
+            const emailEl = document.getElementById('adminUserEmail');
+            if (nameEl) nameEl.textContent = data.user.name || 'Administrator';
+            if (emailEl) emailEl.textContent = data.user.email || '';
+            loadCatalogProducts();
+            loadPendingUtrOrders();
+          } else {
+            showAdminLoginAlert(data.message || 'Authentication failed. Please verify credentials.');
+          }
+        } catch (err) {
+          showAdminLoginAlert('Network error connecting to authentication server.');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
+      });
     }
 
     // Helper: Render media preview items
@@ -1426,6 +1620,97 @@
       }
     });
 
+    // 6b. UPI / UTR Reconciliation Functions
+    async function loadPendingUtrOrders() {
+      const tbody = document.getElementById('reconcileTableBody');
+      const badge = document.getElementById('reconcileCountBadge');
+      if (!tbody || !badge) return;
+
+      try {
+        const res = await fetch('/api/admin/reconciliation/pending-utr', { credentials: 'include' });
+        const data = await res.json();
+        const orders = data.orders || [];
+
+        badge.textContent = `${orders.length} Pending`;
+        if (orders.length > 0) {
+          badge.style.background = '#FEE2E2';
+          badge.style.color = '#991B1B';
+          badge.style.borderColor = '#FCA5A5';
+        } else {
+          badge.style.background = '#D8F3DC';
+          badge.style.color = '#1B4332';
+          badge.style.borderColor = '#74C69D';
+        }
+
+        if (orders.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#888;"><i class="fa-solid fa-circle-check" style="color:#2D6A4F;"></i> All manual UPI payments have been reconciled. No orders awaiting verification.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = orders.map(o => {
+          const ageText = o.ageMinutes !== undefined
+            ? (o.ageMinutes < 60 ? `${o.ageMinutes}m ago` : `${Math.floor(o.ageMinutes / 60)}h ${o.ageMinutes % 60}m ago`)
+            : 'Pending';
+          return `
+            <tr id="reconcile-row-${o.id}">
+              <td><strong>#${escapeHtml(String(o.id))}</strong></td>
+              <td>
+                <div style="font-weight:600; color:#1B4332;">${escapeHtml(o.customerName || 'Customer')}</div>
+                <div style="font-size:0.8rem; color:#666;">${escapeHtml(o.customerEmail || o.customerPhone || '')}</div>
+              </td>
+              <td><span class="price-tag">₹${escapeHtml(String(o.total || 0))}</span></td>
+              <td><code style="background:#F3F4F6; padding:3px 8px; border-radius:4px; font-weight:700; color:#1F2937;">${escapeHtml(o.transactionId || 'None')}</code></td>
+              <td><span style="font-size:0.82rem; color:#6B7280;">${ageText}</span></td>
+              <td style="text-align: right;">
+                <button type="button" class="btn-approve-utr" onclick="reconcileUtrOrder(${o.id}, 'approve')">
+                  <i class="fa-solid fa-check"></i> Approve
+                </button>
+                <button type="button" class="btn-reject-utr" onclick="reconcileUtrOrder(${o.id}, 'reject')">
+                  <i class="fa-solid fa-xmark"></i> Reject
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#DC2626;">Error fetching pending reconciliation orders.</td></tr>`;
+      }
+    }
+
+    window.reconcileUtrOrder = async function(orderId, action) {
+      let reason = '';
+      if (action === 'reject') {
+        reason = prompt('Please enter the reason for rejecting this UTR (e.g. UTR not found on bank statement, amount mismatch):');
+        if (reason === null) return; // User cancelled
+        if (!reason.trim()) {
+          alert('A rejection reason is required.');
+          return;
+        }
+      } else {
+        if (!confirm(`Are you sure you want to approve Order #${orderId} and mark payment as verified?`)) {
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch(`/api/admin/reconciliation/${orderId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ action, reason: reason ? reason.trim() : undefined })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert(`Order #${orderId} successfully ${action === 'approve' ? 'approved & confirmed' : 'rejected & stock restored'}!`, true);
+          loadPendingUtrOrders();
+        } else {
+          showAlert(data.message || 'Failed to update order status', false);
+        }
+      } catch (err) {
+        showAlert('Network error updating reconciliation status.', false);
+      }
+    };
+
     // 7. Sign Out
     document.getElementById('btnAdminLogout').addEventListener('click', async () => {
       try {
@@ -1440,6 +1725,7 @@
       const authorized = await verifyAdminAuth();
       if (authorized) {
         loadCatalogProducts();
+        loadPendingUtrOrders();
       }
     })();
   </script>

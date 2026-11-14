@@ -385,6 +385,37 @@ async function runTests() {
   });
 
   // 9. PhonePe Payment Gateway Integration
+  await test('POST /initiate-payment & /api/payment/initiate-payment returns PhonePe checkout URL and pre-inserts Pending order', async () => {
+    const res = await request('POST', '/api/payment/initiate-payment', {
+      amount: 499,
+      userDetails: {
+        name: "Test Seeker",
+        email: "seeker@umanarayni.com",
+        phone: "9876543210",
+        address: "Ayurvedic Sanctuary, India"
+      }
+    });
+
+    if (res.status !== 200 || !res.data.success) {
+      throw new Error(`PhonePe initiate-payment failed: ${JSON.stringify(res.data)}`);
+    }
+
+    const payUrl = res.data.url || res.data.checkoutUrl || res.data.redirectUrl;
+    if (!payUrl || !payUrl.startsWith('http')) {
+      throw new Error(`Expected valid PhonePe checkout URL, got: ${payUrl}`);
+    }
+
+    if (!res.data.merchantTransactionId || !res.data.merchantTransactionId.startsWith('MT_')) {
+      throw new Error(`Invalid merchantTransactionId: ${res.data.merchantTransactionId}`);
+    }
+
+    // Verify order was pre-inserted into MySQL as Pending
+    const [orderRows] = await db.query('SELECT * FROM orders WHERE id = ?', [res.data.merchantTransactionId]);
+    if (orderRows.length === 0 || orderRows[0].paymentStatus !== 'Pending') {
+      throw new Error(`Order ${res.data.merchantTransactionId} not found in MySQL or not marked as Pending`);
+    }
+  });
+
   await test('POST /api/payment/create-order secures calculation against database prices and returns PhonePe redirect URL', async () => {
     // Send tampered frontend price of 1 Rupee to ensure backend ignores it and queries MySQL
     const res = await request('POST', '/api/payment/create-order', {

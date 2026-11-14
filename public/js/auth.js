@@ -1,11 +1,15 @@
 /**
- * UMANARAYANI AYURVEDA — CREATIVE HERBAL AUTHENTICATION SCRIPT
+ * UMANARAYNI AYURVEDA — CREATIVE HERBAL AUTHENTICATION SCRIPT
  * Two-Step OTP Verification Flow (Email & SMS OTP via Nodemailer & Twilio),
  * Floating botanical leaves animation, interactive Dosha selection,
  * and post-login real-time active users showcase.
  */
 
-let currentTurnstileToken = 'cf_test_pass';
+let currentTurnstileTokens = {
+  login: '',
+  register: '',
+  otp: ''
+};
 let turnstileWidgetIds = {};
 let pendingAuthIdentifier = '';
 let resendTimer = null;
@@ -24,15 +28,15 @@ function getActiveTurnstileToken(mode = 'login') {
       token = window.turnstile.getResponse(`#${mode}Turnstile`) || window.turnstile.getResponse();
     } catch (_) {}
   }
-  if (!token && currentTurnstileToken && currentTurnstileToken !== 'cf_test_pass') {
-    token = currentTurnstileToken;
+  if (!token && currentTurnstileTokens[mode]) {
+    token = currentTurnstileTokens[mode];
   }
   if (!token) {
     const el = document.getElementById(`${mode}Turnstile`);
     const hidden = el ? el.querySelector('[name="cf-turnstile-response"]') : document.querySelector('[name="cf-turnstile-response"]');
     if (hidden && hidden.value) token = hidden.value;
   }
-  return token || currentTurnstileToken || '';
+  return token || '';
 }
 
 function resetTurnstileWidget(mode = 'login') {
@@ -47,7 +51,7 @@ function resetTurnstileWidget(mode = 'login') {
       try { window.turnstile.reset(); } catch (_) {}
     }
   }
-  currentTurnstileToken = '';
+  currentTurnstileTokens[mode] = '';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -81,38 +85,87 @@ async function initTurnstileWidgets() {
   siteKey = siteKey || '0x4AAAAAAF5yxm-iBychLJBe';
 
   const renderWidget = () => {
-    if (window.turnstile) {
-      try {
-        if (document.getElementById('loginTurnstile') && turnstileWidgetIds['login'] === undefined) {
-          turnstileWidgetIds['login'] = window.turnstile.render('#loginTurnstile', {
-            sitekey: siteKey,
-            theme: 'light',
-            callback: (token) => { currentTurnstileToken = token; }
-          });
-        }
-        if (document.getElementById('registerTurnstile') && turnstileWidgetIds['register'] === undefined) {
-          turnstileWidgetIds['register'] = window.turnstile.render('#registerTurnstile', {
-            sitekey: siteKey,
-            theme: 'light',
-            callback: (token) => { currentTurnstileToken = token; }
-          });
-        }
-        if (document.getElementById('otpTurnstile') && turnstileWidgetIds['otp'] === undefined) {
-          turnstileWidgetIds['otp'] = window.turnstile.render('#otpTurnstile', {
-            sitekey: siteKey,
-            theme: 'light',
-            callback: (token) => { currentTurnstileToken = token; }
-          });
-        }
-      } catch (e) {}
+    if (!window.turnstile) return;
+    try {
+      if (document.getElementById('loginTurnstile') && turnstileWidgetIds['login'] === undefined) {
+        turnstileWidgetIds['login'] = window.turnstile.render('#loginTurnstile', {
+          sitekey: siteKey,
+          theme: 'light',
+          callback: (token) => {
+            currentTurnstileTokens['login'] = token;
+            clearAuthMessages();
+          },
+          'expired-callback': () => {
+            currentTurnstileTokens['login'] = '';
+            if (window.turnstile && turnstileWidgetIds['login'] !== undefined) {
+              try { window.turnstile.reset(turnstileWidgetIds['login']); } catch (_) {}
+            }
+          },
+          'error-callback': (code) => {
+            console.warn('[Turnstile Login Widget Error]', code);
+          }
+        });
+      }
+      if (document.getElementById('registerTurnstile') && turnstileWidgetIds['register'] === undefined) {
+        turnstileWidgetIds['register'] = window.turnstile.render('#registerTurnstile', {
+          sitekey: siteKey,
+          theme: 'light',
+          callback: (token) => {
+            currentTurnstileTokens['register'] = token;
+            clearAuthMessages();
+          },
+          'expired-callback': () => {
+            currentTurnstileTokens['register'] = '';
+            if (window.turnstile && turnstileWidgetIds['register'] !== undefined) {
+              try { window.turnstile.reset(turnstileWidgetIds['register']); } catch (_) {}
+            }
+          },
+          'error-callback': (code) => {
+            console.warn('[Turnstile Register Widget Error]', code);
+          }
+        });
+      }
+      if (document.getElementById('otpTurnstile') && turnstileWidgetIds['otp'] === undefined) {
+        turnstileWidgetIds['otp'] = window.turnstile.render('#otpTurnstile', {
+          sitekey: siteKey,
+          theme: 'light',
+          callback: (token) => {
+            currentTurnstileTokens['otp'] = token;
+            clearAuthMessages();
+          },
+          'expired-callback': () => {
+            currentTurnstileTokens['otp'] = '';
+            if (window.turnstile && turnstileWidgetIds['otp'] !== undefined) {
+              try { window.turnstile.reset(turnstileWidgetIds['otp']); } catch (_) {}
+            }
+          },
+          'error-callback': (code) => {
+            console.warn('[Turnstile OTP Widget Error]', code);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[Turnstile Render Warning]', e.message);
     }
   };
 
-  if (window.turnstile) {
-    renderWidget();
-  } else {
-    window.addEventListener('load', () => setTimeout(renderWidget, 500));
-  }
+  const ensureReady = () => {
+    if (window.turnstile) {
+      try {
+        if (typeof window.turnstile.ready === 'function') {
+          window.turnstile.ready(renderWidget);
+        } else {
+          renderWidget();
+        }
+      } catch (_) {
+        renderWidget();
+      }
+    } else {
+      setTimeout(ensureReady, 300);
+    }
+  };
+
+  ensureReady();
 }
 
 /* ==========================================================================
@@ -178,6 +231,9 @@ function initAuthTabs() {
       } else {
         if (loginForm) loginForm.style.display = 'none';
         if (registerForm) registerForm.style.display = 'block';
+        if (window.turnstile && turnstileWidgetIds['register'] === undefined) {
+          setTimeout(() => initTurnstileWidgets(), 100);
+        }
       }
     });
   });
@@ -347,6 +403,13 @@ function initFormSubmissions() {
         return;
       }
 
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const token = getActiveTurnstileToken('login');
+      if (!token && window.turnstile && !isLocalHost) {
+        showAuthError('Please complete the security bot verification before continuing.');
+        return;
+      }
+
       const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -404,6 +467,13 @@ function initFormSubmissions() {
 
       if (password.length < 6) {
         showAuthError('Password must contain at least 6 characters.');
+        return;
+      }
+
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const token = getActiveTurnstileToken('register');
+      if (!token && window.turnstile && !isLocalHost) {
+        showAuthError('Please complete the security bot verification before continuing.');
         return;
       }
 
@@ -528,7 +598,7 @@ function initFormSubmissions() {
           body: JSON.stringify({
             identifier: "pushpendra@example.com",
             password: "ayurveda_pass",
-            turnstileToken: currentTurnstileToken
+            turnstileToken: getActiveTurnstileToken('login')
           })
         });
         const data = await res.json();

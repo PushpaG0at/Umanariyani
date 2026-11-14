@@ -1,5 +1,5 @@
 /**
- * UMANARAYANI AYURVEDA — AMAZON-STYLE PRODUCT DETAIL PAGE SCRIPT
+ * UMANARAYNI AYURVEDA — AMAZON-STYLE PRODUCT DETAIL PAGE SCRIPT
  * Features interactive image loupe zoom lens, delivery pincode calculator,
  * quantity selector, buy box, tabs navigation, reviews, and direct WhatsApp query.
  */
@@ -31,7 +31,7 @@ async function loadProductDetails(productId) {
       document.getElementById('productDetailContainer').innerHTML = `
         <div style="text-align: center; padding: 60px;">
           <h2>Product not found</h2>
-          <p><a href="index.html" style="color: #2D6A4F; text-decoration: underline;">Return to Umanarayani Homepage</a></p>
+          <p><a href="index.html" style="color: #2D6A4F; text-decoration: underline;">Return to Umanarayni Homepage</a></p>
         </div>
       `;
       return;
@@ -47,7 +47,7 @@ async function loadProductDetails(productId) {
 
 function renderProductPage(p) {
   // Page Title
-  document.title = `${p.name} — Umanarayani Ayurveda`;
+  document.title = `${p.name} — Umanarayni Ayurveda`;
 
   // Breadcrumbs
   document.getElementById('breadcrumbCategory').textContent = p.category;
@@ -162,7 +162,7 @@ function renderProductPage(p) {
   buyNowBtn.onclick = () => handleBuyNow(p);
 
   // Dedicated WhatsApp Inquiry with context-aware message
-  const waMessage = `Hello Umanarayani! I have a question regarding *${p.name}* (Price: ₹${p.price}). Could you please guide me on this product?`;
+  const waMessage = `Hello Umanarayni! I have a question regarding *${p.name}* (Price: ₹${p.price}). Could you please guide me on this product?`;
   waBtn.onclick = () => {
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`;
     window.open(url, '_blank');

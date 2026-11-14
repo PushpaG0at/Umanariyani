@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+const { verifyOtpHash } = require('./services/otpSecurityService');
 
 // Initialize the MySQL Connection Pool
 const pool = mysql.createPool({
@@ -59,6 +60,23 @@ async function ensureUserOtpColumns() {
       await pool.query("ALTER TABLE users MODIFY COLUMN role VARCHAR(20) DEFAULT 'user'");
     }
 
+    if (!colNames.includes('totp_secret')) {
+      await pool.query('ALTER TABLE users ADD COLUMN totp_secret VARCHAR(128) NULL AFTER role');
+      console.log(' [DB] Added totp_secret column to users table.');
+    }
+    if (!colNames.includes('totp_enabled')) {
+      await pool.query('ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE AFTER totp_secret');
+      console.log(' [DB] Added totp_enabled column to users table.');
+    }
+    if (!colNames.includes('otp_attempts')) {
+      await pool.query('ALTER TABLE users ADD COLUMN otp_attempts INT DEFAULT 0 AFTER totp_enabled');
+      console.log(' [DB] Added otp_attempts column to users table.');
+    }
+    if (!colNames.includes('otp_last_sent_at')) {
+      await pool.query('ALTER TABLE users ADD COLUMN otp_last_sent_at DATETIME NULL AFTER otp_attempts');
+      console.log(' [DB] Added otp_last_sent_at column to users table.');
+    }
+
     // Allow email to be NULL in case user signs up exclusively via phone number
     const emailCol = cols.find(c => c.Field === 'email');
     if (emailCol && emailCol.Null === 'NO') {
@@ -84,7 +102,7 @@ async function ensureUserOtpColumns() {
 }
 
 /**
- * Ensures orders table has transactionId column with a unique index
+ * Ensures orders table has transactionId, stockReserved, promoCode, and reconciliation columns
  */
 async function ensureOrderColumns() {
   try {
@@ -95,8 +113,140 @@ async function ensureOrderColumns() {
       await pool.query('ALTER TABLE orders ADD COLUMN transactionId VARCHAR(100) NULL UNIQUE AFTER paymentMethod');
       console.log(' [DB] Added transactionId column (with UNIQUE index) to orders table.');
     }
+    if (!colNames.includes('stockReserved')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN stockReserved BOOLEAN DEFAULT TRUE AFTER paymentStatus');
+      console.log(' [DB] Added stockReserved column to orders table.');
+    }
+    if (!colNames.includes('promoCode')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN promoCode VARCHAR(50) NULL AFTER discount');
+      console.log(' [DB] Added promoCode column to orders table.');
+    }
+    if (!colNames.includes('reconciliationNote')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN reconciliationNote TEXT NULL AFTER orderStatus');
+      console.log(' [DB] Added reconciliationNote column to orders table.');
+    }
+    if (!colNames.includes('reconciledAt')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN reconciledAt DATETIME NULL AFTER reconciliationNote');
+      console.log(' [DB] Added reconciledAt column to orders table.');
+    }
+    if (!colNames.includes('reconciledBy')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN reconciledBy VARCHAR(120) NULL AFTER reconciledAt');
+      console.log(' [DB] Added reconciledBy column to orders table.');
+    }
+    if (!colNames.includes('paymentProcessedAt')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN paymentProcessedAt DATETIME NULL AFTER reconciledBy');
+      console.log(' [DB] Added paymentProcessedAt column to orders table.');
+    }
   } catch (err) {
     console.warn('⚠️  [DB] Could not verify/alter orders schema:', err.message);
+  }
+}
+
+/**
+ * Ensures products table has stockCount and reservedStock columns
+ */
+async function ensureStockColumns() {
+  try {
+    const [cols] = await pool.query('DESCRIBE products');
+    const colNames = cols.map(c => c.Field);
+
+    if (!colNames.includes('stockCount')) {
+      await pool.query('ALTER TABLE products ADD COLUMN stockCount INT DEFAULT 0 AFTER inStock');
+      console.log(' [DB] Added stockCount column to products table.');
+    }
+    if (!colNames.includes('reservedStock')) {
+      await pool.query('ALTER TABLE products ADD COLUMN reservedStock INT DEFAULT 0 AFTER stockCount');
+      console.log(' [DB] Added reservedStock column to products table.');
+    }
+  } catch (err) {
+    console.warn('⚠️  [DB] Could not verify/alter products stock columns:', err.message);
+  }
+}
+
+/**
+ * Ensures promo_codes table exists and has seed coupons
+ */
+async function ensurePromoCodeTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS promo_codes (
+        code VARCHAR(50) PRIMARY KEY,
+        type ENUM('percentage', 'flat') NOT NULL DEFAULT 'percentage',
+        value DECIMAL(10, 2) NOT NULL,
+        minCart DECIMAL(10, 2) DEFAULT 0,
+        maxDiscount DECIMAL(10, 2) DEFAULT NULL,
+        usageLimit INT DEFAULT 1000,
+        usageCount INT DEFAULT 0,
+        isActive BOOLEAN DEFAULT TRUE,
+        expiresAt DATETIME DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    const [existing] = await pool.query('SELECT COUNT(*) as cnt FROM promo_codes');
+    if (existing[0].cnt === 0) {
+      await pool.query(`
+        INSERT INTO promo_codes (code, type, value, minCart, maxDiscount, usageLimit, isActive, expiresAt)
+        VALUES 
+          ('AYUR10', 'percentage', 10.00, 499.00, 150.00, 500, TRUE, DATE_ADD(NOW(), INTERVAL 90 DAY)),
+          ('WELCOME50', 'flat', 50.00, 299.00, 50.00, 1000, TRUE, DATE_ADD(NOW(), INTERVAL 180 DAY)),
+          ('VEDA100', 'flat', 100.00, 999.00, 100.00, 300, TRUE, DATE_ADD(NOW(), INTERVAL 90 DAY))
+      `);
+      console.log(' [DB] Seeded initial launch promo codes: AYUR10, WELCOME50, VEDA100');
+    }
+  } catch (err) {
+    console.warn('⚠️  [DB] Could not ensure promo_codes table:', err.message);
+  }
+}
+
+/**
+ * Ensures admin_audit_logs table exists for compliance and tracking of all administrative actions
+ */
+async function ensureAdminAuditLogTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_audit_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id VARCHAR(64) NULL,
+        admin_email VARCHAR(160) NOT NULL,
+        action VARCHAR(100) NOT NULL,
+        resource_type VARCHAR(64) NOT NULL,
+        resource_id VARCHAR(128) NULL,
+        details JSON NULL,
+        ip_address VARCHAR(64) NULL,
+        user_agent VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_audit_admin_email (admin_email),
+        INDEX idx_audit_action (action),
+        INDEX idx_audit_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✅ [DB] Verified/created admin_audit_logs table.');
+  } catch (err) {
+    console.warn('⚠️  [DB] Could not ensure admin_audit_logs table:', err.message);
+  }
+}
+
+/**
+ * Records an immutable audit log entry for administrative actions
+ */
+async function recordAdminAuditLog({ adminId, adminEmail, action, resourceType, resourceId, details, req }) {
+  try {
+    let ip = null;
+    let ua = null;
+    if (req) {
+      const fwd = req.headers['x-forwarded-for'];
+      ip = fwd ? fwd.split(',')[0].trim() : (req.ip || (req.socket && req.socket.remoteAddress));
+      ua = (req.headers['user-agent'] || '').slice(0, 255);
+    }
+    const detailsJson = details ? JSON.stringify(details) : null;
+
+    await pool.query(`
+      INSERT INTO admin_audit_logs (admin_id, admin_email, action, resource_type, resource_id, details, ip_address, user_agent)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [adminId ? String(adminId) : null, adminEmail || 'system', action, resourceType || 'general', resourceId ? String(resourceId) : null, detailsJson, ip, ua]);
+  } catch (err) {
+    console.warn('[Audit Log Error]: Failed to write admin audit log:', err.message);
   }
 }
 
@@ -110,6 +260,9 @@ async function testConnection() {
     connection.release();
     await ensureUserOtpColumns();
     await ensureOrderColumns();
+    await ensureStockColumns();
+    await ensurePromoCodeTable();
+    await ensureAdminAuditLogTable();
     return true;
   } catch (error) {
     const detail = error.code ? `${error.code}${error.message ? `: ${error.message}` : ''}` : error.message || 'Connection error';
@@ -150,7 +303,7 @@ async function findUserByIdentifier(identifier) {
 }
 
 /**
- * Saves a hashed OTP and expiry timestamp for a user
+ * Saves a hashed OTP and expiry timestamp for a user, resetting attempt counters
  */
 async function saveUserOtp(identifier, hashedOtp, expiryDate) {
   if (!identifier) return false;
@@ -159,14 +312,14 @@ async function saveUserOtp(identifier, hashedOtp, expiryDate) {
 
   if (isEmail) {
     const [res] = await pool.query(
-      'UPDATE users SET otp_code = ?, otp_expiry = ? WHERE LOWER(email) = LOWER(?)',
+      'UPDATE users SET otp_code = ?, otp_expiry = ?, otp_attempts = 0, otp_last_sent_at = NOW() WHERE LOWER(email) = LOWER(?)',
       [hashedOtp, expiryDate, clean]
     );
     return res.affectedRows > 0;
   } else {
     const digitsOnly = clean.replace(/[^0-9+]/g, '');
     const [res] = await pool.query(
-      'UPDATE users SET otp_code = ?, otp_expiry = ? WHERE phone_number = ? OR phone_number = ?',
+      'UPDATE users SET otp_code = ?, otp_expiry = ?, otp_attempts = 0, otp_last_sent_at = NOW() WHERE phone_number = ? OR phone_number = ?',
       [hashedOtp, expiryDate, clean, digitsOnly]
     );
     return res.affectedRows > 0;
@@ -175,6 +328,7 @@ async function saveUserOtp(identifier, hashedOtp, expiryDate) {
 
 /**
  * Verifies if entered OTP matches and hasn't expired (5-minute validity)
+ * Uses constant-time HMAC-SHA256 comparison and enforces 5 attempts max limit.
  */
 async function verifyUserOtp(identifier, enteredOtp) {
   if (!identifier || !enteredOtp) {
@@ -197,16 +351,17 @@ async function verifyUserOtp(identifier, enteredOtp) {
   }
 
   const cleanOtp = enteredOtp.toString().trim();
-  let isMatch = false;
-
-  if (user.otp_code.startsWith('$2a$') || user.otp_code.startsWith('$2b$')) {
-    isMatch = await bcrypt.compare(cleanOtp, user.otp_code);
-  } else {
-    isMatch = user.otp_code.trim() === cleanOtp;
-  }
+  const isMatch = await verifyOtpHash(cleanOtp, user.otp_code, bcrypt.compare);
 
   if (!isMatch) {
-    return { success: false, message: 'Invalid OTP code. Please check and try again.' };
+    const attempts = (Number(user.otp_attempts) || 0) + 1;
+    if (attempts >= 5) {
+      await pool.query('UPDATE users SET otp_code = NULL, otp_expiry = NULL, otp_attempts = 0 WHERE id = ?', [user.id]);
+      return { success: false, message: 'Too many failed verification attempts (5/5). This OTP has been invalidated for security. Please request a new code.' };
+    } else {
+      await pool.query('UPDATE users SET otp_attempts = ? WHERE id = ?', [attempts, user.id]);
+      return { success: false, message: `Invalid OTP code. (${attempts}/5 attempts used). Please check and try again.` };
+    }
   }
 
   // OTP verified: mark user verified, set role, and clear OTP
@@ -215,13 +370,14 @@ async function verifyUserOtp(identifier, enteredOtp) {
   const targetRole = isMatchAdmin ? 'admin' : (user.role === 'admin' ? 'admin' : 'user');
 
   await pool.query(
-    'UPDATE users SET is_verified = TRUE, otp_code = NULL, otp_expiry = NULL, role = ? WHERE id = ?',
+    'UPDATE users SET is_verified = TRUE, otp_code = NULL, otp_expiry = NULL, otp_attempts = 0, role = ? WHERE id = ?',
     [targetRole, user.id]
   );
 
   user.is_verified = 1;
   user.otp_code = null;
   user.otp_expiry = null;
+  user.otp_attempts = 0;
   user.role = targetRole;
 
   return { success: true, user };
@@ -290,12 +446,16 @@ async function recordQrPayment(orderData) {
   }
 
   try {
+    const paymentStatus = orderData.paymentStatus || 'Awaiting_Verification';
+    const orderStatus = orderData.orderStatus || 'Awaiting_Verification';
+    const stockReserved = orderData.stockReserved !== undefined ? Boolean(orderData.stockReserved) : true;
+
     const sql = `
       INSERT INTO orders (
         id, userId, customerName, customerEmail, customerPhone, shippingAddress,
         items, subtotal, discount, tax, shippingFee, total, paymentMethod, transactionId,
-        paymentStatus, orderStatus
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'UPI_QR', ?, 'Paid', 'Confirmed')
+        paymentStatus, orderStatus, stockReserved
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'UPI_QR', ?, ?, ?, ?)
     `;
 
     const params = [
@@ -311,7 +471,10 @@ async function recordQrPayment(orderData) {
       Number(tax || 0),
       Number(shippingFee || 0),
       Number(total),
-      cleanTxId
+      cleanTxId,
+      paymentStatus,
+      orderStatus,
+      stockReserved
     ];
 
     await pool.query(sql, params);
@@ -344,6 +507,10 @@ module.exports = {
   testConnection,
   ensureUserOtpColumns,
   ensureOrderColumns,
+  ensureStockColumns,
+  ensurePromoCodeTable,
+  ensureAdminAuditLogTable,
+  recordAdminAuditLog,
   findUserByIdentifier,
   findOrderByTransactionId,
   recordQrPayment,

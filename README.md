@@ -1,4 +1,4 @@
-# 🌿 UMANARAYANI — Pure Nature, Pure Care.
+# 🌿 UMANARAYNI — Pure Nature, Pure Care.
 ### *Classical Ayurvedic Personal Care, Botanical Beauty & AI Herbal Sanctuary*
 
 [![License: ISC](https://img.shields.io/badge/License-ISC-green.svg)](https://opensource.org/licenses/ISC)
@@ -9,18 +9,18 @@
 
 ---
 
-## 📖 About Umanarayani
+## 📖 About Umanarayni
 
-**UMANARAYANI** is an authentic, classical Ayurvedic personal care e-commerce platform and holistic wellness sanctuary. Rooted in traditional Indian botanical wisdom and time-honoured classical formulations (such as *Kshirapak* herbal oil infusion and natural saponin cleansing), Umanarayani delivers pure, uncompromised hair, scalp, and skin care free from sulphates, parabens, and mineral oils.
+**UMANARAYNI** is an authentic, classical Ayurvedic personal care e-commerce platform and holistic wellness sanctuary. Rooted in traditional Indian botanical wisdom and time-honoured classical formulations (such as *Kshirapak* herbal oil infusion and natural saponin cleansing), Umanarayni delivers pure, uncompromised hair, scalp, and skin care free from sulphates, parabens, and mineral oils.
 
-The platform blends ancient Ayurvedic heritage with a state-of-the-art interactive digital experience — featuring a revolving 8-herbs mandala, real-time live visitor counters, rich Amazon-style product exploration pages, interactive Ayurvedic dosha diagnosis, and an AI-powered Ayurvedic specialist (**"Umanarayani AI Vaidya"**) powered by Google Gemini.
+The platform blends ancient Ayurvedic heritage with a state-of-the-art interactive digital experience — featuring a revolving 8-herbs mandala, real-time live visitor counters, rich Amazon-style product exploration pages, interactive Ayurvedic dosha diagnosis, and an AI-powered Ayurvedic specialist (**"Umanarayni AI Vaidya"**) powered by Google Gemini.
 
 ---
 
 ## ✨ Key Features & Architecture
 
 ### 1. 🌀 Revolving 8 Sacred Herbs Mandala
-- An interactive, revolving botanical wheel where the eight sacred herbs of Umanarayani revolve seamlessly around the central brand emblem:
+- An interactive, revolving botanical wheel where the eight sacred herbs of Umanarayni revolve seamlessly around the central brand emblem:
   1. **Amla (Phyllanthus emblica)** — Natural Vitamin C & Youthful Vitality
   2. **Reetha (Sapindus mukorossi)** — Nature's Pure Cleansing Saponin
   3. **Shikakai (Acacia concinna)** — Traditional Fruit for Hair & Silkiness
@@ -33,9 +33,9 @@ The platform blends ancient Ayurvedic heritage with a state-of-the-art interacti
 
 ### 2. 🧴 Classical Product Catalog & Dynamic Detail Experience
 - Comprehensive product catalog showcasing flagship classical preparations:
-  - **Umanarayani Ayurvedic Hair Oil** (₹349 / 200ml) — Infused with Brahmi, Bhringraj, Nagarmotha & Amarbel.
-  - **Umanarayani Herbal Shampoo** (₹329 / 250ml) — Sulphate-free Reetha & Shikakai gentle foaming formula.
-  - **Umanarayani Ayurvedic Orange Face Wash** (₹279 / 150ml) — Anti-tan, acne-clearing citrus bioflavonoids & Neem.
+  - **Umanarayni Ayurvedic Hair Oil** (₹349 / 200ml) — Infused with Brahmi, Bhringraj, Nagarmotha & Amarbel.
+  - **Umanarayni Herbal Shampoo** (₹329 / 250ml) — Sulphate-free Reetha & Shikakai gentle foaming formula.
+  - **Umanarayni Ayurvedic Orange Face Wash** (₹279 / 150ml) — Anti-tan, acne-clearing citrus bioflavonoids & Neem.
 - Amazon-style product pages (`product.html`) featuring:
   - High-resolution multi-angle image galleries
   - Dynamic pricing, savings badges, and volume selectors
@@ -44,9 +44,9 @@ The platform blends ancient Ayurvedic heritage with a state-of-the-art interacti
   - Verified buyer ratings, star distributions, and interactive review submission
   - Direct WhatsApp 1-on-1 consultation button
 
-### 3. 🤖 Gemini AI Ayurvedic Consultant ("Umanarayani AI Vaidya")
+### 3. 🤖 Gemini AI Ayurvedic Consultant ("Umanarayni AI Vaidya")
 - Powered by Google Gemini (`@google/genai`) with dual-mode interactions/generateContent fallback.
-- Context-aware consultation engine loaded with the full Umanarayani botanical materia medica.
+- Context-aware consultation engine loaded with the full Umanarayni botanical materia medica.
 - Helps customers resolve concerns such as Pitta heat, scalp dryness, seasonal hair fall, dandruff, and dull skin with classical guidance and product suggestions.
 - Built-in graceful offline Ayurvedic knowledge engine if internet or API limits are encountered.
 
@@ -90,7 +90,7 @@ The platform blends ancient Ayurvedic heritage with a state-of-the-art interacti
 ## 📂 Project Directory Structure
 
 ```text
-Umanarayani/
+Umanarayni/
 │
 ├── .env.example             # Template for environment variables (Gemini API key, Port)
 ├── .gitignore               # Ignores node_modules and sensitive .env files
@@ -160,7 +160,7 @@ Umanarayani/
 | `POST` | `/api/reviews/:productId`| Submit a new verified review |
 | `POST` | `/api/auth/register` | Register a new customer with Dosha profile |
 | `POST` | `/api/auth/login` | Authenticate customer and retrieve Dosha profile |
-| `POST` | `/api/ai/consult` | Consult **Umanarayani AI Vaidya** (Google Gemini) |
+| `POST` | `/api/ai/consult` | Consult **Umanarayni AI Vaidya** (Google Gemini) |
 | `POST` | `/api/ai/diagnose-dosha`| Diagnostic Dosha Assessment (Google Gemini) |
 | `POST` | `/api/inquiry/whatsapp` | Generate direct WhatsApp consultation link |
 
@@ -177,7 +177,7 @@ Umanarayani/
 1. **Clone the repository:**
    ```bash
    git clone <repository_url>
-   cd Umanarayani
+   cd Umanarayni
    ```
 
 2. **Install dependencies:**
@@ -207,7 +207,7 @@ Umanarayani/
    ```
 
 5. **Open in Browser:**
-   Visit `http://localhost:3000` to explore the Umanarayani experience!
+   Visit `http://localhost:3000` to explore the Umanarayni experience!
 
 ---
 
@@ -219,4 +219,4 @@ Umanarayani/
 
 ---
 
-*© Umanarayani Herbal Products. Pure Nature, Pure Care. All Rights Reserved.*
+*© Umanarayni Herbal Products. Pure Nature, Pure Care. All Rights Reserved.*

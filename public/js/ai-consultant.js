@@ -1,5 +1,5 @@
 /**
- * UMANARAYANI AYURVEDA — AI VAIDYA & HUMAN WHATSAPP CONSULTANT
+ * UMANARAYNI AYURVEDA — AI VAIDYA & HUMAN WHATSAPP CONSULTANT
  * Powered by Google Gemini (gemini-3.6-flash)
  * Human Helpline: +91 8641033514
  */
@@ -231,7 +231,7 @@
         // Append WhatsApp herbal support banner
         const escalateBox = document.createElement('div');
         escalateBox.className = 'ai-answer-whatsapp-escalate';
-        const waUrl = whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I want to consult regarding: ' + content.substring(0, 60))}`;
+        const waUrl = whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayni! I want to consult regarding: ' + content.substring(0, 60))}`;
         escalateBox.innerHTML = `
           <span>Want 1-on-1 guidance from our Herbal Care Team?</span>
           <a href="${waUrl}" target="_blank">
@@ -340,7 +340,7 @@
               // Append WhatsApp herbal support banner
               const escalateBox = document.createElement('div');
               escalateBox.className = 'ai-answer-whatsapp-escalate';
-              const waUrl = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I want to consult regarding: ' + q.substring(0, 60))}`;
+              const waUrl = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayni! I want to consult regarding: ' + q.substring(0, 60))}`;
               escalateBox.innerHTML = `
                 <span>Want 1-on-1 guidance from our Herbal Care Team?</span>
                 <a href="${waUrl}" target="_blank">
@@ -432,7 +432,7 @@
         resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
         if (waReviewBtn) {
-          const prefill = `Namaste Umanarayani! I completed the Dosha Quiz (Hair: ${hairTexture}, Skin: ${skinType}, Concern: ${mainConcern}). Please guide me on my personalized Ayurvedic regimen.`;
+          const prefill = `Namaste Umanarayni! I completed the Dosha Quiz (Hair: ${hairTexture}, Skin: ${skinType}, Concern: ${mainConcern}). Please guide me on my personalized Ayurvedic regimen.`;
           waReviewBtn.href = `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent(prefill)}`;
         }
       } catch (err) {
@@ -480,7 +480,7 @@
         const escalate = document.createElement('div');
         escalate.className = 'ai-answer-whatsapp-escalate';
         escalate.style.marginTop = '8px';
-        const link = whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I have a question about ' + productId + ': ' + text.substring(0, 50))}`;
+        const link = whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayni! I have a question about ' + productId + ': ' + text.substring(0, 50))}`;
         escalate.innerHTML = `
           <span style="font-size:0.75rem;">Prefer 1-on-1 herbal guidance?</span>
           <a href="${link}" target="_blank" style="padding:4px 10px; font-size:0.75rem;">
@@ -546,7 +546,7 @@
               const escalate = document.createElement('div');
               escalate.className = 'ai-answer-whatsapp-escalate';
               escalate.style.marginTop = '8px';
-              const link = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I have a question about ' + productId + ': ' + q.substring(0, 50))}`;
+              const link = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayni! I have a question about ' + productId + ': ' + q.substring(0, 50))}`;
               escalate.innerHTML = `
                 <span style="font-size:0.75rem;">Prefer 1-on-1 herbal guidance?</span>
                 <a href="${link}" target="_blank" style="padding:4px 10px; font-size:0.75rem;">
@@ -670,7 +670,7 @@
         const esc = document.createElement('div');
         esc.className = 'ai-answer-whatsapp-escalate';
         esc.style.marginTop = '8px';
-        const link = whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I consulted your AI and want to talk with a human specialist about: ' + text.substring(0, 50))}`;
+        const link = whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayni! I consulted your AI and want to talk with a human specialist about: ' + text.substring(0, 50))}`;
         esc.innerHTML = `
           <span style="font-size:0.72rem;">Want 1-on-1 herbal support?</span>
           <a href="${link}" target="_blank" style="padding:3px 10px; font-size:0.72rem;">
@@ -758,7 +758,7 @@
               const esc = document.createElement('div');
               esc.className = 'ai-answer-whatsapp-escalate';
               esc.style.marginTop = '8px';
-              const link = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayani! I consulted your AI and want to talk with a human specialist about: ' + q.substring(0, 50))}`;
+              const link = data.whatsappLink || `${HUMAN_WHATSAPP_LINK_BASE}?text=${encodeURIComponent('Hello Umanarayni! I consulted your AI and want to talk with a human specialist about: ' + q.substring(0, 50))}`;
               esc.innerHTML = `
                 <span style="font-size:0.72rem;">Want 1-on-1 herbal support?</span>
                 <a href="${link}" target="_blank" style="padding:3px 10px; font-size:0.72rem;">
