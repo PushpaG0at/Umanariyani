@@ -569,3 +569,43 @@
   color: #1E6B37;
   border: 1px solid #A3E4B7;
 }
+
+/* Accessible Link Button (replaces href="javascript:void(0)" for strict CSP compliance) */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--green-forest, #2D6A4F);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+  color: var(--green-deep, #1B4332);
+}
+
+.link-button:focus {
+  outline: none;
+}
+
+.link-button:focus-visible {
+  outline: 2px solid var(--green-forest, #2D6A4F);
+  outline-offset: 3px;
+  border-radius: 3px;
+  text-decoration: underline;
+}
+
+.forgot-pwd-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -10px;
+  margin-bottom: 14px;
+}

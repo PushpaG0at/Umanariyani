@@ -55,7 +55,7 @@ function resetTurnstileWidget(mode = 'login') {
   currentTurnstileTokens[mode] = '';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initAll() {
   initFloatingLeaves();
   initDoshaPicker();
   initAuthTabs();
@@ -71,7 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
       window.handleUserLogout();
     });
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAll);
+} else {
+  initAll();
+}
 
 async function initTurnstileWidgets() {
   let siteKey = window.TURNSTILE_SITE_KEY;
@@ -894,6 +900,12 @@ function initForgotPasswordFlow() {
       e.preventDefault();
       showForgotRequestView();
     });
+    linkForgot.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        showForgotRequestView();
+      }
+    });
   }
 
   if (btnBackToLogin) {
@@ -901,12 +913,24 @@ function initForgotPasswordFlow() {
       e.preventDefault();
       returnToLoginView();
     });
+    btnBackToLogin.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        returnToLoginView();
+      }
+    });
   }
 
   if (btnCancel) {
     btnCancel.addEventListener('click', (e) => {
       e.preventDefault();
       returnToLoginView();
+    });
+    btnCancel.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        returnToLoginView();
+      }
     });
   }
 
@@ -919,6 +943,17 @@ function initForgotPasswordFlow() {
       if (forgotRequestForm) forgotRequestForm.style.display = 'block';
       const input = document.getElementById('forgotIdentifier');
       if (input) input.focus();
+    });
+    btnBackToRequest.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        clearAuthMessages();
+        if (forgotResendTimer) clearInterval(forgotResendTimer);
+        if (forgotVerifyForm) forgotVerifyForm.style.display = 'none';
+        if (forgotRequestForm) forgotRequestForm.style.display = 'block';
+        const input = document.getElementById('forgotIdentifier');
+        if (input) input.focus();
+      }
     });
   }
 

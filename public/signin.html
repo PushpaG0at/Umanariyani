@@ -12,8 +12,7 @@
   <!-- Core & Sign-in Stylesheets -->
   <link rel="stylesheet" href="/css/style.css?v=2.5">
   <link rel="stylesheet" href="/css/signin.css?v=2.5">
-  <!-- Cloudflare Turnstile Bot Defense -->
-  <script>window.TURNSTILE_SITE_KEY = '0x4AAAAAAF5yxm-iBychLJBe';</script>
+  <!-- Cloudflare Turnstile Bot Defense (Site key fetched securely via /api/config or data-sitekey fallback) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
 <body class="signin-page-body">
@@ -72,7 +71,7 @@
           </div>
 
           <div class="forgot-pwd-row" style="display:flex; justify-content:flex-end; margin-top:-12px; margin-bottom:14px;">
-            <a href="javascript:void(0)" id="linkForgotPassword" style="font-size:0.82rem; color:var(--green-forest); text-decoration:none; font-weight:600; cursor:pointer;">Forgot password?</a>
+            <button type="button" id="linkForgotPassword" class="link-button" aria-haspopup="dialog">Forgot password?</button>
           </div>
 
           <!-- Cloudflare Turnstile Bot Mitigation Widget Hook -->
@@ -388,7 +387,7 @@
             <i class="fa-solid fa-bag-shopping"></i> Explore Hair & Skin Formulations
           </a>
 
-          <button id="btnLogoutSession" onclick="handleUserLogout()" style="font-size:0.85rem; color:var(--text-muted); text-decoration:underline; cursor:pointer;">
+          <button id="btnLogoutSession" type="button" class="link-button" style="font-size:0.85rem; color:var(--text-muted); text-decoration:underline;">
             Log out from this session
           </button>
         </div>

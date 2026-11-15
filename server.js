@@ -109,7 +109,50 @@ const upload = multer({
 // Note: HSTS is disabled (hsts: false) to preserve standard HTTP testing on raw EC2 IP (http://13.127.4.94:3000)
 // without causing browser SSL protocol errors. It will activate automatically if HTTPS is explicitly enforced.
 app.use(helmet({
-  contentSecurityPolicy: false, // Permissive CSP to prevent blocking inline scripts, CSS, and CDN assets
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "https://challenges.cloudflare.com",
+        "https://cdnjs.cloudflare.com"
+      ],
+      scriptSrcAttr: ["'none'"], // Strict: No inline event handlers or javascript: URLs
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'", // Allowed for CSS styling
+        "https://fonts.googleapis.com",
+        "https://cdnjs.cloudflare.com"
+      ],
+      fontSrc: [
+        "'self'",
+        "https://fonts.gstatic.com",
+        "https://cdnjs.cloudflare.com",
+        "data:"
+      ],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https:"
+      ],
+      connectSrc: [
+        "'self'",
+        "https://challenges.cloudflare.com",
+        "https://generativelanguage.googleapis.com",
+        "https://api.phonepe.com",
+        "https://mercury-t2.phonepe.com"
+      ],
+      frameSrc: [
+        "'self'",
+        "https://challenges.cloudflare.com"
+      ],
+      frameAncestors: ["'none'"], // Anti-clickjacking defense
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"]
+    }
+  },
   crossOriginEmbedderPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
