@@ -23,6 +23,7 @@ const db = require('../db');
 const {
   hashOtp,
   verifyOtpHash,
+  hashResetToken,
   checkOtpSendLimits,
   recordOtpSent,
   checkAndIncrementDailySms
@@ -77,9 +78,45 @@ async function main() {
     console.log(`[Setup] Created test user id=${testUserId} (${testEmail}, ${testPhone})\n`);
 
     // -------------------------------------------------------------
+    // TEST GROUP 0: Database Schema & Migration Integrity
+    // -------------------------------------------------------------
+    console.log('--- TEST GROUP 0: Schema Integrity Verification ---');
+
+    await runAsyncTest('password_resets table exists in MySQL database', async () => {
+      const [tables] = await db.pool.query("SHOW TABLES LIKE 'password_resets'");
+      assert.strictEqual(tables.length, 1, "password_resets table MUST exist in connected database");
+    });
+
+    await runAsyncTest('password_resets table contains all required security columns', async () => {
+      const [cols] = await db.pool.query('DESCRIBE password_resets');
+      const colNames = cols.map(c => c.Field);
+      const requiredCols = [
+        'id', 'user_id', 'identifier', 'channel',
+        'otp_hash', 'otp_expires_at', 'otp_attempts',
+        'reset_token_hash', 'token_expires_at', 'is_used', 'created_at', 'updated_at'
+      ];
+      requiredCols.forEach(col => {
+        assert.ok(colNames.includes(col), `password_resets table must include column: ${col}`);
+      });
+    });
+
+    await runAsyncTest('users table contains password_changed_at column for session revocation', async () => {
+      const [cols] = await db.pool.query('DESCRIBE users');
+      const colNames = cols.map(c => c.Field);
+      assert.ok(colNames.includes('password_changed_at'), 'users table must include password_changed_at');
+    });
+
+    await runAsyncTest('hashResetToken generates keyed 64-char HMAC hash', async () => {
+      const sampleToken = '5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b';
+      const tokenHmac = hashResetToken(sampleToken);
+      assert.strictEqual(tokenHmac.length, 64, 'HMAC-SHA256 produced 64 hex characters');
+      assert.strictEqual(tokenHmac, hashResetToken(sampleToken), 'Hashing is deterministic');
+    });
+
+    // -------------------------------------------------------------
     // TEST GROUP 1: Anti-Enumeration Safety & Generic Messaging
     // -------------------------------------------------------------
-    console.log('--- TEST GROUP 1: Anti-Enumeration Safety ---');
+    console.log('\n--- TEST GROUP 1: Anti-Enumeration Safety ---');
 
     runTest('Generic message format is identical for existing and non-existing accounts', () => {
       const genericMsg = "If an account exists with this email or mobile number, we've sent a 6-digit recovery code.";
@@ -202,10 +239,10 @@ async function main() {
 
     // Simulate OTP verification and reset token generation
     const rawResetToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+    const tokenHash = hashResetToken(rawResetToken);
     const tokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    await runAsyncTest('storePasswordResetToken saves SHA-256 token hash and clears OTP hash', async () => {
+    await runAsyncTest('storePasswordResetToken saves HMAC-SHA256 token hash and clears OTP hash', async () => {
       await db.storePasswordResetToken(freshResetId, tokenHash, tokenExpiresAt);
 
       const [rows] = await db.pool.query('SELECT * FROM password_resets WHERE id = ?', [freshResetId]);
@@ -462,6 +499,22 @@ async function main() {
         const data = await res.json();
         assert.strictEqual(res.status, 400);
         assert.strictEqual(data.success, false);
+      });
+
+      // 9h: Enforce Turnstile rejection when token is missing/invalid under enforcement
+      await runAsyncTest('HTTP POST /api/auth/forgot-password/request: Rejects missing token with 403 when enforced', async () => {
+        const res = await fetch(`${baseUrl}/api/auth/forgot-password/request`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-enforce-turnstile': 'true'
+          },
+          body: JSON.stringify({ identifier: 'test_turnstile_fail@umanarayni.com', turnstileToken: '' })
+        });
+        const data = await res.json();
+        assert.strictEqual(res.status, 403);
+        assert.strictEqual(data.success, false);
+        assert.ok(data.code, 'Error response includes code');
       });
 
     } finally {

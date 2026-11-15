@@ -41,6 +41,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 8. Update Cart Count
   updateCartBadge();
+
+  // 9. Setup Product Card Event Delegation & Clear Search
+  setupProductsGridEvents();
+  const clearSearchBtn = document.getElementById('btnClearSearchGlobal');
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', () => {
+      if (typeof window.clearGlobalSearch === 'function') {
+        window.clearGlobalSearch();
+      }
+    });
+  }
 });
 
 let allProducts = [];
@@ -116,7 +127,7 @@ function renderProductsGrid(products) {
         <i class="fa-solid fa-leaf" style="font-size: 2.5rem; color: var(--green-light); margin-bottom: 12px;"></i>
         <h3 style="font-size: 1.3rem; color: var(--green-primary);">No products match your search</h3>
         <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 6px;">Try adjusting your search terms or view our complete Ayurvedic collection.</p>
-        <button class="btn-card-details" onclick="loadProducts('all')" style="margin: 16px auto 0; display: inline-flex;">Reset Filters</button>
+        <button type="button" class="btn-card-details" data-action="reset-filters" style="margin: 16px auto 0; display: inline-flex;">Reset Filters</button>
       </div>
     `;
     return;
@@ -129,28 +140,30 @@ function renderProductsGrid(products) {
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappQuery)}`;
 
     return `
-      <div class="product-card" data-product-id="${product.id}" onclick="handleCardClick(event, '${productDetailUrl}')">
+      <div class="product-card" data-product-id="${product.id}" data-product-url="${productDetailUrl}">
         <!-- Badge -->
-        ${product.badge ? `<span class="product-badge-flag">${product.badge}</span>` : ''}
+        ${product.badge ? `<span class="product-badge-flag">${escapeHtml(product.badge)}</span>` : ''}
 
         <!-- Wishlist Button -->
-        <button class="product-wishlist-btn" title="Add to Wishlist" onclick="toggleWishlist(event, '${product.id}')">
+        <button type="button" class="product-wishlist-btn" title="Add to Wishlist" data-product-id="${product.id}">
           <i class="fa-regular fa-heart"></i>
         </button>
 
-        <!-- Product Image Showcase with Smooth Hover Zoom -->
-        <div class="product-card-img-wrap">
-          <img src="${product.image}" alt="${product.name}" class="product-card-img" loading="lazy">
+        <!-- Product Image Showcase with Smooth Hover Zoom & Native Link -->
+        <a href="${productDetailUrl}" class="product-card-img-wrap" aria-label="View ${escapeHtml(product.name)} details">
+          <img src="${product.image}" alt="${escapeHtml(product.name)}" class="product-card-img" loading="lazy">
           <div class="quick-view-overlay">
             <i class="fa-solid fa-eye"></i> View Full Details & Specs
           </div>
-        </div>
+        </a>
 
         <!-- Product Content -->
         <div class="product-card-body">
-          <span class="product-category-sub">${product.category} &bull; ${product.volume || 'Ayurvedic'}</span>
-          <h3 class="product-card-title">${product.name}</h3>
-          <p class="product-card-subtitle">${product.subtitle || ''}</p>
+          <span class="product-category-sub">${escapeHtml(product.category)} &bull; ${escapeHtml(product.volume || 'Ayurvedic')}</span>
+          <h3 class="product-card-title">
+            <a href="${productDetailUrl}" class="product-card-title-link">${escapeHtml(product.name)}</a>
+          </h3>
+          <p class="product-card-subtitle">${escapeHtml(product.subtitle || '')}</p>
 
           <!-- Amazon-Style Rating -->
           <div class="product-rating-row">
@@ -162,7 +175,7 @@ function renderProductsGrid(products) {
           <!-- Featured Ingredients Chips -->
           <div class="featured-herbs-chips">
             ${(product.featuredIngredients || []).slice(0, 4).map(herb => `
-              <span class="herb-chip">🌿 ${herb}</span>
+              <span class="herb-chip">🌿 ${escapeHtml(herb)}</span>
             `).join('')}
             ${(product.featuredIngredients || []).length > 4 ? `
               <span class="herb-chip">+${product.featuredIngredients.length - 4} more</span>
@@ -180,14 +193,14 @@ function renderProductsGrid(products) {
 
           <!-- Card Actions -->
           <div class="product-card-actions">
-            <a href="${productDetailUrl}" class="btn-card-details" onclick="event.stopPropagation()">
+            <a href="${productDetailUrl}" class="btn-card-details">
               <i class="fa-solid fa-bag-shopping"></i> View Details
             </a>
-            <a href="${whatsappUrl}" target="_blank" class="btn-card-whatsapp" onclick="event.stopPropagation()" title="WhatsApp Herbal Support (+91 8641033514)">
+            <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" class="btn-card-whatsapp" title="WhatsApp Herbal Support (+91 8641033514)">
               <i class="fa-brands fa-whatsapp"></i> WhatsApp
             </a>
           </div>
-          <button class="btn-card-ai" onclick="openAiForProduct(event, '${product.name.replace(/'/g, "\\'")}', '${product.id}')" style="width:100%; margin-top:8px; padding:7px 12px; background:#F0F7F2; border:1px solid rgba(45,106,79,0.2); border-radius:8px; color:var(--green-primary); font-size:0.78rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s ease;">
+          <button type="button" class="btn-card-ai" data-product-id="${product.id}" data-product-name="${escapeHtml(product.name)}" style="width:100%; margin-top:8px; padding:7px 12px; background:#F0F7F2; border:1px solid rgba(45,106,79,0.2); border-radius:8px; color:var(--green-primary); font-size:0.78rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.2s ease;">
             <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--gold-deep);"></i> Ask AI Vaidya about this
           </button>
         </div>
@@ -196,9 +209,83 @@ function renderProductsGrid(products) {
   }).join('');
 }
 
+// Event Delegation for Products Grid: handles click on card, wishlist, reset filters, and AI query
+function setupProductsGridEvents() {
+  const grid = document.getElementById('productsGrid');
+  if (!grid || grid.dataset.eventsBound) return;
+  grid.dataset.eventsBound = 'true';
+
+  grid.addEventListener('click', (event) => {
+    // 1. Reset Filters Button
+    const resetBtn = event.target.closest('[data-action="reset-filters"]');
+    if (resetBtn) {
+      event.preventDefault();
+      loadProducts('all');
+      return;
+    }
+
+    // 2. Wishlist Button
+    const wishlistBtn = event.target.closest('.product-wishlist-btn');
+    if (wishlistBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      const pId = wishlistBtn.getAttribute('data-product-id');
+      toggleWishlistBtn(wishlistBtn, pId);
+      return;
+    }
+
+    // 3. Ask AI Button
+    const aiBtn = event.target.closest('.btn-card-ai');
+    if (aiBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      const pName = aiBtn.getAttribute('data-product-name');
+      const pId = aiBtn.getAttribute('data-product-id');
+      openAiForProduct(event, pName, pId);
+      return;
+    }
+
+    // 4. Native <a> links (image wrap, title link, "View Details", WhatsApp)
+    if (event.target.closest('a')) {
+      return; // Standard native link navigation
+    }
+
+    // 5. Any click on the card body: navigate to product page!
+    const card = event.target.closest('.product-card');
+    if (card) {
+      const url = card.getAttribute('data-product-url');
+      if (url) {
+        window.location.href = url;
+      }
+    }
+  });
+}
+
+function toggleWishlistBtn(btn, productId) {
+  const icon = btn.querySelector('i');
+  if (!icon) return;
+  if (icon.classList.contains('fa-regular')) {
+    icon.classList.remove('fa-regular');
+    icon.classList.add('fa-solid');
+    icon.style.color = '#E74C3C';
+    showToast("Added to your Herbal Wishlist 🌿");
+  } else {
+    icon.classList.remove('fa-solid');
+    icon.classList.add('fa-regular');
+    icon.style.color = '';
+    showToast("Removed from Wishlist");
+  }
+}
+
+window.toggleWishlist = function(event, productId) {
+  if (event && event.stopPropagation) event.stopPropagation();
+  const btn = event.currentTarget || (event.target && event.target.closest('.product-wishlist-btn'));
+  if (btn) toggleWishlistBtn(btn, productId);
+};
+
 // Quick AI trigger for a specific product
 window.openAiForProduct = function(event, prodName, prodId) {
-  event.stopPropagation();
+  if (event && event.stopPropagation) event.stopPropagation();
   const sanctuary = document.getElementById('aiSanctuarySection');
   if (sanctuary) {
     sanctuary.scrollIntoView({ behavior: 'smooth' });
@@ -215,27 +302,10 @@ window.openAiForProduct = function(event, prodName, prodId) {
 
 // Clicking the card body opens the Amazon-style detail page
 window.handleCardClick = function(event, url) {
-  if (event.target.closest('a') || event.target.closest('button')) {
+  if (event && (event.target.closest('a') || event.target.closest('button'))) {
     return;
   }
   window.location.href = url;
-};
-
-window.toggleWishlist = function(event, productId) {
-  event.stopPropagation();
-  const btn = event.currentTarget;
-  const icon = btn.querySelector('i');
-  if (icon.classList.contains('fa-regular')) {
-    icon.classList.remove('fa-regular');
-    icon.classList.add('fa-solid');
-    icon.style.color = '#E74C3C';
-    showToast("Added to your Herbal Wishlist 🌿");
-  } else {
-    icon.classList.remove('fa-solid');
-    icon.classList.add('fa-regular');
-    icon.style.color = '';
-    showToast("Removed from Wishlist");
-  }
 };
 
 /* ==========================================================================

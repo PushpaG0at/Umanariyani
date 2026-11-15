@@ -53,16 +53,340 @@ function resetTurnstileWidget(mode = 'login') {
     }
   }
   currentTurnstileTokens[mode] = '';
+  if (mode === 'forgot') {
+    const btn = document.getElementById('btnForgotRequestSubmit');
+    if (btn) {
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      btn.disabled = !isLocal;
+      btn.style.opacity = isLocal ? '1' : '0.6';
+      btn.style.cursor = isLocal ? 'pointer' : 'not-allowed';
+    }
+  }
+}
+
+let siteKeyPromise = null;
+
+/**
+ * Robust, async, CSP-compliant Turnstile site key resolver.
+ * Priority:
+ * 1. data-sitekey attribute on DOM (<body data-sitekey="...">)
+ * 2. window.TURNSTILE_SITE_KEY global (if defined)
+ * 3. GET /api/config endpoint
+ * 4. Safe fallback key
+ * Caches the promise to ensure network is only hit once.
+ */
+async function getTurnstileSiteKey() {
+  if (siteKeyPromise) {
+    return siteKeyPromise;
+  }
+
+  siteKeyPromise = (async () => {
+    // 1. Check data-sitekey attribute on DOM
+    const datasetElement = document.querySelector('[data-sitekey]');
+    if (datasetElement) {
+      const attrKey = datasetElement.getAttribute('data-sitekey');
+      if (attrKey && attrKey.trim()) {
+        return attrKey.trim();
+      }
+    }
+
+    // 2. Check window global
+    if (window.TURNSTILE_SITE_KEY && typeof window.TURNSTILE_SITE_KEY === 'string') {
+      const globalKey = window.TURNSTILE_SITE_KEY.trim();
+      if (globalKey) return globalKey;
+    }
+
+    // 3. Fetch from /api/config
+    try {
+      const res = await fetch('/api/config');
+      if (res.ok) {
+        const cfg = await res.json();
+        if (cfg && cfg.turnstileSiteKey && typeof cfg.turnstileSiteKey === 'string') {
+          return cfg.turnstileSiteKey.trim();
+        }
+      }
+    } catch (err) {
+      console.warn('[Turnstile] Could not retrieve site key from /api/config:', err.message);
+    }
+
+    // 4. Default fallback key
+    return '0x4AAAAAAF5yxm-iBychLJBe';
+  })();
+
+  return siteKeyPromise;
+}
+
+/**
+ * Checks whether an element is currently visible in the DOM (not hidden via display:none).
+ * Cloudflare Turnstile requires visible non-zero dimensions to render properly.
+ */
+function isContainerVisible(el) {
+  if (!el) return false;
+  return !!(el.offsetWidth || el.offsetHeight || (el.getClientRects && el.getClientRects().length > 0));
+}
+
+/**
+ * Helper to execute a callback when Cloudflare Turnstile API script has finished loading.
+ */
+function whenTurnstileReady(callback) {
+  if (typeof window !== 'undefined' && window.turnstile) {
+    if (typeof window.turnstile.ready === 'function') {
+      try {
+        window.turnstile.ready(callback);
+        return;
+      } catch (_) {}
+    }
+    callback();
+    return;
+  }
+
+  let attempts = 0;
+  const interval = setInterval(() => {
+    attempts++;
+    if (window.turnstile) {
+      clearInterval(interval);
+      if (typeof window.turnstile.ready === 'function') {
+        try {
+          window.turnstile.ready(callback);
+          return;
+        } catch (_) {}
+      }
+      callback();
+    } else if (attempts >= 50) {
+      clearInterval(interval);
+      console.warn('[Turnstile] Script load timed out after 5 seconds');
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isLocal) {
+        const btn = document.getElementById('btnForgotRequestSubmit');
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+        }
+      }
+    }
+  }, 100);
+}
+
+async function renderLoginTurnstile() {
+  const container = document.getElementById('loginTurnstile');
+  if (!container || !isContainerVisible(container)) return;
+  if (!window.turnstile || !window.turnstile.render) {
+    whenTurnstileReady(() => renderLoginTurnstile());
+    return;
+  }
+  if (turnstileWidgetIds['login'] !== undefined) return;
+
+  try {
+    const siteKey = await getTurnstileSiteKey();
+    if (!siteKey || !container || !isContainerVisible(container)) return;
+    if (turnstileWidgetIds['login'] !== undefined) return;
+
+    turnstileWidgetIds['login'] = window.turnstile.render('#loginTurnstile', {
+      sitekey: siteKey,
+      theme: 'light',
+      callback: (token) => {
+        currentTurnstileTokens['login'] = token;
+        clearAuthMessages();
+      },
+      'expired-callback': () => {
+        currentTurnstileTokens['login'] = '';
+        if (window.turnstile && turnstileWidgetIds['login'] !== undefined) {
+          try { window.turnstile.reset(turnstileWidgetIds['login']); } catch (_) {}
+        }
+      },
+      'error-callback': (code) => {
+        console.warn('[Turnstile Login Widget Error]', code);
+      }
+    });
+  } catch (err) {
+    console.warn('[Turnstile Login Render Error]', err.message);
+  }
+}
+
+async function renderRegisterTurnstile() {
+  const container = document.getElementById('registerTurnstile');
+  if (!container || !isContainerVisible(container)) return;
+  if (!window.turnstile || !window.turnstile.render) {
+    whenTurnstileReady(() => renderRegisterTurnstile());
+    return;
+  }
+  if (turnstileWidgetIds['register'] !== undefined) return;
+
+  try {
+    const siteKey = await getTurnstileSiteKey();
+    if (!siteKey || !container || !isContainerVisible(container)) return;
+    if (turnstileWidgetIds['register'] !== undefined) return;
+
+    turnstileWidgetIds['register'] = window.turnstile.render('#registerTurnstile', {
+      sitekey: siteKey,
+      theme: 'light',
+      callback: (token) => {
+        currentTurnstileTokens['register'] = token;
+        clearAuthMessages();
+      },
+      'expired-callback': () => {
+        currentTurnstileTokens['register'] = '';
+        if (window.turnstile && turnstileWidgetIds['register'] !== undefined) {
+          try { window.turnstile.reset(turnstileWidgetIds['register']); } catch (_) {}
+        }
+      },
+      'error-callback': (code) => {
+        console.warn('[Turnstile Register Widget Error]', code);
+      }
+    });
+  } catch (err) {
+    console.warn('[Turnstile Register Render Error]', err.message);
+  }
+}
+
+async function renderOtpTurnstile() {
+  const container = document.getElementById('otpTurnstile');
+  if (!container || !isContainerVisible(container)) return;
+  if (!window.turnstile || !window.turnstile.render) {
+    whenTurnstileReady(() => renderOtpTurnstile());
+    return;
+  }
+  if (turnstileWidgetIds['otp'] !== undefined) return;
+
+  try {
+    const siteKey = await getTurnstileSiteKey();
+    if (!siteKey || !container || !isContainerVisible(container)) return;
+    if (turnstileWidgetIds['otp'] !== undefined) return;
+
+    turnstileWidgetIds['otp'] = window.turnstile.render('#otpTurnstile', {
+      sitekey: siteKey,
+      theme: 'light',
+      callback: (token) => {
+        currentTurnstileTokens['otp'] = token;
+        clearAuthMessages();
+      },
+      'expired-callback': () => {
+        currentTurnstileTokens['otp'] = '';
+        if (window.turnstile && turnstileWidgetIds['otp'] !== undefined) {
+          try { window.turnstile.reset(turnstileWidgetIds['otp']); } catch (_) {}
+        }
+      },
+      'error-callback': (code) => {
+        console.warn('[Turnstile OTP Widget Error]', code);
+      }
+    });
+  } catch (err) {
+    console.warn('[Turnstile OTP Render Error]', err.message);
+  }
+}
+
+async function renderForgotTurnstile() {
+  const container = document.getElementById('forgotTurnstile');
+  const submitBtn = document.getElementById('btnForgotRequestSubmit');
+  const statusEl = document.getElementById('forgotTurnstileStatus');
+  if (!container || !isContainerVisible(container)) return;
+
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (!window.turnstile || !window.turnstile.render) {
+    whenTurnstileReady(() => renderForgotTurnstile());
+    if (isLocal && submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+    }
+    return;
+  }
+
+  try {
+    const siteKey = await getTurnstileSiteKey();
+    if (!siteKey) {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+      }
+      return;
+    }
+
+    // If already rendered, reset cleanly on newly opened visible container
+    if (turnstileWidgetIds['forgot'] !== undefined) {
+      try {
+        window.turnstile.reset(turnstileWidgetIds['forgot']);
+        currentTurnstileTokens['forgot'] = '';
+        if (submitBtn) {
+          submitBtn.disabled = !isLocal;
+          submitBtn.style.opacity = isLocal ? '1' : '0.6';
+          submitBtn.style.cursor = isLocal ? 'pointer' : 'not-allowed';
+        }
+      } catch (_) {}
+      return;
+    }
+
+    turnstileWidgetIds['forgot'] = window.turnstile.render('#forgotTurnstile', {
+      sitekey: siteKey,
+      theme: 'light',
+      callback: (token) => {
+        currentTurnstileTokens['forgot'] = token;
+        if (statusEl) statusEl.style.display = 'none';
+        clearAuthMessages();
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+          submitBtn.style.cursor = 'pointer';
+        }
+      },
+      'expired-callback': () => {
+        currentTurnstileTokens['forgot'] = '';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = '0.6';
+          submitBtn.style.cursor = 'not-allowed';
+        }
+        if (statusEl) {
+          statusEl.textContent = 'Security verification expired. Please solve the challenge again.';
+          statusEl.style.display = 'block';
+        }
+        if (window.turnstile && turnstileWidgetIds['forgot'] !== undefined) {
+          try { window.turnstile.reset(turnstileWidgetIds['forgot']); } catch (_) {}
+        }
+      },
+      'error-callback': (code) => {
+        currentTurnstileTokens['forgot'] = '';
+        if (submitBtn) {
+          submitBtn.disabled = !isLocal;
+          submitBtn.style.opacity = isLocal ? '1' : '0.6';
+          submitBtn.style.cursor = isLocal ? 'pointer' : 'not-allowed';
+        }
+        if (statusEl) {
+          statusEl.textContent = 'Verification error. Please refresh challenge.';
+          statusEl.style.display = 'block';
+        }
+        console.warn('[Turnstile Forgot Password Widget Error]', code);
+      }
+    });
+
+    if (isLocal && submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+    }
+  } catch (err) {
+    console.warn('[Turnstile Forgot Render Error]', err.message);
+  }
+}
+
+async function initTurnstileWidgets() {
+  try {
+    await renderLoginTurnstile();
+  } catch (err) {
+    console.warn('[Turnstile Widgets Init Error]', err.message);
+  }
 }
 
 function initAll() {
-  initFloatingLeaves();
-  initDoshaPicker();
-  initAuthTabs();
-  initFormSubmissions();
-  initForgotPasswordFlow();
-  initTurnstileWidgets();
-  checkExistingSession();
+  try { initFloatingLeaves(); } catch (e) { console.warn('[Init] Floating Leaves Error:', e); }
+  try { initDoshaPicker(); } catch (e) { console.warn('[Init] Dosha Picker Error:', e); }
+  try { initAuthTabs(); } catch (e) { console.warn('[Init] Auth Tabs Error:', e); }
+  try { initFormSubmissions(); } catch (e) { console.warn('[Init] Form Submissions Error:', e); }
+  try { initForgotPasswordFlow(); } catch (e) { console.warn('[Init] Forgot Password Flow Error:', e); }
+  try { initTurnstileWidgets(); } catch (e) { console.warn('[Init] Turnstile Widgets Error:', e); }
+  try { checkExistingSession(); } catch (e) { console.warn('[Init] Existing Session Error:', e); }
 
   const logoutBtn = document.getElementById('btnLogoutSession');
   if (logoutBtn) {
@@ -77,122 +401,6 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initAll);
 } else {
   initAll();
-}
-
-async function initTurnstileWidgets() {
-  let siteKey = window.TURNSTILE_SITE_KEY;
-  if (!siteKey) {
-    try {
-      const res = await fetch('/api/config');
-      const cfg = await res.json();
-      if (cfg && cfg.turnstileSiteKey) {
-        siteKey = cfg.turnstileSiteKey;
-      }
-    } catch (_) {}
-  }
-  siteKey = siteKey || '0x4AAAAAAF5yxm-iBychLJBe';
-
-  const renderWidget = () => {
-    if (!window.turnstile) return;
-    try {
-      if (document.getElementById('loginTurnstile') && turnstileWidgetIds['login'] === undefined) {
-        turnstileWidgetIds['login'] = window.turnstile.render('#loginTurnstile', {
-          sitekey: siteKey,
-          theme: 'light',
-          callback: (token) => {
-            currentTurnstileTokens['login'] = token;
-            clearAuthMessages();
-          },
-          'expired-callback': () => {
-            currentTurnstileTokens['login'] = '';
-            if (window.turnstile && turnstileWidgetIds['login'] !== undefined) {
-              try { window.turnstile.reset(turnstileWidgetIds['login']); } catch (_) {}
-            }
-          },
-          'error-callback': (code) => {
-            console.warn('[Turnstile Login Widget Error]', code);
-          }
-        });
-      }
-      if (document.getElementById('registerTurnstile') && turnstileWidgetIds['register'] === undefined) {
-        turnstileWidgetIds['register'] = window.turnstile.render('#registerTurnstile', {
-          sitekey: siteKey,
-          theme: 'light',
-          callback: (token) => {
-            currentTurnstileTokens['register'] = token;
-            clearAuthMessages();
-          },
-          'expired-callback': () => {
-            currentTurnstileTokens['register'] = '';
-            if (window.turnstile && turnstileWidgetIds['register'] !== undefined) {
-              try { window.turnstile.reset(turnstileWidgetIds['register']); } catch (_) {}
-            }
-          },
-          'error-callback': (code) => {
-            console.warn('[Turnstile Register Widget Error]', code);
-          }
-        });
-      }
-      if (document.getElementById('otpTurnstile') && turnstileWidgetIds['otp'] === undefined) {
-        turnstileWidgetIds['otp'] = window.turnstile.render('#otpTurnstile', {
-          sitekey: siteKey,
-          theme: 'light',
-          callback: (token) => {
-            currentTurnstileTokens['otp'] = token;
-            clearAuthMessages();
-          },
-          'expired-callback': () => {
-            currentTurnstileTokens['otp'] = '';
-            if (window.turnstile && turnstileWidgetIds['otp'] !== undefined) {
-              try { window.turnstile.reset(turnstileWidgetIds['otp']); } catch (_) {}
-            }
-          },
-          'error-callback': (code) => {
-            console.warn('[Turnstile OTP Widget Error]', code);
-          }
-        });
-      }
-      if (document.getElementById('forgotTurnstile') && turnstileWidgetIds['forgot'] === undefined) {
-        turnstileWidgetIds['forgot'] = window.turnstile.render('#forgotTurnstile', {
-          sitekey: siteKey,
-          theme: 'light',
-          callback: (token) => {
-            currentTurnstileTokens['forgot'] = token;
-            clearAuthMessages();
-          },
-          'expired-callback': () => {
-            currentTurnstileTokens['forgot'] = '';
-            if (window.turnstile && turnstileWidgetIds['forgot'] !== undefined) {
-              try { window.turnstile.reset(turnstileWidgetIds['forgot']); } catch (_) {}
-            }
-          },
-          'error-callback': (code) => {
-            console.warn('[Turnstile Forgot Password Widget Error]', code);
-          }
-        });
-      }
-    } catch (e) {
-      console.warn('[Turnstile Render Warning]', e.message);
-    }
-  };
-
-  const ensureReady = () => {
-    if (window.turnstile) {
-      try {
-        if (typeof window.turnstile.ready === 'function') {
-          window.turnstile.ready(renderWidget);
-        } else {
-          renderWidget();
-        }
-      } catch (_) {
-        renderWidget();
-      }
-    } else {
-      setTimeout(ensureReady, 300);
-    }
-  };
-
-  ensureReady();
 }
 
 /* ==========================================================================
@@ -257,12 +465,11 @@ function initAuthTabs() {
       if (mode === 'login') {
         if (loginForm) loginForm.style.display = 'block';
         if (registerForm) registerForm.style.display = 'none';
+        setTimeout(() => renderLoginTurnstile(), 50);
       } else {
         if (loginForm) loginForm.style.display = 'none';
         if (registerForm) registerForm.style.display = 'block';
-        if (window.turnstile && turnstileWidgetIds['register'] === undefined) {
-          setTimeout(() => initTurnstileWidgets(), 100);
-        }
+        setTimeout(() => renderRegisterTurnstile(), 50);
       }
     });
   });
@@ -289,6 +496,7 @@ function showOtpVerificationStep(identifier, maskedText, devOtp) {
   if (registerForm) registerForm.style.display = 'none';
   if (tabsWrap) tabsWrap.style.display = 'none';
   if (otpForm) otpForm.style.display = 'block';
+  setTimeout(() => renderOtpTurnstile(), 50);
 
   if (otpTargetMasked) {
     otpTargetMasked.textContent = maskedText || identifier;
@@ -855,10 +1063,8 @@ function initForgotPasswordFlow() {
     if (forgotVerifyForm) forgotVerifyForm.style.display = 'none';
     if (forgotResetForm) forgotResetForm.style.display = 'none';
 
-    // Render Turnstile widget if needed
-    if (window.turnstile && turnstileWidgetIds['forgot'] === undefined) {
-      setTimeout(() => initTurnstileWidgets(), 50);
-    }
+    // Render or refresh Turnstile widget on visible container
+    setTimeout(() => renderForgotTurnstile(), 50);
 
     const input = document.getElementById('forgotIdentifier');
     if (input) {
@@ -893,6 +1099,7 @@ function initForgotPasswordFlow() {
     });
 
     resetTurnstileWidget('forgot');
+    setTimeout(() => renderLoginTurnstile(), 50);
   }
 
   if (linkForgot) {
@@ -1058,8 +1265,12 @@ function initForgotPasswordFlow() {
         showAuthError('Network error connecting to Ayurvedic Sanctuary. Please try again.');
       } finally {
         if (submitBtn) {
-          submitBtn.disabled = false;
           submitBtn.innerHTML = origBtnHtml;
+          const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          const hasToken = Boolean(currentTurnstileTokens['forgot']);
+          submitBtn.disabled = !(hasToken || isLocal);
+          submitBtn.style.opacity = (hasToken || isLocal) ? '1' : '0.6';
+          submitBtn.style.cursor = (hasToken || isLocal) ? 'pointer' : 'not-allowed';
         }
       }
     });

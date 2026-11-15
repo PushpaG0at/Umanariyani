@@ -27,6 +27,7 @@ const { generateTotpSecret, generateTotpUri, computeTotpCode, verifyTotpToken } 
 const {
   hashOtp,
   verifyOtpHash,
+  hashResetToken,
   checkOtpSendLimits,
   recordOtpSent,
   checkAndIncrementDailySms
@@ -50,6 +51,42 @@ const {
   verifyHumanVerificationToken,
   verifyCheckoutBotProtection
 } = require('./services/humanVerificationService');
+
+// ==================== 0. STARTUP ENVIRONMENT VALIDATION ====================
+function validateStartupEnv() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const requiredProdVars = [
+    'SESSION_SECRET',
+    'DB_USER',
+    'DB_NAME',
+    'OTP_HMAC_SECRET',
+    'RESET_TOKEN_SECRET',
+    'TURNSTILE_SITE_KEY',
+    'TURNSTILE_SECRET_KEY',
+    'SMTP_EMAIL',
+    'SMTP_PASS'
+  ];
+
+  const missingProd = requiredProdVars.filter(key => !process.env[key] || !process.env[key].trim());
+  if (isProduction && missingProd.length > 0) {
+    console.error('\n=============================================================');
+    console.error('❌ FATAL STARTUP CONFIGURATION ERROR: MISSING ENV VARIABLES');
+    console.error('=============================================================');
+    console.error('Production startup halted. The following required variables are missing:');
+    missingProd.forEach(k => console.error(`   - ${k}`));
+    console.error('\nPlease update your .env file or environment before starting.');
+    console.error('Refer to .env.example for required configuration.');
+    console.error('=============================================================\n');
+    process.exit(1);
+  }
+
+  if (!isProduction && missingProd.length > 0) {
+    console.warn('\n⚠️  [Config Notice] Running in non-production mode with some missing variables:');
+    missingProd.forEach(k => console.warn(`   - ${k} (using development fallback)`));
+    console.warn('   Ensure these are populated in .env for production deployment.\n');
+  }
+}
+validateStartupEnv();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -389,32 +426,60 @@ async function verifyTurnstile(token, req) {
     process.env.TURNSTILE_ENFORCE === 'true'
   );
 
-  if (!token) {
+  if (!token || !String(token).trim()) {
     if (!enforceTurnstile && (isLocal || process.env.NODE_ENV !== 'production' || secretKey.startsWith('1x0000'))) {
       return { success: true, mode: 'test_dev_bypass' };
     }
-    return { success: false, message: 'Bot protection verification token is required' };
+    return {
+      success: false,
+      code: 'TOKEN_REQUIRED',
+      message: 'Bot protection verification token is required. Please complete the security check.'
+    };
   }
 
   // Cloudflare test tokens
-  if (token === 'XXXX.DUMMY.TOKEN.XXXX' || token.startsWith('cf_test_') || token === 'cf_test_pass') {
+  const cleanToken = String(token).trim();
+  if (cleanToken === 'XXXX.DUMMY.TOKEN.XXXX' || cleanToken.startsWith('cf_test_') || cleanToken === 'cf_test_pass') {
     return { success: true, mode: 'dummy_test_pass' };
   }
 
   try {
     const formData = new URLSearchParams();
     formData.append('secret', secretKey);
-    formData.append('response', token.trim());
+    formData.append('response', cleanToken);
     // Note: Do not append remoteip. Omitting remoteip prevents false rejections behind AWS EC2, ALBs, or NATs.
+
+    // 5-second timeout controller so stalled upstream network checks fail safely
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
-      body: formData
+      body: formData,
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
+
     const result = await cfRes.json();
     if (!result.success) {
       const errorCodes = result['error-codes'] || [];
       console.warn('[Turnstile] Cloudflare siteverify rejected token:', errorCodes, 'for host:', host);
+
+      if (errorCodes.includes('timeout-or-duplicate')) {
+        return {
+          success: false,
+          code: 'TURNSTILE_EXPIRED',
+          message: 'Security verification challenge expired or was already used. Please complete the verification again.'
+        };
+      }
+
+      if (errorCodes.includes('invalid-input-response')) {
+        return {
+          success: false,
+          code: 'TURNSTILE_INVALID',
+          message: 'Invalid security challenge response. Please solve the challenge and try again.'
+        };
+      }
 
       // Handle hostname-mismatch:
       // The user successfully solved the captcha challenge, but the host (localhost, EC2 IP 13.127.4.94,
@@ -437,10 +502,16 @@ async function verifyTurnstile(token, req) {
         console.warn(`[Turnstile Dev Mode] Bypassing ${errorCodes.join(', ')} for local test on ${host}`);
         return { success: true, mode: 'dev_bypass', warnings: errorCodes };
       }
+
+      return {
+        success: false,
+        code: 'BOT_VERIFICATION_FAILED',
+        message: 'Security bot verification failed. Please try again.'
+      };
     }
     return result;
   } catch (err) {
-    console.warn('Turnstile verification network check skipped:', err.message);
+    console.warn('Turnstile verification network check skipped/timed out:', err.message);
     return { success: true, fallback: true };
   }
 }
@@ -481,6 +552,36 @@ function getMailTransporter() {
       pass: process.env.SMTP_PASS.replace(/\s+/g, '')
     }
   });
+}
+
+/**
+ * Startup check: Verifies Nodemailer SMTP authentication and connection.
+ * Reminds developer of 16-character Google App Password requirement if verification fails.
+ * Does NOT print any passwords or credentials to the console.
+ */
+async function verifySmtpConnection() {
+  const transporter = getMailTransporter();
+  if (!transporter) {
+    console.warn('\n⚠️  [Nodemailer] SMTP email service is NOT configured.');
+    console.warn('   Missing SMTP_EMAIL or SMTP_PASS in environment variables.');
+    console.warn('   👉 Note: For Google Gmail accounts with 2-Step Verification, an App Password is required.');
+    console.warn('   Generate one at: https://myaccount.google.com/apppasswords (16 letters, select app="Mail").');
+    console.warn('   Delivery of OTP verification and password recovery emails will fail until configured.\n');
+    return false;
+  }
+
+  try {
+    await transporter.verify();
+    const email = (process.env.SMTP_EMAIL || '').trim();
+    console.log(`✅ [Nodemailer] SMTP service connected and authenticated successfully (${maskIdentifier(email)}).`);
+    return true;
+  } catch (err) {
+    console.warn('\n⚠️  [Nodemailer] SMTP authentication/connection failed on startup:', err.message);
+    console.warn('   👉 If using Gmail: ensure you are using a 16-character Google App Password (not your personal Google account password).');
+    console.warn('   👉 Visit https://myaccount.google.com/apppasswords to create or refresh your App Password.');
+    console.warn('   Transactional emails (OTP, password reset, order updates) will not dispatch until resolved.\n');
+    return false;
+  }
 }
 
 let twilioClient = null;
@@ -2444,6 +2545,7 @@ app.post('/api/auth/forgot-password/request', authLimiter, async (req, res) => {
     if (!botCheck.success) {
       return res.status(403).json({
         success: false,
+        code: botCheck.code || 'BOT_VERIFICATION_FAILED',
         message: botCheck.message || 'Security bot verification failed. Please try again.'
       });
     }
@@ -2454,6 +2556,7 @@ app.post('/api/auth/forgot-password/request', authLimiter, async (req, res) => {
     if (!limitCheck.allowed) {
       return res.status(429).json({
         success: false,
+        code: 'RATE_LIMIT_EXCEEDED',
         message: limitCheck.reason,
         retryAfter: limitCheck.retryAfterSeconds
       });
@@ -2519,8 +2622,16 @@ app.post('/api/auth/forgot-password/request', authLimiter, async (req, res) => {
       ...(isDev ? { devOtp: otp } : {})
     });
   } catch (err) {
-    console.error('[Forgot Password Error] Failed to process recovery request:', err.message);
-    res.status(500).json({ success: false, message: 'Server error processing password recovery request.' });
+    const requestId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    console.error(`[Forgot Password Error] [${requestId}] Route: ${req.method} ${req.originalUrl}`);
+    console.error(`[Forgot Password Error] [${requestId}] Error: ${err.message}`);
+    console.error(`[Forgot Password Error] [${requestId}] Stack:\n`, err.stack);
+    res.status(500).json({
+      success: false,
+      code: 'SERVER_ERROR',
+      message: 'Server error processing password recovery request. If this persists, please contact support.',
+      requestId
+    });
   }
 });
 
@@ -2586,7 +2697,7 @@ app.post('/api/auth/forgot-password/verify', authLimiter, async (req, res) => {
 
     // OTP Verified: Issue a single-use, 10-minute random reset token
     const rawResetToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+    const tokenHash = hashResetToken(rawResetToken);
     const tokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     await db.storePasswordResetToken(resetRecord.id, tokenHash, tokenExpiresAt);
@@ -2597,8 +2708,16 @@ app.post('/api/auth/forgot-password/verify', authLimiter, async (req, res) => {
       message: 'Recovery code verified. Please set your new password.'
     });
   } catch (err) {
-    console.error('[Forgot Password Error] Failed to verify recovery code:', err.message);
-    res.status(500).json({ success: false, message: 'Server error verifying recovery code.' });
+    const requestId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    console.error(`[Forgot Password Verify Error] [${requestId}] Route: ${req.method} ${req.originalUrl}`);
+    console.error(`[Forgot Password Verify Error] [${requestId}] Error: ${err.message}`);
+    console.error(`[Forgot Password Verify Error] [${requestId}] Stack:\n`, err.stack);
+    res.status(500).json({
+      success: false,
+      code: 'SERVER_ERROR',
+      message: 'Server error verifying recovery code. If this persists, please contact support.',
+      requestId
+    });
   }
 });
 
@@ -2643,9 +2762,13 @@ app.post('/api/auth/forgot-password/reset', authLimiter, async (req, res) => {
       });
     }
 
-    // Lookup reset record by hashed token
-    const tokenHash = crypto.createHash('sha256').update(String(resetToken).trim()).digest('hex');
-    const resetRecord = await db.getActivePasswordResetByToken(tokenHash);
+    // Lookup reset record by hashed token (supports keyed HMAC and legacy sha256)
+    const tokenHash = hashResetToken(resetToken);
+    let resetRecord = await db.getActivePasswordResetByToken(tokenHash);
+    if (!resetRecord) {
+      const legacyHash = crypto.createHash('sha256').update(String(resetToken).trim()).digest('hex');
+      resetRecord = await db.getActivePasswordResetByToken(legacyHash);
+    }
 
     if (!resetRecord) {
       return res.status(400).json({
@@ -2701,8 +2824,16 @@ app.post('/api/auth/forgot-password/reset', authLimiter, async (req, res) => {
       message: 'Your password has been reset successfully. Please sign in with your new password.'
     });
   } catch (err) {
-    console.error('[Forgot Password Error] Failed to reset password:', err.message);
-    res.status(500).json({ success: false, message: 'Server error resetting password.' });
+    const requestId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    console.error(`[Forgot Password Reset Error] [${requestId}] Route: ${req.method} ${req.originalUrl}`);
+    console.error(`[Forgot Password Reset Error] [${requestId}] Error: ${err.message}`);
+    console.error(`[Forgot Password Reset Error] [${requestId}] Stack:\n`, err.stack);
+    res.status(500).json({
+      success: false,
+      code: 'SERVER_ERROR',
+      message: 'Server error resetting password. If this persists, please contact support.',
+      requestId
+    });
   }
 });
 
@@ -4393,6 +4524,9 @@ if (require.main === module) {
     
     // Test MySQL connection pool on server boot
     await db.testConnection();
+
+    // Verify Nodemailer SMTP connection on server boot
+    await verifySmtpConnection();
 
     // Initialize automated nightly database backup scheduler (2:00 AM, 7-day retention)
     startBackupSchedule();

@@ -18,6 +18,26 @@ document.addEventListener('DOMContentLoaded', () => {
   setupActiveUsersTracker();
   checkUserState();
   setupSearch();
+
+  const askAiBtn = document.getElementById('btnAskAiAboutProduct');
+  if (askAiBtn) {
+    askAiBtn.addEventListener('click', () => {
+      const aiTabBtn = document.querySelector('[data-target="tabAiConsultant"]');
+      if (aiTabBtn) {
+        aiTabBtn.click();
+        aiTabBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          const inp = document.getElementById('prodAiInput');
+          if (inp) inp.focus();
+        }, 500);
+      }
+    });
+  }
+
+  // Attach back button listeners without inline onclick
+  document.querySelectorAll('#floatingBackBtn, .btn-back-to-store, .breadcrumb-back-pill').forEach(btn => {
+    btn.addEventListener('click', handleSmartBack);
+  });
 });
 
 let currentProduct = null;
@@ -78,10 +98,21 @@ function renderProductPage(p) {
   const thumbsCol = document.getElementById('galleryThumbsCol');
   const galleryImgs = p.gallery && p.gallery.length ? p.gallery : [p.image];
   thumbsCol.innerHTML = galleryImgs.map((img, idx) => `
-    <div class="thumb-item ${idx === 0 ? 'active' : ''}" onclick="switchGalleryImage('${img}', this)">
+    <div class="thumb-item ${idx === 0 ? 'active' : ''}" data-img="${img}">
       <img src="${img}" alt="${p.name} view ${idx + 1}">
     </div>
   `).join('');
+
+  if (!thumbsCol.dataset.eventsBound) {
+    thumbsCol.dataset.eventsBound = 'true';
+    thumbsCol.addEventListener('click', (e) => {
+      const item = e.target.closest('.thumb-item');
+      if (item) {
+        const imgUrl = item.getAttribute('data-img');
+        if (imgUrl) switchGalleryImage(imgUrl, item);
+      }
+    });
+  }
 
   // Setup Loupe Magnifier
   setupImageZoom(p.image);

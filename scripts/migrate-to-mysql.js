@@ -146,7 +146,116 @@ async function migrate() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
     INSERT IGNORE INTO site_stats (stat_key, stat_value) VALUES ('total_visitors', 1240);
+
+    -- PASSWORD RESETS TABLE (Single-use, 5-minute timed password recovery)
+    CREATE TABLE IF NOT EXISTS password_resets (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) NOT NULL,
+      identifier VARCHAR(255) NOT NULL,
+      channel ENUM('email', 'sms') NOT NULL,
+      otp_hash VARCHAR(255) NULL,
+      otp_expires_at DATETIME NULL,
+      otp_attempts INT DEFAULT 0,
+      reset_token_hash VARCHAR(255) NULL,
+      token_expires_at DATETIME NULL,
+      is_used BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_pwd_resets_user (user_id),
+      INDEX idx_pwd_resets_ident (identifier),
+      INDEX idx_pwd_resets_token (reset_token_hash),
+      INDEX idx_pwd_resets_created (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- ADDRESSES TABLE (Immutable customer shipping addresses)
+    CREATE TABLE IF NOT EXISTS addresses (
+      id VARCHAR(64) PRIMARY KEY,
+      user_id VARCHAR(64) NOT NULL,
+      label VARCHAR(50) DEFAULT 'Home',
+      name VARCHAR(120) NOT NULL,
+      phone VARCHAR(20) NOT NULL,
+      email VARCHAR(160) NOT NULL,
+      address_line1 VARCHAR(255) NOT NULL,
+      address_line2 VARCHAR(255) NULL,
+      landmark VARCHAR(255) NULL,
+      city VARCHAR(100) NOT NULL,
+      state VARCHAR(100) NOT NULL,
+      pincode VARCHAR(10) NOT NULL,
+      is_default BOOLEAN DEFAULT FALSE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_address_user (user_id),
+      INDEX idx_address_user_default (user_id, is_default),
+      CONSTRAINT fk_address_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- PROMO CODES TABLE
+    CREATE TABLE IF NOT EXISTS promo_codes (
+      code VARCHAR(50) PRIMARY KEY,
+      type ENUM('percentage', 'flat') NOT NULL DEFAULT 'percentage',
+      value DECIMAL(10, 2) NOT NULL,
+      minCart DECIMAL(10, 2) DEFAULT 0,
+      maxDiscount DECIMAL(10, 2) DEFAULT NULL,
+      usageLimit INT DEFAULT 1000,
+      usageCount INT DEFAULT 0,
+      isActive BOOLEAN DEFAULT TRUE,
+      expiresAt DATETIME DEFAULT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- ADMIN AUDIT LOGS TABLE
+    CREATE TABLE IF NOT EXISTS admin_audit_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      admin_id VARCHAR(64) NULL,
+      admin_email VARCHAR(160) NOT NULL,
+      action VARCHAR(100) NOT NULL,
+      resource_type VARCHAR(64) NOT NULL,
+      resource_id VARCHAR(128) NULL,
+      details JSON NULL,
+      ip_address VARCHAR(64) NULL,
+      user_agent VARCHAR(255) NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_audit_admin_email (admin_email),
+      INDEX idx_audit_action (action),
+      INDEX idx_audit_created_at (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
+
+  // Ensure idempotent column migrations on existing tables
+  console.log('🔄 Checking and applying column alterations...');
+  const [userCols] = await connection.query('DESCRIBE users');
+  const userColNames = userCols.map(c => c.Field);
+  if (!userColNames.includes('password_changed_at')) {
+    await connection.query('ALTER TABLE users ADD COLUMN password_changed_at DATETIME NULL AFTER password');
+    console.log('   ✅ Added password_changed_at column to users table.');
+  }
+  if (!userColNames.includes('totp_secret')) {
+    await connection.query('ALTER TABLE users ADD COLUMN totp_secret VARCHAR(128) NULL AFTER role');
+    console.log('   ✅ Added totp_secret column to users table.');
+  }
+  if (!userColNames.includes('totp_enabled')) {
+    await connection.query('ALTER TABLE users ADD COLUMN totp_enabled BOOLEAN DEFAULT FALSE AFTER totp_secret');
+    console.log('   ✅ Added totp_enabled column to users table.');
+  }
+
+  const [orderCols] = await connection.query('DESCRIBE orders');
+  const orderColNames = orderCols.map(c => c.Field);
+  if (!orderColNames.includes('shipping_address_json')) {
+    await connection.query('ALTER TABLE orders ADD COLUMN shipping_address_json JSON NULL AFTER shippingAddress');
+    console.log('   ✅ Added shipping_address_json column to orders table.');
+  }
+  if (!orderColNames.includes('city')) {
+    await connection.query('ALTER TABLE orders ADD COLUMN city VARCHAR(100) NULL AFTER shipping_address_json');
+    console.log('   ✅ Added city column to orders table.');
+  }
+  if (!orderColNames.includes('state')) {
+    await connection.query('ALTER TABLE orders ADD COLUMN state VARCHAR(100) NULL AFTER city');
+    console.log('   ✅ Added state column to orders table.');
+  }
+  if (!orderColNames.includes('pincode')) {
+    await connection.query('ALTER TABLE orders ADD COLUMN pincode VARCHAR(10) NULL AFTER state');
+    console.log('   ✅ Added pincode column to orders table.');
+  }
 
   console.log('✅ Tables created successfully.');
 

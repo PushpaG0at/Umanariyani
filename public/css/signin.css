@@ -200,7 +200,8 @@
   align-items: center;
 }
 
-.input-with-icon i {
+.input-with-icon > i,
+.input-with-icon i:first-child {
   position: absolute;
   left: 14px;
   color: var(--green-sage);
@@ -523,14 +524,19 @@
 }
 
 /* Password Visibility Toggle */
+.btn-toggle-pwd,
 .input-with-icon .btn-toggle-pwd {
   position: absolute;
-  right: 12px;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--green-sage, #52B788);
   cursor: pointer;
-  padding: 6px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
   font-size: 0.95rem;
   display: flex;
   align-items: center;
@@ -539,12 +545,25 @@
   z-index: 2;
 }
 
+.btn-toggle-pwd i,
+.input-with-icon .btn-toggle-pwd i {
+  position: static;
+  left: auto;
+  top: auto;
+  transform: none;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.btn-toggle-pwd:hover,
 .input-with-icon .btn-toggle-pwd:hover {
   color: var(--green-forest, #2D6A4F);
 }
 
 .input-with-icon input.has-toggle {
-  padding-right: 42px;
+  padding-right: 40px;
 }
 
 /* Success Alert Box */

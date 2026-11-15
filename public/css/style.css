@@ -1463,6 +1463,26 @@ button {
   transition: color 0.2s ease;
 }
 
+.product-card-title a,
+.product-card-title-link {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+
+.product-card-title-link:hover {
+  color: var(--green-forest);
+}
+
+.product-card-img-wrap {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.product-card {
+  cursor: pointer;
+}
+
 .product-card:hover .product-card-title {
   color: var(--green-forest);
 }

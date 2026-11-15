@@ -37,7 +37,7 @@
   </div>
 
   <!-- Floating Quick Back Button -->
-  <a href="index.html#productsSection" class="floating-back-btn" id="floatingBackBtn" onclick="handleSmartBack(event)" title="Return to Products Catalog">
+  <a href="index.html#productsSection" class="floating-back-btn" id="floatingBackBtn" title="Return to Products Catalog">
     <i class="fa-solid fa-arrow-left"></i>
     <span>Back to Store</span>
   </a>
@@ -54,7 +54,7 @@
       </a>
 
       <!-- Center Back Button (Never mixes with Brand Name) -->
-      <a href="index.html#productsSection" class="btn-back-to-store" onclick="handleSmartBack(event)">
+      <a href="index.html#productsSection" class="btn-back-to-store">
         <i class="fa-solid fa-arrow-left"></i>
         <span>&larr; Back to Products</span>
       </a>
@@ -93,7 +93,7 @@
   <div class="amazon-breadcrumbs">
     <div class="container" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <div style="display:flex; align-items:center;">
-        <a href="index.html#productsSection" class="breadcrumb-back-pill" onclick="handleSmartBack(event)">
+        <a href="index.html#productsSection" class="breadcrumb-back-pill">
           <i class="fa-solid fa-arrow-left"></i> Back to Products
         </a>
         <ul class="breadcrumb-list">
@@ -548,24 +548,6 @@
   <!-- Scripts -->
   <script src="/js/product.js?v=2.5"></script>
   <script src="/js/ai-consultant.js?v=2.5"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const askAiBtn = document.getElementById('btnAskAiAboutProduct');
-      if (askAiBtn) {
-        askAiBtn.addEventListener('click', () => {
-          // Switch to AI tab
-          const aiTabBtn = document.querySelector('[data-target="tabAiConsultant"]');
-          if (aiTabBtn) {
-            aiTabBtn.click();
-            aiTabBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => {
-              const inp = document.getElementById('prodAiInput');
-              if (inp) inp.focus();
-            }, 500);
-          }
-        });
-      }
-    });
-  </script>
+
 </body>
 </html>

@@ -11,11 +11,11 @@
 
   <!-- Core & Sign-in Stylesheets -->
   <link rel="stylesheet" href="/css/style.css?v=2.5">
-  <link rel="stylesheet" href="/css/signin.css?v=2.5">
+  <link rel="stylesheet" href="/css/signin.css?v=2.6">
   <!-- Cloudflare Turnstile Bot Defense (Site key fetched securely via /api/config or data-sitekey fallback) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
-<body class="signin-page-body">
+<body class="signin-page-body" data-sitekey="0x4AAAAAAF5yxm-iBychLJBe">
 
   <!-- Floating Botanical Leaves Background -->
   <div class="leaves-container" id="leavesContainer"></div>
@@ -229,8 +229,9 @@
 
             <!-- Cloudflare Turnstile Bot Mitigation Widget Hook for Forgot Password Request -->
             <div id="forgotTurnstile" style="margin:10px auto; min-height:48px; display:flex; justify-content:center;"></div>
+            <div id="forgotTurnstileStatus" style="display:none; font-size:0.82rem; color:#DC2626; text-align:center; margin-bottom:8px;"></div>
 
-            <button type="submit" class="btn-herbal-submit" id="btnForgotRequestSubmit">
+            <button type="submit" class="btn-herbal-submit" id="btnForgotRequestSubmit" disabled style="opacity:0.6; cursor:not-allowed;">
               <i class="fa-solid fa-paper-plane"></i>
               <span>Send Recovery Code</span>
             </button>
@@ -296,7 +297,7 @@
 
             <div class="form-group">
               <label class="form-label" for="forgotNewPassword">New Password</label>
-              <div class="input-with-icon">
+              <div class="input-with-icon" style="position: relative;">
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="forgotNewPassword" class="herbal-input has-toggle" placeholder="At least 8 characters" required autocomplete="new-password">
                 <button type="button" class="btn-toggle-pwd" data-target="forgotNewPassword" aria-label="Toggle password visibility">
@@ -307,7 +308,7 @@
 
             <div class="form-group">
               <label class="form-label" for="forgotConfirmPassword">Confirm New Password</label>
-              <div class="input-with-icon">
+              <div class="input-with-icon" style="position: relative;">
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="forgotConfirmPassword" class="herbal-input has-toggle" placeholder="Re-enter new password" required autocomplete="new-password">
                 <button type="button" class="btn-toggle-pwd" data-target="forgotConfirmPassword" aria-label="Toggle password visibility">

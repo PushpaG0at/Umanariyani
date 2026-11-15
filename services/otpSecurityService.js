@@ -11,10 +11,12 @@
 
 const crypto = require('node:crypto');
 
-// Configuration
-const MAX_HOURLY_OTP_PER_IDENTIFIER = 3;
-const RESEND_COOLDOWN_SECONDS = 60;
-const MAX_VERIFICATION_ATTEMPTS = 5;
+// Configuration with environment overrides
+const MAX_HOURLY_OTP_PER_IDENTIFIER = Number(process.env.OTP_MAX_HOURLY_PER_IDENTIFIER) || 3;
+const RESEND_COOLDOWN_SECONDS = Number(process.env.OTP_RESEND_COOLDOWN_SECONDS) || 60;
+const MAX_VERIFICATION_ATTEMPTS = Number(process.env.OTP_MAX_ATTEMPTS) || 5;
+const OTP_EXPIRY_MINUTES = Number(process.env.OTP_EXPIRY_MINUTES) || 5;
+const RESET_TOKEN_EXPIRY_MINUTES = Number(process.env.RESET_TOKEN_EXPIRY_MINUTES) || 10;
 
 // In-memory sliding window counters
 // Map<identifier, Array<timestampMs>>
@@ -169,13 +171,35 @@ function checkAndIncrementDailySms() {
   };
 }
 
+/**
+ * Returns the active secret for password reset token hashing
+ */
+function getResetTokenSecret() {
+  return (process.env.RESET_TOKEN_SECRET || process.env.OTP_HMAC_SECRET || process.env.SESSION_SECRET || 'umanarayani_sacred_reset_token_secret_2026').trim();
+}
+
+/**
+ * Computes keyed HMAC-SHA256 hash for a password reset token
+ * @param {string} token Raw token string
+ * @returns {string} Hex encoded HMAC hash
+ */
+function hashResetToken(token) {
+  const secret = getResetTokenSecret();
+  const cleanToken = String(token).trim();
+  return crypto.createHmac('sha256', secret).update(cleanToken).digest('hex');
+}
+
 module.exports = {
   hashOtp,
   verifyOtpHash,
+  hashResetToken,
+  getResetTokenSecret,
   checkOtpSendLimits,
   recordOtpSent,
   checkAndIncrementDailySms,
   MAX_HOURLY_OTP_PER_IDENTIFIER,
   RESEND_COOLDOWN_SECONDS,
-  MAX_VERIFICATION_ATTEMPTS
+  MAX_VERIFICATION_ATTEMPTS,
+  OTP_EXPIRY_MINUTES,
+  RESET_TOKEN_EXPIRY_MINUTES
 };
