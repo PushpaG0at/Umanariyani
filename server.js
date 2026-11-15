@@ -178,7 +178,8 @@ app.use(helmet({
         "https://challenges.cloudflare.com",
         "https://generativelanguage.googleapis.com",
         "https://api.phonepe.com",
-        "https://mercury-t2.phonepe.com"
+        "https://mercury-t2.phonepe.com",
+        "data:"
       ],
       frameSrc: [
         "'self'",
