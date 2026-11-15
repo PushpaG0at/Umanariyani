@@ -8,7 +8,8 @@
 let currentTurnstileTokens = {
   login: '',
   register: '',
-  otp: ''
+  otp: '',
+  forgot: ''
 };
 let turnstileWidgetIds = {};
 let pendingAuthIdentifier = '';
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDoshaPicker();
   initAuthTabs();
   initFormSubmissions();
+  initForgotPasswordFlow();
   initTurnstileWidgets();
   checkExistingSession();
 
@@ -144,6 +146,25 @@ async function initTurnstileWidgets() {
           }
         });
       }
+      if (document.getElementById('forgotTurnstile') && turnstileWidgetIds['forgot'] === undefined) {
+        turnstileWidgetIds['forgot'] = window.turnstile.render('#forgotTurnstile', {
+          sitekey: siteKey,
+          theme: 'light',
+          callback: (token) => {
+            currentTurnstileTokens['forgot'] = token;
+            clearAuthMessages();
+          },
+          'expired-callback': () => {
+            currentTurnstileTokens['forgot'] = '';
+            if (window.turnstile && turnstileWidgetIds['forgot'] !== undefined) {
+              try { window.turnstile.reset(turnstileWidgetIds['forgot']); } catch (_) {}
+            }
+          },
+          'error-callback': (code) => {
+            console.warn('[Turnstile Forgot Password Widget Error]', code);
+          }
+        });
+      }
     } catch (e) {
       console.warn('[Turnstile Render Warning]', e.message);
     }
@@ -215,6 +236,7 @@ function initAuthTabs() {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
   const otpForm = document.getElementById('otpForm');
+  const forgotContainer = document.getElementById('forgotPasswordContainer');
 
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -223,6 +245,7 @@ function initAuthTabs() {
       clearAuthMessages();
 
       if (otpForm) otpForm.style.display = 'none';
+      if (forgotContainer) forgotContainer.style.display = 'none';
 
       const mode = btn.getAttribute('data-mode');
       if (mode === 'login') {
@@ -787,30 +810,472 @@ window.handleUserLogout = async function() {
   window.location.reload();
 };
 
-function showAuthError(msg) {
-  let errBox = document.getElementById('authErrorBox');
-  if (!errBox) {
-    errBox = document.createElement('div');
-    errBox.id = 'authErrorBox';
-    const formWrap = document.querySelector('.auth-form-wrap');
-    if (formWrap) formWrap.prepend(errBox);
+/* ==========================================================================
+   5. FORGOT PASSWORD FLOW (3-STEP RECOVERY)
+   ========================================================================== */
+let pendingForgotIdentifier = '';
+let currentResetToken = '';
+let forgotResendTimer = null;
+let forgotResendSecondsRemaining = 60;
+let lastForgotDevOtp = '';
+
+function initForgotPasswordFlow() {
+  const linkForgot = document.getElementById('linkForgotPassword');
+  const forgotContainer = document.getElementById('forgotPasswordContainer');
+  const forgotRequestForm = document.getElementById('forgotRequestForm');
+  const forgotVerifyForm = document.getElementById('forgotVerifyForm');
+  const forgotResetForm = document.getElementById('forgotResetForm');
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const otpForm = document.getElementById('otpForm');
+  const tabsWrap = document.getElementById('authTabsWrap');
+
+  const btnBackToLogin = document.getElementById('btnForgotBackToLogin');
+  const btnCancel = document.getElementById('btnForgotCancel');
+  const btnBackToRequest = document.getElementById('btnForgotBackToRequest');
+  const btnResendForgotOtp = document.getElementById('btnForgotResendOtp');
+  const btnAutoFillForgotOtp = document.getElementById('btnForgotAutoFillOtp');
+
+  // Show Forgot Password View
+  function showForgotRequestView() {
+    clearAuthMessages();
+    if (loginForm) loginForm.style.display = 'none';
+    if (registerForm) registerForm.style.display = 'none';
+    if (otpForm) otpForm.style.display = 'none';
+    if (tabsWrap) tabsWrap.style.display = 'none';
+
+    if (forgotContainer) forgotContainer.style.display = 'block';
+    if (forgotRequestForm) forgotRequestForm.style.display = 'block';
+    if (forgotVerifyForm) forgotVerifyForm.style.display = 'none';
+    if (forgotResetForm) forgotResetForm.style.display = 'none';
+
+    // Render Turnstile widget if needed
+    if (window.turnstile && turnstileWidgetIds['forgot'] === undefined) {
+      setTimeout(() => initTurnstileWidgets(), 50);
+    }
+
+    const input = document.getElementById('forgotIdentifier');
+    if (input) {
+      // Pre-fill from login field if already provided
+      const loginEmailInput = document.getElementById('loginEmail');
+      if (loginEmailInput && loginEmailInput.value.trim() && !input.value.trim()) {
+        input.value = loginEmailInput.value.trim();
+      }
+      input.focus();
+    }
   }
-  errBox.style.cssText = `
-    background: #FDEDEC;
-    color: #C0392B;
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    margin-bottom: 16px;
-    border: 1px solid #F5B7B1;
-    text-align: center;
-    font-weight: 600;
-  `;
-  errBox.textContent = msg;
-  errBox.style.display = 'block';
+
+  // Return to Login View
+  function returnToLoginView() {
+    clearAuthMessages();
+    if (forgotResendTimer) clearInterval(forgotResendTimer);
+
+    if (forgotContainer) forgotContainer.style.display = 'none';
+    if (forgotRequestForm) forgotRequestForm.style.display = 'none';
+    if (forgotVerifyForm) forgotVerifyForm.style.display = 'none';
+    if (forgotResetForm) forgotResetForm.style.display = 'none';
+
+    if (tabsWrap) tabsWrap.style.display = 'flex';
+    if (loginForm) loginForm.style.display = 'block';
+    if (registerForm) registerForm.style.display = 'none';
+    if (otpForm) otpForm.style.display = 'none';
+
+    const tabBtns = document.querySelectorAll('.auth-tab-btn');
+    tabBtns.forEach(btn => {
+      if (btn.getAttribute('data-mode') === 'login') btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+
+    resetTurnstileWidget('forgot');
+  }
+
+  if (linkForgot) {
+    linkForgot.addEventListener('click', (e) => {
+      e.preventDefault();
+      showForgotRequestView();
+    });
+  }
+
+  if (btnBackToLogin) {
+    btnBackToLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      returnToLoginView();
+    });
+  }
+
+  if (btnCancel) {
+    btnCancel.addEventListener('click', (e) => {
+      e.preventDefault();
+      returnToLoginView();
+    });
+  }
+
+  if (btnBackToRequest) {
+    btnBackToRequest.addEventListener('click', (e) => {
+      e.preventDefault();
+      clearAuthMessages();
+      if (forgotResendTimer) clearInterval(forgotResendTimer);
+      if (forgotVerifyForm) forgotVerifyForm.style.display = 'none';
+      if (forgotRequestForm) forgotRequestForm.style.display = 'block';
+      const input = document.getElementById('forgotIdentifier');
+      if (input) input.focus();
+    });
+  }
+
+  // Password Visibility Toggles
+  const toggleButtons = document.querySelectorAll('.btn-toggle-pwd');
+  toggleButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const targetInput = document.getElementById(targetId);
+      const icon = btn.querySelector('i');
+      if (!targetInput) return;
+
+      if (targetInput.type === 'password') {
+        targetInput.type = 'text';
+        if (icon) {
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+        }
+      } else {
+        targetInput.type = 'password';
+        if (icon) {
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+        }
+      }
+    });
+  });
+
+  // Step A: Request OTP Submission
+  if (forgotRequestForm) {
+    forgotRequestForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAuthMessages();
+
+      const identifierInput = document.getElementById('forgotIdentifier');
+      const identifier = identifierInput ? identifierInput.value.trim() : '';
+      const submitBtn = document.getElementById('btnForgotRequestSubmit');
+
+      if (!identifier) {
+        showAuthError('Please enter your registered email address or mobile number.');
+        return;
+      }
+
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const token = getActiveTurnstileToken('forgot');
+      if (!token && window.turnstile && !isLocalHost) {
+        showAuthError('Please complete the security bot verification before requesting OTP.');
+        return;
+      }
+
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending Recovery Code...`;
+      }
+
+      try {
+        const res = await fetch('/api/auth/forgot-password/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ identifier, turnstileToken: token })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          pendingForgotIdentifier = identifier;
+          lastForgotDevOtp = data.devOtp || '';
+
+          const maskedTarget = document.getElementById('forgotTargetMasked');
+          if (maskedTarget) {
+            maskedTarget.textContent = data.masked || identifier;
+          }
+
+          const devHint = document.getElementById('forgotOtpDevHint');
+          const devCode = document.getElementById('forgotOtpDevCode');
+          if (devHint && devCode) {
+            if (data.devOtp) {
+              devHint.style.display = 'block';
+              devCode.textContent = data.devOtp;
+            } else {
+              devHint.style.display = 'none';
+            }
+          }
+
+          forgotRequestForm.style.display = 'none';
+          if (forgotVerifyForm) {
+            forgotVerifyForm.style.display = 'block';
+            const otpInput = document.getElementById('forgotOtpInput');
+            if (otpInput) {
+              otpInput.value = '';
+              otpInput.focus();
+            }
+          }
+          startForgotResendTimer();
+        } else {
+          resetTurnstileWidget('forgot');
+          showAuthError(data.message || 'Unable to request password recovery. Please try again.');
+        }
+      } catch (err) {
+        resetTurnstileWidget('forgot');
+        showAuthError('Network error connecting to Ayurvedic Sanctuary. Please try again.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
+      }
+    });
+  }
+
+  function startForgotResendTimer() {
+    if (forgotResendTimer) clearInterval(forgotResendTimer);
+    forgotResendSecondsRemaining = 60;
+
+    const btnResend = document.getElementById('btnForgotResendOtp');
+    if (btnResend) {
+      btnResend.disabled = true;
+      btnResend.style.opacity = '0.6';
+      btnResend.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Resend OTP in <span id="forgotOtpCountdown">60</span>s`;
+    }
+
+    forgotResendTimer = setInterval(() => {
+      forgotResendSecondsRemaining--;
+      const span = document.getElementById('forgotOtpCountdown');
+      if (span) span.textContent = forgotResendSecondsRemaining;
+
+      if (forgotResendSecondsRemaining <= 0) {
+        clearInterval(forgotResendTimer);
+        if (btnResend) {
+          btnResend.disabled = false;
+          btnResend.style.opacity = '1';
+          btnResend.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Resend OTP Now`;
+        }
+      }
+    }, 1000);
+  }
+
+  // Resend OTP Action in Step B
+  if (btnResendForgotOtp) {
+    btnResendForgotOtp.addEventListener('click', async () => {
+      if (btnResendForgotOtp.disabled || !pendingForgotIdentifier) return;
+      clearAuthMessages();
+
+      try {
+        btnResendForgotOtp.disabled = true;
+        btnResendForgotOtp.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sending code...`;
+
+        const res = await fetch('/api/auth/forgot-password/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ identifier: pendingForgotIdentifier })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          lastForgotDevOtp = data.devOtp || '';
+          if (data.devOtp && document.getElementById('forgotOtpDevCode')) {
+            document.getElementById('forgotOtpDevHint').style.display = 'block';
+            document.getElementById('forgotOtpDevCode').textContent = data.devOtp;
+          }
+          startForgotResendTimer();
+        } else {
+          showAuthError(data.message || 'Could not resend recovery code. Please try again.');
+          btnResendForgotOtp.disabled = false;
+        }
+      } catch (err) {
+        showAuthError('Network error resending recovery code. Please try again.');
+        btnResendForgotOtp.disabled = false;
+      }
+    });
+  }
+
+  // Auto-fill dev OTP in Step B
+  if (btnAutoFillForgotOtp) {
+    btnAutoFillForgotOtp.addEventListener('click', () => {
+      const otpInput = document.getElementById('forgotOtpInput');
+      if (otpInput && lastForgotDevOtp) {
+        otpInput.value = lastForgotDevOtp;
+        otpInput.focus();
+      }
+    });
+  }
+
+  // Step B: Verify OTP Submission
+  if (forgotVerifyForm) {
+    forgotVerifyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAuthMessages();
+
+      const otpInput = document.getElementById('forgotOtpInput');
+      const otp = otpInput ? otpInput.value.trim() : '';
+      const submitBtn = document.getElementById('btnForgotVerifySubmit');
+
+      if (!/^\d{6}$/.test(otp)) {
+        showAuthError('Please enter the 6-digit numeric recovery code.');
+        return;
+      }
+
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying Code...`;
+      }
+
+      try {
+        const res = await fetch('/api/auth/forgot-password/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ identifier: pendingForgotIdentifier, otp })
+        });
+        const data = await res.json();
+
+        if (data.success && data.resetToken) {
+          currentResetToken = data.resetToken;
+          if (forgotResendTimer) clearInterval(forgotResendTimer);
+
+          forgotVerifyForm.style.display = 'none';
+          if (forgotResetForm) {
+            forgotResetForm.style.display = 'block';
+            const newPwdInput = document.getElementById('forgotNewPassword');
+            if (newPwdInput) {
+              newPwdInput.value = '';
+              newPwdInput.focus();
+            }
+            const confirmPwdInput = document.getElementById('forgotConfirmPassword');
+            if (confirmPwdInput) confirmPwdInput.value = '';
+          }
+        } else {
+          showAuthError(data.message || 'Verification failed. The code may be incorrect or expired.');
+        }
+      } catch (err) {
+        showAuthError('Error verifying recovery code with server. Please try again.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
+      }
+    });
+  }
+
+  // Step C: Reset Password Submission
+  if (forgotResetForm) {
+    forgotResetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAuthMessages();
+
+      const newPassword = document.getElementById('forgotNewPassword').value;
+      const confirmPassword = document.getElementById('forgotConfirmPassword').value;
+      const submitBtn = document.getElementById('btnForgotResetSubmit');
+
+      if (!newPassword || !confirmPassword) {
+        showAuthError('Please enter and confirm your new password.');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showAuthError('Passwords do not match. Please re-enter them carefully.');
+        return;
+      }
+
+      if (newPassword.length < 8) {
+        showAuthError('Password must be at least 8 characters long.');
+        return;
+      }
+
+      const hasLetter = /[a-zA-Z]/.test(newPassword);
+      const hasDigitOrSymbol = /[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
+      if (!hasLetter || !hasDigitOrSymbol) {
+        showAuthError('Password must contain letters and at least one number or symbol.');
+        return;
+      }
+
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Updating Password...`;
+      }
+
+      try {
+        const res = await fetch('/api/auth/forgot-password/reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            resetToken: currentResetToken,
+            newPassword,
+            confirmPassword
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          const finishedIdentifier = pendingForgotIdentifier;
+          returnToLoginView();
+          const loginEmailInput = document.getElementById('loginEmail');
+          if (loginEmailInput && finishedIdentifier) {
+            loginEmailInput.value = finishedIdentifier;
+          }
+          const loginPwdInput = document.getElementById('loginPassword');
+          if (loginPwdInput) {
+            loginPwdInput.value = '';
+            loginPwdInput.focus();
+          }
+
+          currentResetToken = '';
+          pendingForgotIdentifier = '';
+          lastForgotDevOtp = '';
+
+          showAuthSuccess('Your password has been updated securely! Please sign in with your new password.');
+        } else {
+          showAuthError(data.message || 'Unable to update password. Please try again.');
+        }
+      } catch (err) {
+        showAuthError('Network error updating password. Please try again.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origBtnHtml;
+        }
+      }
+    });
+  }
+}
+
+function showAuthSuccess(msg) {
+  let box = document.getElementById('authAlertBox') || document.getElementById('authErrorBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'authAlertBox';
+    const formWrap = document.querySelector('.auth-form-wrap');
+    if (formWrap) formWrap.prepend(box);
+  }
+  box.className = 'auth-status-alert success';
+  box.innerHTML = `<i class="fa-solid fa-circle-check" style="margin-right:6px;"></i> ${msg}`;
+  box.style.display = 'block';
+}
+
+function showAuthError(msg) {
+  let box = document.getElementById('authAlertBox') || document.getElementById('authErrorBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'authAlertBox';
+    const formWrap = document.querySelector('.auth-form-wrap');
+    if (formWrap) formWrap.prepend(box);
+  }
+  box.className = 'auth-status-alert error';
+  box.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i> ${msg}`;
+  box.style.display = 'block';
 }
 
 function clearAuthMessages() {
-  const errBox = document.getElementById('authErrorBox');
-  if (errBox) errBox.style.display = 'none';
+  const box1 = document.getElementById('authAlertBox');
+  if (box1) box1.style.display = 'none';
+  const box2 = document.getElementById('authErrorBox');
+  if (box2) box2.style.display = 'none';
 }

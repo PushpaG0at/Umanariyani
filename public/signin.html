@@ -71,6 +71,10 @@
             </div>
           </div>
 
+          <div class="forgot-pwd-row" style="display:flex; justify-content:flex-end; margin-top:-12px; margin-bottom:14px;">
+            <a href="javascript:void(0)" id="linkForgotPassword" style="font-size:0.82rem; color:var(--green-forest); text-decoration:none; font-weight:600; cursor:pointer;">Forgot password?</a>
+          </div>
+
           <!-- Cloudflare Turnstile Bot Mitigation Widget Hook -->
           <div id="loginTurnstile" style="margin:10px auto; min-height:48px; display:flex; justify-content:center;"></div>
 
@@ -200,6 +204,136 @@
             </button>
           </div>
         </form>
+
+        <!-- 4. Forgot Password Flow Container -->
+        <div id="forgotPasswordContainer" style="display:none;">
+
+          <!-- Step A: Enter Email or Mobile -->
+          <form id="forgotRequestForm">
+            <div class="otp-header-box" style="text-align:center; margin-bottom:18px;">
+              <div class="otp-icon-badge" style="width:52px; height:52px; margin:0 auto 10px; background:rgba(26,60,42,0.08); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--green-forest); font-size:1.4rem;">
+                <i class="fa-solid fa-key"></i>
+              </div>
+              <h3 style="font-size:1.2rem; color:var(--green-forest); margin-bottom:4px; font-weight:700;">Reset Your Password</h3>
+              <p style="font-size:0.86rem; color:var(--text-muted); line-height:1.45; margin:0;">
+                Enter your registered email address or mobile number. We will send you a 6-digit recovery code.
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="forgotIdentifier">Email Address or Mobile Number</label>
+              <div class="input-with-icon">
+                <i class="fa-regular fa-envelope"></i>
+                <input type="text" id="forgotIdentifier" class="herbal-input" placeholder="name@domain.com or +91 9876543210" required autocomplete="username">
+              </div>
+            </div>
+
+            <!-- Cloudflare Turnstile Bot Mitigation Widget Hook for Forgot Password Request -->
+            <div id="forgotTurnstile" style="margin:10px auto; min-height:48px; display:flex; justify-content:center;"></div>
+
+            <button type="submit" class="btn-herbal-submit" id="btnForgotRequestSubmit">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>Send Recovery Code</span>
+            </button>
+
+            <div style="text-align:center; margin-top:16px;">
+              <button type="button" id="btnForgotBackToLogin" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.84rem; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-arrow-left"></i> Back to Sign In
+              </button>
+            </div>
+          </form>
+
+          <!-- Step B: Verify 6-digit OTP -->
+          <form id="forgotVerifyForm" style="display:none;">
+            <div class="otp-header-box" style="text-align:center; margin-bottom:18px;">
+              <div class="otp-icon-badge" style="width:52px; height:52px; margin:0 auto 10px; background:rgba(26,60,42,0.08); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--green-forest); font-size:1.4rem;">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <h3 style="font-size:1.2rem; color:var(--green-forest); margin-bottom:4px; font-weight:700;">Enter Recovery Code</h3>
+              <p style="font-size:0.86rem; color:var(--text-muted); line-height:1.45; margin:0;">
+                A 6-digit OTP was sent to<br>
+                <strong id="forgotTargetMasked" style="color:var(--green-primary); font-size:0.95rem;"></strong>
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="forgotOtpInput" style="text-align:center; display:block;">6-Digit OTP</label>
+              <div class="input-with-icon" style="max-width:240px; margin:0 auto;">
+                <i class="fa-solid fa-key"></i>
+                <input type="text" id="forgotOtpInput" class="herbal-input" placeholder="••••••" maxlength="6" inputmode="numeric" autocomplete="one-time-code" required style="letter-spacing:6px; font-size:1.25rem; text-align:center; font-weight:700;">
+              </div>
+              <div id="forgotOtpDevHint" style="display:none; text-align:center; margin-top:10px; font-size:0.8rem; color:var(--gold-deep); background:rgba(193,154,91,0.12); padding:6px 12px; border-radius:8px;">
+                <span>Test OTP: <strong id="forgotOtpDevCode"></strong></span>
+                <button type="button" id="btnForgotAutoFillOtp" style="margin-left:8px; background:var(--forest-deep, #1A3C2A); color:#fff; border:none; padding:3px 9px; border-radius:4px; font-size:0.75rem; cursor:pointer;">Auto-Fill</button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-herbal-submit" id="btnForgotVerifySubmit">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>Verify Code & Proceed</span>
+            </button>
+
+            <div class="otp-action-row" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:0.82rem;">
+              <button type="button" id="btnForgotBackToRequest" style="background:none; border:none; color:var(--text-muted); cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-arrow-left"></i> Change account
+              </button>
+              <button type="button" id="btnForgotResendOtp" disabled style="background:none; border:none; color:var(--gold-deep); font-weight:600; cursor:pointer;">
+                Resend OTP in <span id="forgotOtpCountdown">60</span>s
+              </button>
+            </div>
+          </form>
+
+          <!-- Step C: Set New Password -->
+          <form id="forgotResetForm" style="display:none;">
+            <div class="otp-header-box" style="text-align:center; margin-bottom:18px;">
+              <div class="otp-icon-badge" style="width:52px; height:52px; margin:0 auto 10px; background:rgba(26,60,42,0.08); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--green-forest); font-size:1.4rem;">
+                <i class="fa-solid fa-lock"></i>
+              </div>
+              <h3 style="font-size:1.2rem; color:var(--green-forest); margin-bottom:4px; font-weight:700;">Set New Password</h3>
+              <p style="font-size:0.86rem; color:var(--text-muted); line-height:1.45; margin:0;">
+                Choose a strong new password for your Umanarayni account.
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="forgotNewPassword">New Password</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="forgotNewPassword" class="herbal-input has-toggle" placeholder="At least 8 characters" required autocomplete="new-password">
+                <button type="button" class="btn-toggle-pwd" data-target="forgotNewPassword" aria-label="Toggle password visibility">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="forgotConfirmPassword">Confirm New Password</label>
+              <div class="input-with-icon">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="forgotConfirmPassword" class="herbal-input has-toggle" placeholder="Re-enter new password" required autocomplete="new-password">
+                <button type="button" class="btn-toggle-pwd" data-target="forgotConfirmPassword" aria-label="Toggle password visibility">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div style="font-size:0.78rem; color:var(--text-muted); margin-top:-6px; margin-bottom:14px; line-height:1.4;">
+              <i class="fa-solid fa-shield-halved" style="color:var(--green-sage);"></i> Minimum 8 characters, with letters and numbers or symbols.
+            </div>
+
+            <button type="submit" class="btn-herbal-submit" id="btnForgotResetSubmit">
+              <i class="fa-solid fa-seedling"></i>
+              <span>Update Password & Sign In</span>
+            </button>
+
+            <div style="text-align:center; margin-top:16px;">
+              <button type="button" id="btnForgotCancel" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.84rem; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-xmark"></i> Cancel & Return to Sign In
+              </button>
+            </div>
+          </form>
+
+        </div>
 
       </div>
 

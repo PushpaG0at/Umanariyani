@@ -32,6 +32,24 @@ const {
   checkAndIncrementDailySms
 } = require('./services/otpSecurityService');
 const { SECURE_UPLOAD_DIR, validateAllUploadedFiles } = require('./services/uploadValidator');
+const {
+  INDIAN_STATES_AND_UTS,
+  normalizeIndianPhone,
+  isValidIndianPincode,
+  checkPincodeServiceability,
+  validateDeliveryAddress,
+  formatAddressString
+} = require('./services/addressService');
+const {
+  HUMAN_VERIFIED_COOKIE_NAME,
+  getVerificationTtlSeconds,
+  issueHumanVerificationCookie,
+  clearHumanVerificationCookie,
+  flagClientRisk,
+  isClientRiskFlagged,
+  verifyHumanVerificationToken,
+  verifyCheckoutBotProtection
+} = require('./services/humanVerificationService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -242,6 +260,7 @@ const globalApiLimiter = rateLimit({
   max: GLOBAL_RATE_LIMIT_MAX, // Tuned for Indian mobile CGNATs (Jio/Airtel) where thousands of users share gateway IPs
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
   keyGenerator: (req) => {
     return req.user?.id || req.cookies?.umanarayni_auth || req.ip;
   },
@@ -282,15 +301,20 @@ const aiConsultantLimiter = rateLimit({
   }
 });
 
-// Checkout and Order Limiter
+// Checkout and Order Limiter (Adaptive protection: triggers re-challenge and clears verification cookie on rate limit breach)
 const orderLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    success: false,
-    message: 'Too many checkout requests. Please wait 15 minutes or contact customer support.'
+  handler: (req, res) => {
+    flagClientRisk(req, 'Order rate limit exceeded', res);
+    res.status(429).json({
+      success: false,
+      code: 'RATE_LIMIT_EXCEEDED',
+      requireChallenge: true,
+      message: 'Too many checkout requests. Please wait 15 minutes or complete security verification.'
+    });
   }
 });
 
@@ -316,8 +340,14 @@ async function verifyTurnstile(token, req) {
   const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1' ||
                   reqIp === '127.0.0.1' || reqIp === '::1' || reqIp === '::ffff:127.0.0.1';
 
+  const enforceTurnstile = Boolean(
+    req?.headers?.['x-enforce-turnstile'] === 'true' ||
+    req?.headers?.['x-verify-turnstile'] === 'true' ||
+    process.env.TURNSTILE_ENFORCE === 'true'
+  );
+
   if (!token) {
-    if (isLocal || process.env.NODE_ENV !== 'production' || secretKey.startsWith('1x0000')) {
+    if (!enforceTurnstile && (isLocal || process.env.NODE_ENV !== 'production' || secretKey.startsWith('1x0000'))) {
       return { success: true, mode: 'test_dev_bypass' };
     }
     return { success: false, message: 'Bot protection verification token is required' };
@@ -535,9 +565,275 @@ async function sendOtpNotification({ identifier, otp, userName }) {
   }
 }
 
+/**
+ * Escapes characters with special meaning in HTML to prevent XSS in email notifications.
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Dispatches a password reset recovery code via Nodemailer (Email) or Twilio (SMS).
+ * Security: Does NOT log the OTP code anywhere.
+ */
+async function sendPasswordResetOtpNotification({ identifier, otp, userName }) {
+  const isEmail = identifier.includes('@');
+  const greeting = userName ? `Namaste ${userName}` : 'Namaste';
+
+  if (isEmail) {
+    const transporter = getMailTransporter();
+    if (!transporter) {
+      console.error(`❌ [Nodemailer] Cannot dispatch password reset email to ${maskIdentifier(identifier)}: Missing SMTP_EMAIL / SMTP_PASS.`);
+      return { sent: false, channel: 'email', error: 'Missing SMTP credentials in .env' };
+    }
+
+    try {
+      const fromEmail = (process.env.SMTP_EMAIL || '').trim();
+      const mailOptions = {
+        from: `"Umanarayni Ayurveda Security" <${fromEmail}>`,
+        to: identifier,
+        subject: `Your Umanarayni Password Recovery Code`,
+        text: `${greeting},\n\nWe received a request to reset your Umanarayni Ayurvedic Sanctuary account password.\n\nYour 6-digit recovery code is: ${otp}\n\nThis code is valid for 5 minutes and single-use.\n\nIf you did not request this code, your password remains unchanged. Please contact our helpline at +91 8641033514 if you have concerns.\n\nPure Nature, Pure Care.\nUmanarayni Ayurveda`,
+        html: `
+          <div style="font-family: 'Georgia', serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #FAFDF7; border: 1px solid #DCE7D6; border-radius: 16px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #1A3C2A; margin: 0; font-size: 26px; letter-spacing: 1px;">UMANARAYANI</h1>
+              <p style="color: #C19A5B; font-size: 11px; letter-spacing: 2px; margin: 4px 0 0 0; text-transform: uppercase;">Pure Nature, Pure Care.</p>
+            </div>
+            <p style="color: #2D3748; font-size: 15px; margin-bottom: 12px;">${greeting},</p>
+            <p style="color: #4A5568; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+              We received a request to reset your Umanarayni Ayurvedic Sanctuary account password. Please enter the 6-digit recovery code below:
+            </p>
+            <div style="text-align: center; margin: 28px 0;">
+              <div style="display: inline-block; background: #1A3C2A; color: #FAFDF7; font-size: 34px; font-weight: 700; letter-spacing: 10px; padding: 14px 28px; border-radius: 12px; border: 2px solid #C19A5B; box-shadow: 0 4px 16px rgba(26,60,42,0.15);">
+                ${otp}
+              </div>
+              <p style="color: #718096; font-size: 12px; margin-top: 10px;">⏳ Valid for 5 minutes only &bull; Single-use code.</p>
+            </div>
+            <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 24px 0;">
+            <p style="color: #A0AEC0; font-size: 11px; text-align: center; margin: 0; line-height: 1.5;">
+              If you did not request this password reset, you can safely ignore this email. Your current password remains secure.<br>
+              Need assistance? WhatsApp our Ayurvedic Care Helpline at +91 8641033514.
+            </p>
+          </div>
+        `
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      return { sent: true, channel: 'email', messageId: info.messageId };
+    } catch (err) {
+      console.error(`❌ [Nodemailer SMTP Error] Failed to send password reset email to ${maskIdentifier(identifier)}:`, err.message);
+      return { sent: false, channel: 'email', error: err.message };
+    }
+  } else {
+    // SMS via Twilio
+    if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+      try {
+        const message = await twilioClient.messages.create({
+          body: `[Umanarayani] Your password recovery code is ${otp}. Valid for 5 minutes. Do not share. If this wasn't you, call +918641033514.`,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: identifier
+        });
+        return { sent: true, channel: 'sms', sid: message.sid };
+      } catch (err) {
+        console.error(`❌ [Twilio Error] Failed to send SMS recovery code to ${maskIdentifier(identifier)}:`, err.message);
+        return { sent: false, channel: 'sms', error: err.message };
+      }
+    }
+    return { sent: false, channel: 'sms', error: 'Missing Twilio credentials' };
+  }
+}
+
+/**
+ * Sends a security alert notification when a password has been changed.
+ * Includes a prominent "Wasn't you?" contact notice.
+ */
+async function sendPasswordChangedNotification({ user, channel, identifier }) {
+  const isEmail = channel === 'email' || (identifier && identifier.includes('@')) || Boolean(user.email);
+  const targetEmail = user.email || (identifier && identifier.includes('@') ? identifier : null);
+  const targetPhone = user.phone_number || (!identifier?.includes('@') ? identifier : null);
+  const userName = user.name || 'Patron';
+
+  if (isEmail && targetEmail) {
+    const transporter = getMailTransporter();
+    if (transporter) {
+      try {
+        const fromEmail = (process.env.SMTP_EMAIL || '').trim();
+        const nowFormatted = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'full', timeStyle: 'short' });
+        await transporter.sendMail({
+          from: `"Umanarayni Ayurveda Security" <${fromEmail}>`,
+          to: targetEmail,
+          subject: `Security Alert: Your Umanarayni Password Was Changed`,
+          text: `Namaste ${userName},\n\nYour Umanarayni Ayurvedic Sanctuary account password was successfully changed on ${nowFormatted} IST.\n\nAll existing active sessions have been automatically terminated.\n\nWAS NOT YOU?\nIf you did not make this change, please contact our Ayurvedic Care Helpline immediately at +91 8641033514 or email support@umanarayni.com so our security team can protect your account.\n\nPure Nature, Pure Care.\nUmanarayni Ayurveda`,
+          html: `
+            <div style="font-family: 'Georgia', serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #FAFDF7; border: 1px solid #DCE7D6; border-radius: 16px;">
+              <div style="text-align: center; margin-bottom: 24px;">
+                <h1 style="color: #1A3C2A; margin: 0; font-size: 26px; letter-spacing: 1px;">UMANARAYANI</h1>
+                <p style="color: #C19A5B; font-size: 11px; letter-spacing: 2px; margin: 4px 0 0 0; text-transform: uppercase;">Pure Nature, Pure Care.</p>
+              </div>
+              <p style="color: #2D3748; font-size: 15px; margin-bottom: 12px;">Namaste ${escapeHtml(userName)},</p>
+              <p style="color: #4A5568; font-size: 14px; line-height: 1.6; margin-bottom: 16px;">
+                Your Umanarayni Ayurvedic Sanctuary account password was successfully changed on <strong>${nowFormatted} IST</strong>.
+              </p>
+              <p style="color: #4A5568; font-size: 13px; line-height: 1.5; margin-bottom: 24px;">
+                For your security, all existing active login sessions across all your devices have been automatically invalidated.
+              </p>
+              <div style="background: #FFF5F5; border: 1px solid #FED7D7; border-radius: 10px; padding: 16px; margin-bottom: 24px;">
+                <strong style="color: #9B2C2C; font-size: 14px; display: block; margin-bottom: 6px;">
+                  ⚠️ Wasn't you?
+                </strong>
+                <span style="color: #742A2A; font-size: 12.5px; line-height: 1.5; display: block;">
+                  If you did not initiate this password change, your account may be compromised. Please contact our Ayurvedic Care Helpline immediately at <strong>+91 8641033514</strong> or email <strong>support@umanarayni.com</strong> to secure your account.
+                </span>
+              </div>
+              <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 20px 0;">
+              <p style="color: #A0AEC0; font-size: 11px; text-align: center; margin: 0;">
+                Umanarayni Ayurveda &bull; Authentic Classical Formulations &bull; umanarayni.com
+              </p>
+            </div>
+          `
+        });
+      } catch (err) {
+        console.error(`❌ [Nodemailer] Failed to send password changed alert to ${maskIdentifier(targetEmail)}:`, err.message);
+      }
+    }
+  }
+
+  // Also send SMS if phone is available
+  if (targetPhone && twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+    try {
+      await twilioClient.messages.create({
+        body: `[Umanarayni] Security Alert: Your account password was changed. If this wasn't you, call +918641033514 immediately to secure your account.`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: targetPhone
+      });
+    } catch (err) {
+      console.error(`❌ [Twilio] Failed to send password changed SMS alert to ${maskIdentifier(targetPhone)}:`, err.message);
+    }
+  }
+}
+
+/**
+ * Sends a rich order confirmation email to the customer with full items, prices, and delivery address snapshot.
+ */
+async function sendOrderConfirmationEmail({ orderId, customerName, customerEmail, customerPhone, addressSnapshot, items, subtotal, discount, total, paymentMethod }) {
+  try {
+    const transporter = getMailTransporter();
+    if (!transporter || !customerEmail) return false;
+
+    const formattedAddr = addressSnapshot?.formatted || formatAddressString(addressSnapshot);
+    const itemListHtml = (items || []).map(item => `
+      <tr>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #EAEAEA; font-size: 14px; color: #1B4332;">
+          <strong>${item.name}</strong>${item.volume ? ` <span style="color:#718096; font-size:12px;">(${item.volume})</span>` : ''}
+        </td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #EAEAEA; font-size: 14px; text-align: center; color: #4A5568;">
+          ${item.quantity}
+        </td>
+        <td style="padding: 10px 12px; border-bottom: 1px solid #EAEAEA; font-size: 14px; text-align: right; font-weight: 600; color: #1B4332;">
+          ₹${item.price * item.quantity}
+        </td>
+      </tr>
+    `).join('');
+
+    const mailOptions = {
+      from: `"UMANARAYNI AYURVEDA" <${process.env.SMTP_EMAIL || 'support@umanarayni.com'}>`,
+      to: customerEmail,
+      subject: `🌿 Order Confirmed [${orderId}] — UMANARAYNI AYURVEDA`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+          <div style="background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 100%); padding: 32px 24px; text-align: center; color: #FAFDF7;">
+            <div style="font-size: 40px; margin-bottom: 8px;">🌿</div>
+            <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 1px;">UMANARAYNI AYURVEDA</h1>
+            <p style="margin: 6px 0 0; font-size: 13px; color: #D8F3DC; letter-spacing: 2px; text-transform: uppercase;">Pure Nature, Pure Care</p>
+          </div>
+          
+          <div style="padding: 28px 24px;">
+            <h2 style="color: #1B4332; font-size: 20px; margin-top: 0;">Order Confirmed! 🙏</h2>
+            <p style="color: #4A5568; font-size: 14px; line-height: 1.6;">
+              Namaste <strong>${customerName || 'Ayurvedic Patron'}</strong>, thank you for your sacred order. Our Vaidyas are preparing your handcrafted botanical formulations with authentic care.
+            </p>
+
+            <div style="background: #F4F7F5; padding: 12px 16px; border-radius: 8px; margin: 18px 0; font-size: 13px; color: #1B4332; display: flex; justify-content: space-between;">
+              <span><strong>Order ID:</strong> ${orderId}</span>
+              <span><strong>Payment:</strong> ${paymentMethod || 'Prepaid'}</span>
+            </div>
+
+            <!-- Items Table -->
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+              <thead>
+                <tr style="background: #FAFDF7; border-bottom: 2px solid #D8F3DC;">
+                  <th style="padding: 10px 12px; text-align: left; font-size: 12px; color: #2D6A4F; text-transform: uppercase;">Formulation</th>
+                  <th style="padding: 10px 12px; text-align: center; font-size: 12px; color: #2D6A4F; text-transform: uppercase;">Qty</th>
+                  <th style="padding: 10px 12px; text-align: right; font-size: 12px; color: #2D6A4F; text-transform: uppercase;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemListHtml}
+              </tbody>
+            </table>
+
+            <!-- Price Breakdown -->
+            <div style="margin: 16px 0; border-top: 1px dashed #CBD5E0; padding-top: 12px;">
+              <div style="display: flex; justify-content: space-between; font-size: 13px; color: #718096; margin-bottom: 6px;">
+                <span>Subtotal:</span>
+                <span>₹${subtotal}</span>
+              </div>
+              ${Number(discount) > 0 ? `
+              <div style="display: flex; justify-content: space-between; font-size: 13px; color: #007600; margin-bottom: 6px;">
+                <span>Ayurvedic Discount:</span>
+                <span>-₹${discount}</span>
+              </div>` : ''}
+              <div style="display: flex; justify-content: space-between; font-size: 13px; color: #007600; margin-bottom: 6px;">
+                <span>Delivery:</span>
+                <span>FREE (Express Dispatched)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: #1B4332; margin-top: 8px; padding-top: 8px; border-top: 1px solid #E2E8F0;">
+                <span>Total Amount:</span>
+                <span>₹${total}</span>
+              </div>
+            </div>
+
+            <!-- Delivery Address Card -->
+            <div style="background: #FAFCFA; border: 1px solid #D8F3DC; border-radius: 10px; padding: 16px; margin: 24px 0;">
+              <h3 style="margin: 0 0 10px; font-size: 14px; color: #1B4332; display: flex; align-items: center; gap: 6px;">
+                📍 Express Delivery Destination
+              </h3>
+              <p style="margin: 0; font-size: 13px; color: #2D3748; line-height: 1.5;">
+                <strong>${customerName}</strong> (${customerPhone})<br>
+                ${addressSnapshot?.addressLine1 || ''}${addressSnapshot?.addressLine2 ? ', ' + addressSnapshot.addressLine2 : ''}<br>
+                ${addressSnapshot?.landmark ? 'Landmark: Near ' + addressSnapshot.landmark + '<br>' : ''}
+                ${addressSnapshot?.city || ''}, ${addressSnapshot?.state || ''} - <strong>${addressSnapshot?.pincode || ''}</strong>
+              </p>
+            </div>
+
+            <div style="text-align: center; margin-top: 24px; font-size: 12px; color: #718096;">
+              <p style="margin: 4px 0;">Need help with your dispatch? WhatsApp our Vaidyas at <strong>+91 8641033514</strong></p>
+              <p style="margin: 4px 0;">100% Pure Botanical Formulations &bull; Ayush Certified &bull; Handcrafted in India</p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ [Order Email Sent] Order ${orderId} confirmation sent to ${customerEmail}. Message ID: ${info.messageId}`);
+    return true;
+  } catch (err) {
+    console.warn(`⚠️ [Order Email Error] Could not send confirmation for order ${orderId}:`, err.message);
+    return false;
+  }
+}
+
 // ==================== 5. JWT & SERVER-SIDE RBAC MIDDLEWARES ====================
 function authenticateToken(required = true) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     let token = null;
     if (req.cookies && (req.cookies.umanarayni_auth || req.cookies.umanarayani_auth)) {
       token = (req.cookies.umanarayni_auth || req.cookies.umanarayani_auth);
@@ -555,6 +851,42 @@ function authenticateToken(required = true) {
 
     try {
       const decoded = jwt.verify(token, SESSION_SECRET);
+
+      // Session safety: Invalidate sessions created prior to a password change
+      if (decoded && decoded.id && decoded.iat) {
+        try {
+          const [uRows] = await db.pool.query(
+            'SELECT id, password_changed_at, UNIX_TIMESTAMP(password_changed_at) AS pwd_changed_ts FROM users WHERE id = ?',
+            [decoded.id]
+          );
+          if (uRows.length > 0 && (uRows[0].pwd_changed_ts || uRows[0].password_changed_at)) {
+            const pwdChangedSec = uRows[0].pwd_changed_ts
+              ? Number(uRows[0].pwd_changed_ts)
+              : Math.floor(new Date(uRows[0].password_changed_at).getTime() / 1000);
+            if (decoded.iat < pwdChangedSec) {
+              const cookieOpts = {
+                httpOnly: true,
+                secure: isProd || Boolean(req.secure),
+                sameSite: 'lax'
+              };
+              res.clearCookie('umanarayni_auth', cookieOpts);
+              res.clearCookie('umanarayani_auth', cookieOpts);
+              if (required) {
+                return res.status(401).json({
+                  success: false,
+                  sessionRevoked: true,
+                  message: 'Your password was recently changed. Please sign in again with your new password.'
+                });
+              }
+              req.user = null;
+              return next();
+            }
+          }
+        } catch (dbErr) {
+          console.warn('[Session Verification Error] Could not verify password_changed_at:', dbErr.message);
+        }
+      }
+
       req.user = decoded;
       next();
     } catch (err) {
@@ -1599,6 +1931,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
     if (!botCheck.success) {
       return res.status(403).json({ success: false, message: botCheck.message || 'Security bot verification failed. Please try again.' });
     }
+    issueHumanVerificationCookie(res, req);
 
     const identifier = String(rawIdentifier).trim();
     const isEmail = identifier.includes('@');
@@ -1715,6 +2048,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     if (!botCheck.success) {
       return res.status(403).json({ success: false, message: botCheck.message || 'Security bot verification failed. Please try again.' });
     }
+    issueHumanVerificationCookie(res, req);
 
     const cleanIdentifier = String(rawIdentifier).trim();
     const user = await db.findUserByIdentifier(cleanIdentifier);
@@ -1857,6 +2191,9 @@ async function handleVerifyOtp(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
+    // Issue human verification cookie bound to verified user session
+    issueHumanVerificationCookie(res, req, { userId: user.id });
+
     const stats = await getTotalWebsiteUsersCount();
 
     res.json({
@@ -1986,7 +2323,344 @@ app.post('/api/auth/logout', (req, res) => {
   };
   res.clearCookie('umanarayni_auth', cookieOpts);
   res.clearCookie('umanarayani_auth', cookieOpts);
+  clearHumanVerificationCookie(res, req);
   res.json({ success: true, message: 'Logged out successfully from Ayurvedic Sanctuary' });
+});
+
+// 9d. Bot Verification Status (UI helper to skip Turnstile widget when human_verified cookie or user session is active)
+app.get(['/api/bot-verification-status', '/api/auth/turnstile-status'], authenticateToken(false), (req, res) => {
+  const isRisk = isClientRiskFlagged(req);
+  if (isRisk) {
+    return res.json({
+      verified: false,
+      isLoggedIn: Boolean(req.user),
+      requiresChallenge: true,
+      reason: 'risk_flagged',
+      siteKey: process.env.TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
+    });
+  }
+
+  // 1. Logged-in user with valid session: auto-issue cookie and skip challenge
+  if (req.user && req.user.id) {
+    issueHumanVerificationCookie(res, req, { userId: req.user.id });
+    return res.json({
+      verified: true,
+      isLoggedIn: true,
+      requiresChallenge: false
+    });
+  }
+
+  // 2. Check signed human_verified cookie
+  const cookieVal = req.cookies && req.cookies[HUMAN_VERIFIED_COOKIE_NAME];
+  if (cookieVal) {
+    const verified = verifyHumanVerificationToken(cookieVal, req.user?.id);
+    if (verified.valid) {
+      return res.json({
+        verified: true,
+        isLoggedIn: false,
+        requiresChallenge: false,
+        expiresAt: verified.payload?.exp
+      });
+    }
+  }
+
+  // 3. Guest with no cookie
+  return res.json({
+    verified: false,
+    isLoggedIn: false,
+    requiresChallenge: true,
+    siteKey: process.env.TURNSTILE_SITE_KEY || '1x00000000000000000000AA'
+  });
+});
+
+// ==================== 9d. FORGOT PASSWORD & RECOVERY FLOW ====================
+
+/**
+ * Step 1: Request Password Recovery Code
+ * Enforces Turnstile bot defense, per-identifier rate limiting (3/hr, 60s cooldown),
+ * daily Twilio SMS cap, and anti-enumeration timing safety.
+ * Always returns a generic response so attackers cannot discover valid accounts.
+ */
+app.post('/api/auth/forgot-password/request', authLimiter, async (req, res) => {
+  try {
+    const { identifier, email, phone, phoneNumber, turnstileToken } = req.body;
+    const rawIdentifier = identifier || email || phone || phoneNumber;
+    if (!rawIdentifier || typeof rawIdentifier !== 'string' || !rawIdentifier.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email address or mobile phone number is required.'
+      });
+    }
+
+    const cleanIdentifier = rawIdentifier.trim();
+    const isEmail = cleanIdentifier.includes('@');
+
+    // 1. Verify Cloudflare Turnstile bot protection
+    const token = turnstileToken || req.headers['x-turnstile-token'];
+    const botCheck = await verifyTurnstile(token, req);
+    if (!botCheck.success) {
+      return res.status(403).json({
+        success: false,
+        message: botCheck.message || 'Security bot verification failed. Please try again.'
+      });
+    }
+    issueHumanVerificationCookie(res, req);
+
+    // 2. Enforce per-identifier rate limits (max 3/hr, 60s cooldown)
+    const limitCheck = checkOtpSendLimits(cleanIdentifier);
+    if (!limitCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        message: limitCheck.reason,
+        retryAfter: limitCheck.retryAfterSeconds
+      });
+    }
+
+    // 3. Enforce daily SMS cap to protect Twilio bill
+    if (!isEmail) {
+      const smsCapCheck = checkAndIncrementDailySms();
+      if (!smsCapCheck.allowed) {
+        return res.status(429).json({ success: false, message: smsCapCheck.reason });
+      }
+    }
+
+    // 4. Lookup user by identifier
+    const user = await db.findUserByIdentifier(cleanIdentifier);
+
+    // 5. Anti-Enumeration Timing Protection:
+    // If account does NOT exist, execute simulated crypto delay so timing matches real account lookup
+    if (!user) {
+      await bcrypt.hash('simulated_timing_entropy_salt', 10);
+      recordOtpSent(cleanIdentifier);
+      return res.status(200).json({
+        success: true,
+        message: "If an account exists with this email or mobile number, we've sent a 6-digit recovery code.",
+        identifier: cleanIdentifier,
+        channel: isEmail ? 'email' : 'sms',
+        masked: maskIdentifier(cleanIdentifier)
+      });
+    }
+
+    // 6. User exists: Generate 6-digit OTP, hash with HMAC-SHA256, and store in password_resets
+    const otp = generateSecureOtp();
+    const hashedOtp = hashOtp(otp);
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    const targetDelivery = isEmail ? (user.email || cleanIdentifier) : (user.phone_number || cleanIdentifier);
+
+    await db.createPasswordResetRequest({
+      userId: user.id,
+      identifier: targetDelivery,
+      channel: isEmail ? 'email' : 'sms',
+      otpHash: hashedOtp,
+      otpExpiresAt
+    });
+
+    // 7. Dispatch OTP notification (never logs the OTP code)
+    await sendPasswordResetOtpNotification({
+      identifier: targetDelivery,
+      otp,
+      userName: user.name
+    });
+
+    recordOtpSent(cleanIdentifier);
+
+    // Return the exact same generic message
+    const isDev = process.env.NODE_ENV !== 'production';
+    return res.status(200).json({
+      success: true,
+      message: "If an account exists with this email or mobile number, we've sent a 6-digit recovery code.",
+      identifier: targetDelivery,
+      channel: isEmail ? 'email' : 'sms',
+      masked: maskIdentifier(targetDelivery),
+      ...(isDev ? { devOtp: otp } : {})
+    });
+  } catch (err) {
+    console.error('[Forgot Password Error] Failed to process recovery request:', err.message);
+    res.status(500).json({ success: false, message: 'Server error processing password recovery request.' });
+  }
+});
+
+/**
+ * Step 2: Verify Recovery Code
+ * Compares 6-digit OTP in constant time, enforces 5 max attempts,
+ * and issues a single-use 10-minute reset token stored hashed.
+ */
+app.post('/api/auth/forgot-password/verify', authLimiter, async (req, res) => {
+  try {
+    const { identifier, otp } = req.body;
+    if (!identifier || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Identifier and 6-digit recovery code are required.'
+      });
+    }
+
+    const cleanIdentifier = String(identifier).trim();
+    const cleanOtp = String(otp).trim();
+
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recovery code must be exactly 6 numeric digits.'
+      });
+    }
+
+    const resetRecord = await db.getActivePasswordResetByOtp(cleanIdentifier);
+    if (!resetRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'Recovery code has expired or is invalid. Please request a new code.'
+      });
+    }
+
+    // Check maximum failed verification attempts
+    if (Number(resetRecord.otp_attempts) >= 5) {
+      await db.invalidatePasswordReset(resetRecord.id);
+      return res.status(400).json({
+        success: false,
+        message: 'Too many failed verification attempts (5/5). This recovery code has been invalidated for security. Please request a new code.'
+      });
+    }
+
+    // Verify OTP in constant time
+    const isMatch = await verifyOtpHash(cleanOtp, resetRecord.otp_hash);
+
+    if (!isMatch) {
+      const attempts = await db.incrementResetOtpAttempts(resetRecord.id);
+      if (attempts >= 5) {
+        await db.invalidatePasswordReset(resetRecord.id);
+        return res.status(400).json({
+          success: false,
+          message: 'Too many failed verification attempts (5/5). This recovery code has been invalidated for security. Please request a new code.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: `Invalid recovery code (${attempts}/5 attempts used). Please check and try again.`
+      });
+    }
+
+    // OTP Verified: Issue a single-use, 10-minute random reset token
+    const rawResetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawResetToken).digest('hex');
+    const tokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await db.storePasswordResetToken(resetRecord.id, tokenHash, tokenExpiresAt);
+
+    return res.status(200).json({
+      success: true,
+      resetToken: rawResetToken,
+      message: 'Recovery code verified. Please set your new password.'
+    });
+  } catch (err) {
+    console.error('[Forgot Password Error] Failed to verify recovery code:', err.message);
+    res.status(500).json({ success: false, message: 'Server error verifying recovery code.' });
+  }
+});
+
+/**
+ * Step 3: Set New Password
+ * Validates new password (min 8 chars, letter + number/symbol, not equal to old),
+ * hashes with bcrypt 12 rounds, updates user, invalidates all sessions and tokens,
+ * clears cookies, and sends security change notification.
+ */
+app.post('/api/auth/forgot-password/reset', authLimiter, async (req, res) => {
+  try {
+    const { resetToken, newPassword, confirmPassword } = req.body;
+
+    if (!resetToken || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token, new password, and confirmation password are required.'
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password and confirmation password do not match.'
+      });
+    }
+
+    // Minimum 8 characters + strength check (letters + numbers/symbols)
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long.'
+      });
+    }
+
+    const hasLetter = /[A-Za-z]/.test(newPassword);
+    const hasNumberOrSymbol = /[\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
+    if (!hasLetter || !hasNumberOrSymbol) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must contain both letters and numbers or symbols.'
+      });
+    }
+
+    // Lookup reset record by hashed token
+    const tokenHash = crypto.createHash('sha256').update(String(resetToken).trim()).digest('hex');
+    const resetRecord = await db.getActivePasswordResetByToken(tokenHash);
+
+    if (!resetRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password reset session has expired or is invalid. Please request a new recovery code.'
+      });
+    }
+
+    // Lookup user
+    const [uRows] = await db.pool.query('SELECT * FROM users WHERE id = ?', [resetRecord.user_id]);
+    if (uRows.length === 0) {
+      return res.status(400).json({ success: false, message: 'User account not found.' });
+    }
+    const user = uRows[0];
+
+    // Ensure new password is not equal to old password
+    if (user.password) {
+      const isSame = (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))
+        ? await bcrypt.compare(newPassword, user.password)
+        : user.password === newPassword;
+      if (isSame) {
+        return res.status(400).json({
+          success: false,
+          message: 'New password cannot be the same as your old password. Please choose a different password.'
+        });
+      }
+    }
+
+    // Hash with bcryptjs at 12 rounds
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    // Complete password reset (updates password, password_changed_at, clears OTPs, invalidates reset tokens)
+    await db.completePasswordReset(user.id, hashedPassword);
+
+    // Session Safety: Clear authentication cookies
+    const cookieOpts = {
+      httpOnly: true,
+      secure: isProd || Boolean(req.secure),
+      sameSite: 'lax'
+    };
+    res.clearCookie('umanarayni_auth', cookieOpts);
+    res.clearCookie('umanarayani_auth', cookieOpts);
+
+    // Send security notification (email/SMS) with "Wasn't you?" contact line
+    sendPasswordChangedNotification({
+      user,
+      channel: resetRecord.channel,
+      identifier: resetRecord.identifier
+    }).catch(notifyErr => console.warn('[Security Notification Warning]:', notifyErr.message));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your password has been reset successfully. Please sign in with your new password.'
+    });
+  } catch (err) {
+    console.error('[Forgot Password Error] Failed to reset password:', err.message);
+    res.status(500).json({ success: false, message: 'Server error resetting password.' });
+  }
 });
 
 // ==================== 10. ORDER INTEGRITY, IDEMPOTENCY & STATE MACHINE ====================
@@ -2103,6 +2777,26 @@ async function transitionOrderPayment({
 
     await connection.commit();
 
+    // If order was confirmed/paid, dispatch confirmation email to customer
+    if (isPaymentSuccess) {
+      const snap = typeof order.shipping_address_json === 'string'
+        ? JSON.parse(order.shipping_address_json || '{}')
+        : (order.shipping_address_json || { formatted: order.shippingAddress });
+
+      sendOrderConfirmationEmail({
+        orderId: order.id,
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        customerPhone: order.customerPhone,
+        addressSnapshot: snap,
+        items: typeof order.items === 'string' ? JSON.parse(order.items || '[]') : order.items,
+        subtotal: order.subtotal,
+        discount: order.discount,
+        total: order.total,
+        paymentMethod: order.paymentMethod
+      }).catch(e => console.warn('Order confirmation email background send error:', e.message));
+    }
+
     const [updatedRows] = await db.pool.query('SELECT * FROM orders WHERE id = ?', [orderId]);
     return {
       success: true,
@@ -2153,18 +2847,45 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
       turnstileToken
     } = req.body;
 
-    // Optional turnstile check on checkout
-    if (turnstileToken) {
-      const botCheck = await verifyTurnstile(turnstileToken, req);
-      if (!botCheck.success) {
-        connection.release();
-        return res.status(403).json({ success: false, message: 'Checkout bot verification failed.' });
-      }
+    // Bot verification for checkout (accepts valid human_verified cookie, active session, or fresh Turnstile token)
+    const botCheck = await verifyCheckoutBotProtection(req, res, verifyTurnstile);
+    if (!botCheck.success) {
+      connection.release();
+      return res.status(403).json({
+        success: false,
+        code: botCheck.code || 'BOT_VERIFICATION_REQUIRED',
+        requireChallenge: true,
+        message: botCheck.message || 'Security verification required before proceeding.'
+      });
     }
 
-    if (!customerName || !customerEmail || !items || !Array.isArray(items) || items.length === 0) {
+    // 0. Strict Server-Side Delivery Address Validation
+    const addressInput = req.body.deliveryAddress || {
+      fullName: customerName || req.body.fullName || req.body.name,
+      mobile: customerPhone || req.body.mobile || req.body.phone,
+      email: customerEmail || req.body.email,
+      addressLine1: req.body.addressLine1 || shippingAddress,
+      addressLine2: req.body.addressLine2,
+      landmark: req.body.landmark,
+      city: req.body.city,
+      state: req.body.state,
+      pincode: req.body.pincode
+    };
+
+    const validatedAddress = validateDeliveryAddress(addressInput);
+    if (!validatedAddress.valid) {
       connection.release();
-      return res.status(400).json({ success: false, message: 'Missing required order details or cart items.' });
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_DELIVERY_ADDRESS',
+        message: validatedAddress.message,
+        errors: validatedAddress.errors
+      });
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      connection.release();
+      return res.status(400).json({ success: false, message: 'Missing required cart items.' });
     }
 
     await connection.beginTransaction();
@@ -2203,16 +2924,21 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
     await connection.query(`
       INSERT INTO orders (
         id, userId, customerName, customerEmail, customerPhone, shippingAddress,
+        shipping_address_json, city, state, pincode,
         items, subtotal, discount, tax, shippingFee, total, paymentMethod, promoCode,
         paymentStatus, orderStatus, stockReserved, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'Pending', 'Pending', TRUE, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, 'Pending', 'Pending', TRUE, NOW(), NOW())
     `, [
       orderId,
       userId || null,
-      customerName,
-      customerEmail,
-      customerPhone || '',
-      shippingAddress || '',
+      validatedAddress.sanitized.fullName,
+      validatedAddress.sanitized.email,
+      validatedAddress.sanitized.mobile,
+      validatedAddress.formatted,
+      JSON.stringify(validatedAddress.snapshot),
+      validatedAddress.sanitized.city,
+      validatedAddress.sanitized.state,
+      validatedAddress.sanitized.pincode,
       JSON.stringify(verifiedItems),
       verifiedSubtotal,
       discountAmount,
@@ -2223,6 +2949,20 @@ app.post('/api/orders', orderLimiter, async (req, res) => {
     ]);
 
     await connection.commit();
+
+    // Send order confirmation email asynchronously
+    sendOrderConfirmationEmail({
+      orderId,
+      customerName: validatedAddress.sanitized.fullName,
+      customerEmail: validatedAddress.sanitized.email,
+      customerPhone: validatedAddress.sanitized.mobile,
+      addressSnapshot: validatedAddress.snapshot,
+      items: verifiedItems,
+      subtotal: verifiedSubtotal,
+      discount: discountAmount,
+      total: calculatedTotal,
+      paymentMethod: paymentMethod || 'COD'
+    }).catch(e => console.warn('Order confirmation email background send error:', e.message));
 
     res.status(201).json({
       success: true,
@@ -2262,6 +3002,7 @@ app.get('/api/orders', async (req, res) => {
     const orders = rows.map(o => ({
       ...o,
       items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : o.items,
+      shipping_address_json: typeof o.shipping_address_json === 'string' ? JSON.parse(o.shipping_address_json || '{}') : (o.shipping_address_json || null),
       subtotal: Number(o.subtotal),
       discount: Number(o.discount),
       tax: Number(o.tax),
@@ -2293,6 +3034,7 @@ app.get('/api/orders/:id', async (req, res) => {
       order: {
         ...o,
         items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : o.items,
+        shipping_address_json: typeof o.shipping_address_json === 'string' ? JSON.parse(o.shipping_address_json || '{}') : (o.shipping_address_json || null),
         subtotal: Number(o.subtotal),
         discount: Number(o.discount),
         tax: Number(o.tax),
@@ -2303,6 +3045,149 @@ app.get('/api/orders/:id', async (req, res) => {
   } catch (err) {
     console.error('Error fetching order by ID from MySQL:', err);
     res.status(500).json({ success: false, message: 'Database error fetching order' });
+  }
+});
+
+// ==================== 10d. PINCODE SERVICEABILITY & ADDRESS MANAGEMENT ====================
+
+/**
+ * Pincode serviceability check endpoint
+ * Route: GET /api/shipping/check-pincode/:pincode
+ */
+app.get('/api/shipping/check-pincode/:pincode', (req, res) => {
+  const result = checkPincodeServiceability(req.params.pincode);
+  res.json({
+    success: true,
+    ...result
+  });
+});
+
+/**
+ * Get official list of all 36 Indian states and UTs
+ * Route: GET /api/shipping/states
+ */
+app.get('/api/shipping/states', (req, res) => {
+  res.json({
+    success: true,
+    states: INDIAN_STATES_AND_UTS
+  });
+});
+
+/**
+ * Get saved addresses for logged-in user
+ * Route: GET /api/addresses
+ */
+app.get('/api/addresses', authenticateToken(true), async (req, res) => {
+  try {
+    const addresses = await db.getUserAddresses(req.user.id);
+    res.json({
+      success: true,
+      count: addresses.length,
+      addresses
+    });
+  } catch (err) {
+    console.error('Error fetching user addresses:', err);
+    res.status(500).json({ success: false, message: 'Could not fetch saved addresses' });
+  }
+});
+
+/**
+ * Add a new saved address for logged-in user
+ * Route: POST /api/addresses
+ */
+app.post('/api/addresses', authenticateToken(true), async (req, res) => {
+  try {
+    const validation = validateDeliveryAddress(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message,
+        errors: validation.errors
+      });
+    }
+
+    const saved = await db.addUserAddress(req.user.id, {
+      ...validation.sanitized,
+      is_default: Boolean(req.body.is_default || req.body.isDefault)
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Address saved successfully',
+      address: saved
+    });
+  } catch (err) {
+    console.error('Error adding user address:', err);
+    res.status(500).json({ success: false, message: 'Could not save address: ' + err.message });
+  }
+});
+
+/**
+ * Update an existing address
+ * Route: PUT /api/addresses/:id
+ */
+app.put('/api/addresses/:id', authenticateToken(true), async (req, res) => {
+  try {
+    const validation = validateDeliveryAddress(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message,
+        errors: validation.errors
+      });
+    }
+
+    const updated = await db.updateUserAddress(req.user.id, req.params.id, {
+      ...validation.sanitized,
+      is_default: Boolean(req.body.is_default || req.body.isDefault)
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Address not found or unauthorized' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Address updated successfully',
+      address: updated
+    });
+  } catch (err) {
+    console.error('Error updating address:', err);
+    res.status(500).json({ success: false, message: 'Could not update address: ' + err.message });
+  }
+});
+
+/**
+ * Delete a saved address
+ * Route: DELETE /api/addresses/:id
+ */
+app.delete('/api/addresses/:id', authenticateToken(true), async (req, res) => {
+  try {
+    const deleted = await db.deleteUserAddress(req.user.id, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Address not found or unauthorized' });
+    }
+    res.json({ success: true, message: 'Address deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting address:', err);
+    res.status(500).json({ success: false, message: 'Could not delete address' });
+  }
+});
+
+/**
+ * Set an address as default
+ * Route: POST /api/addresses/:id/default
+ */
+app.post('/api/addresses/:id/default', authenticateToken(true), async (req, res) => {
+  try {
+    const ok = await db.setDefaultUserAddress(req.user.id, req.params.id);
+    if (!ok) {
+      return res.status(404).json({ success: false, message: 'Address not found or unauthorized' });
+    }
+    res.json({ success: true, message: 'Default address updated' });
+  } catch (err) {
+    console.error('Error setting default address:', err);
+    res.status(500).json({ success: false, message: 'Could not set default address' });
   }
 });
 
@@ -2330,10 +3215,50 @@ const handleInitiatePayment = async (req, res) => {
       merchantUserId: customUserId
     } = req.body;
 
-    const name = customerName || req.body.name || userDetails.name || (req.user && req.user.name) || 'Ayurvedic Patron';
-    const email = customerEmail || req.body.email || userDetails.email || (req.user && req.user.email) || 'patron@umanarayni.com';
-    const phone = customerPhone || req.body.phone || req.body.phoneNumber || userDetails.phone || userDetails.mobileNumber || '+91 9999999999';
-    const address = shippingAddress || userDetails.address || req.body.address || 'Express Delivery Address';
+    // Bot verification for payment initiation (accepts valid human_verified cookie, active session, or fresh Turnstile token)
+    const botCheck = await verifyCheckoutBotProtection(req, res, verifyTurnstile);
+    if (!botCheck.success) {
+      connection.release();
+      return res.status(403).json({
+        success: false,
+        code: botCheck.code || 'BOT_VERIFICATION_REQUIRED',
+        requireChallenge: true,
+        message: botCheck.message || 'Security verification required before proceeding.'
+      });
+    }
+
+    // 0. Strict Server-Side Delivery Address Validation
+    const addressInput = req.body.deliveryAddress || {
+      fullName: customerName || req.body.fullName || req.body.name || userDetails.name,
+      mobile: customerPhone || req.body.mobile || req.body.phone || userDetails.phone,
+      email: customerEmail || req.body.email || userDetails.email,
+      addressLine1: req.body.addressLine1 || shippingAddress || userDetails.address,
+      addressLine2: req.body.addressLine2,
+      landmark: req.body.landmark,
+      city: req.body.city,
+      state: req.body.state,
+      pincode: req.body.pincode
+    };
+
+    const validatedAddress = validateDeliveryAddress(addressInput);
+    if (!validatedAddress.valid) {
+      connection.release();
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_DELIVERY_ADDRESS',
+        message: validatedAddress.message,
+        errors: validatedAddress.errors
+      });
+    }
+
+    const name = validatedAddress.sanitized.fullName;
+    const email = validatedAddress.sanitized.email;
+    const phone = validatedAddress.sanitized.mobile;
+    const formattedAddress = validatedAddress.formatted;
+    const addressSnapshotJson = JSON.stringify(validatedAddress.snapshot);
+    const city = validatedAddress.sanitized.city;
+    const state = validatedAddress.sanitized.state;
+    const pincode = validatedAddress.sanitized.pincode;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       connection.release();
@@ -2387,9 +3312,10 @@ const handleInitiatePayment = async (req, res) => {
     await connection.query(`
       INSERT INTO orders (
         id, userId, customerName, customerEmail, customerPhone, shippingAddress,
+        shipping_address_json, city, state, pincode,
         items, subtotal, discount, tax, shippingFee, total, paymentMethod, promoCode,
         paymentStatus, orderStatus, stockReserved, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'PhonePe', ?, 'Pending', 'Pending', TRUE, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'PhonePe', ?, 'Pending', 'Pending', TRUE, NOW(), NOW())
       ON DUPLICATE KEY UPDATE updated_at = NOW()
     `, [
       merchantTransactionId,
@@ -2397,7 +3323,11 @@ const handleInitiatePayment = async (req, res) => {
       name,
       email,
       phone,
-      address,
+      formattedAddress,
+      addressSnapshotJson,
+      city,
+      state,
+      pincode,
       JSON.stringify(verifiedItems),
       verifiedSubtotal,
       discountAmount,
@@ -2407,6 +3337,18 @@ const handleInitiatePayment = async (req, res) => {
 
     await connection.commit();
     connection.release();
+
+    // Optionally persist to addresses table if logged in and requested
+    if (req.user && req.user.id && (req.body.saveAddress || req.body.is_default)) {
+      try {
+        await db.addUserAddress(req.user.id, {
+          ...validatedAddress.sanitized,
+          is_default: Boolean(req.body.is_default)
+        });
+      } catch (saveErr) {
+        console.warn('Could not auto-save address to user profile:', saveErr.message);
+      }
+    }
 
     // 4. Request PhonePe checkout page via service
     const phonepeResult = await phonepeService.initiatePaymentOrder({
@@ -2551,10 +3493,10 @@ const handlePaymentStatus = async (req, res) => {
 };
 
 // Route Registrations for Payment Gateway
-app.post('/initiate-payment', handleInitiatePayment);
-app.post('/api/payment/initiate-payment', handleInitiatePayment);
-app.post('/api/initiate-payment', handleInitiatePayment);
-app.post('/api/payment/create-order', handleInitiatePayment);
+app.post('/initiate-payment', orderLimiter, handleInitiatePayment);
+app.post('/api/payment/initiate-payment', orderLimiter, handleInitiatePayment);
+app.post('/api/initiate-payment', orderLimiter, handleInitiatePayment);
+app.post('/api/payment/create-order', orderLimiter, handleInitiatePayment);
 
 app.get('/status/:txnId', handlePaymentStatus);
 app.post('/status/:txnId', handlePaymentStatus);
@@ -2603,15 +3545,16 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
 
     const rawTxId = transactionId || utr;
 
-    if (turnstileToken) {
-      const botCheck = await verifyTurnstile(turnstileToken, req);
-      if (!botCheck.success) {
-        connection.release();
-        return res.status(403).json({
-          success: false,
-          message: botCheck.message || 'Security bot verification failed. Please try again.'
-        });
-      }
+    // Bot verification for QR payment (accepts valid human_verified cookie, active session, or fresh Turnstile token)
+    const botCheck = await verifyCheckoutBotProtection(req, res, verifyTurnstile);
+    if (!botCheck.success) {
+      connection.release();
+      return res.status(403).json({
+        success: false,
+        code: botCheck.code || 'BOT_VERIFICATION_REQUIRED',
+        requireChallenge: true,
+        message: botCheck.message || 'Security verification required before proceeding.'
+      });
     }
 
     // 1. Strict UTR format validation: Indian bank UPI UTR (12 numeric or 12-22 alphanumeric ref)
@@ -2687,10 +3630,39 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
 
     const finalTotal = Math.max(0, verifiedSubtotal - discountAmount);
 
-    const cleanName = (customerName || '').trim() || 'Ayurvedic Patron';
-    const cleanEmail = (customerEmail || '').trim() || 'patron@umanarayni.com';
-    const cleanPhone = (customerPhone || '').trim() || '+91 8641033514';
-    const cleanAddress = (shippingAddress || '').trim() || 'Address confirmed via UPI Checkout';
+    // 4b. Strict Delivery Address Validation
+    const addressInput = req.body.deliveryAddress || {
+      fullName: customerName || req.body.fullName || req.body.name,
+      mobile: customerPhone || req.body.mobile || req.body.phone,
+      email: customerEmail || req.body.email,
+      addressLine1: req.body.addressLine1 || shippingAddress,
+      addressLine2: req.body.addressLine2,
+      landmark: req.body.landmark,
+      city: req.body.city,
+      state: req.body.state,
+      pincode: req.body.pincode
+    };
+
+    const validatedAddress = validateDeliveryAddress(addressInput);
+    if (!validatedAddress.valid) {
+      await connection.rollback();
+      connection.release();
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_DELIVERY_ADDRESS',
+        message: validatedAddress.message,
+        errors: validatedAddress.errors
+      });
+    }
+
+    const cleanName = validatedAddress.sanitized.fullName;
+    const cleanEmail = validatedAddress.sanitized.email;
+    const cleanPhone = validatedAddress.sanitized.mobile;
+    const cleanAddress = validatedAddress.formatted;
+    const addressSnapshotJson = JSON.stringify(validatedAddress.snapshot);
+    const city = validatedAddress.sanitized.city;
+    const state = validatedAddress.sanitized.state;
+    const pincode = validatedAddress.sanitized.pincode;
 
     const orderId = `ORD-QR-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -2706,9 +3678,10 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
     await connection.query(`
       INSERT INTO orders (
         id, userId, customerName, customerEmail, customerPhone, shippingAddress,
+        shipping_address_json, city, state, pincode,
         items, subtotal, discount, tax, shippingFee, total, paymentMethod, transactionId,
         promoCode, paymentStatus, orderStatus, stockReserved, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'UPI_QR', ?, ?, 'Awaiting_Verification', 'Awaiting_Verification', TRUE, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 'UPI_QR', ?, ?, 'Awaiting_Verification', 'Awaiting_Verification', TRUE, NOW(), NOW())
     `, [
       orderId,
       userId,
@@ -2716,6 +3689,10 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
       cleanEmail,
       cleanPhone,
       cleanAddress,
+      addressSnapshotJson,
+      city,
+      state,
+      pincode,
       JSON.stringify(verifiedItems),
       verifiedSubtotal,
       discountAmount,
@@ -2725,6 +3702,33 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
     ]);
 
     await connection.commit();
+    connection.release();
+
+    // Send order confirmation email asynchronously
+    sendOrderConfirmationEmail({
+      orderId,
+      customerName: cleanName,
+      customerEmail: cleanEmail,
+      customerPhone: cleanPhone,
+      addressSnapshot: validatedAddress.snapshot,
+      items: verifiedItems,
+      subtotal: verifiedSubtotal,
+      discount: discountAmount,
+      total: finalTotal,
+      paymentMethod: 'UPI_QR'
+    }).catch(e => console.warn('Order confirmation email background send error:', e.message));
+
+    // Optionally persist address if logged in and requested
+    if (userId && (req.body.saveAddress || req.body.is_default)) {
+      try {
+        await db.addUserAddress(userId, {
+          ...validatedAddress.sanitized,
+          is_default: Boolean(req.body.is_default)
+        });
+      } catch (saveErr) {
+        console.warn('Could not auto-save address to user profile:', saveErr.message);
+      }
+    }
     connection.release();
 
     console.log(`✅ [UPI QR UTR Registered] Order ${orderId} | UTR: ${cleanTxId} | Awaiting Admin Verification`);
@@ -2756,7 +3760,8 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
 app.get('/api/admin/reconciliation/pending-utr', authenticateToken(false), requireAdmin, async (req, res) => {
   try {
     const [orders] = await db.query(`
-      SELECT id, customerName, customerEmail, customerPhone, total, transactionId, items,
+      SELECT id, customerName, customerEmail, customerPhone, shippingAddress,
+             shipping_address_json, city, state, pincode, total, transactionId, items,
              created_at, TIMESTAMPDIFF(MINUTE, created_at, NOW()) AS ageMinutes
       FROM orders
       WHERE paymentMethod = 'UPI_QR' AND orderStatus = 'Awaiting_Verification'
@@ -2768,7 +3773,8 @@ app.get('/api/admin/reconciliation/pending-utr', authenticateToken(false), requi
       count: orders.length,
       orders: orders.map(o => ({
         ...o,
-        items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : o.items
+        items: typeof o.items === 'string' ? JSON.parse(o.items || '[]') : o.items,
+        shipping_address_json: typeof o.shipping_address_json === 'string' ? JSON.parse(o.shipping_address_json || '{}') : (o.shipping_address_json || null)
       }))
     });
   } catch (err) {
@@ -2909,6 +3915,18 @@ cron.schedule('*/30 * * * *', async () => {
     }
   } catch (cronErr) {
     console.error('Error running UTR auto-expiry cron:', cronErr.message);
+  }
+});
+
+// Runs every hour to clean up expired/used password reset requests older than 24 hours
+cron.schedule('0 * * * *', async () => {
+  try {
+    const cleaned = await db.cleanupExpiredPasswordResets();
+    if (cleaned > 0) {
+      console.log(`🧹 [Password Reset Cron] Cleaned up ${cleaned} expired/used password reset records.`);
+    }
+  } catch (err) {
+    console.error('Error running password reset cleanup cron:', err.message);
   }
 });
 
@@ -3324,16 +4342,19 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-app.listen(PORT, async () => {
-  console.log(`🌿 Umanarayni Ayurvedic Server running at http://localhost:${PORT}`);
-  console.log(`📞 WhatsApp Consultation: +918641033514`);
-  
-  // Test MySQL connection pool on server boot
-  await db.testConnection();
+let server = null;
+if (require.main === module) {
+  server = app.listen(PORT, async () => {
+    console.log(`🌿 Umanarayni Ayurvedic Server running at http://localhost:${PORT}`);
+    console.log(`📞 WhatsApp Consultation: +918641033514`);
+    
+    // Test MySQL connection pool on server boot
+    await db.testConnection();
 
-  // Initialize automated nightly database backup scheduler (2:00 AM, 7-day retention)
-  startBackupSchedule();
-});
+    // Initialize automated nightly database backup scheduler (2:00 AM, 7-day retention)
+    startBackupSchedule();
+  });
+}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
@@ -3343,3 +4364,5 @@ process.on('SIGINT', async () => {
   } catch (err) {}
   process.exit(0);
 });
+
+module.exports = app;

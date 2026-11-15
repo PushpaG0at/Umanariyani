@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
 /**
@@ -6,6 +6,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
  * Displayed when PhonePe redirects the user back to /checkout/success after successful payment.
  */
 const CheckoutSuccess = () => {
+  const [shippingDetails, setShippingDetails] = useState(null);
+
   // Support both React Router useSearchParams and fallback to window.location
   let txnId = '';
   try {
@@ -19,6 +21,30 @@ const CheckoutSuccess = () => {
   const navigate = useNavigate ? (() => {
     try { return useNavigate(); } catch (_) { return null; }
   })() : null;
+
+  useEffect(() => {
+    if (!txnId) return;
+    fetch(`/api/orders/${encodeURIComponent(txnId)}`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.order) {
+          const o = data.order;
+          setShippingDetails({
+            name: o.shipping_address_json?.fullName || o.customerName || 'Customer',
+            phone: o.shipping_address_json?.phone || o.customerPhone || '',
+            email: o.shipping_address_json?.email || o.customerEmail || '',
+            line1: o.shipping_address_json?.addressLine1 || o.shippingAddress || '',
+            line2: o.shipping_address_json?.addressLine2 || '',
+            landmark: o.shipping_address_json?.landmark || '',
+            city: o.shipping_address_json?.city || o.city || '',
+            state: o.shipping_address_json?.state || o.state || '',
+            pincode: o.shipping_address_json?.pincode || o.pincode || '',
+            formatted: o.shippingAddress || ''
+          });
+        }
+      })
+      .catch(() => {});
+  }, [txnId]);
 
   const handleReturnHome = () => {
     if (navigate) {
@@ -44,6 +70,25 @@ const CheckoutSuccess = () => {
           <div style={styles.txnBox}>
             <span style={styles.txnLabel}>Transaction Reference ID</span>
             <span style={styles.txnValue}>{txnId}</span>
+          </div>
+        )}
+
+        {shippingDetails && (
+          <div style={styles.addressBox}>
+            <div style={styles.addressTitle}>
+              <span>📦</span>
+              <span>Delivering To</span>
+            </div>
+            <div style={styles.addressContent}>
+              <strong>{shippingDetails.name}</strong>
+              {shippingDetails.phone && ` • +91 ${shippingDetails.phone}`}
+              <br />
+              {shippingDetails.line1}
+              {shippingDetails.line2 ? `, ${shippingDetails.line2}` : ''}
+              {shippingDetails.landmark ? ` (Near ${shippingDetails.landmark})` : ''}
+              <br />
+              {shippingDetails.city ? `${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.pincode}` : shippingDetails.formatted}
+            </div>
           </div>
         )}
 
@@ -145,6 +190,28 @@ const styles = {
     fontWeight: 'bold',
     color: '#154734',
     wordBreak: 'break-all'
+  },
+  addressBox: {
+    backgroundColor: '#f4f8f5',
+    border: '1px solid #c8d8ce',
+    borderRadius: '10px',
+    padding: '14px 16px',
+    marginBottom: '20px',
+    textAlign: 'left'
+  },
+  addressTitle: {
+    fontSize: '0.85rem',
+    fontWeight: '700',
+    color: '#154734',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginBottom: '6px'
+  },
+  addressContent: {
+    fontSize: '0.88rem',
+    color: '#2d4739',
+    lineHeight: 1.45
   },
   perksCard: {
     backgroundColor: '#fafcfb',

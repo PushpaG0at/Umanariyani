@@ -579,6 +579,67 @@
       border-top: 1px solid rgba(45, 106, 79, 0.12);
     }
 
+    .btn-copy-addr {
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .btn-copy-addr:hover {
+      background: #DBEAFE;
+    }
+    .btn-print-label {
+      background: #F0FDF4;
+      color: #15803D;
+      border: 1px solid #BBF7D0;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .btn-print-label:hover {
+      background: #DCFCE7;
+    }
+    .shipping-label-sheet {
+      width: 420px;
+      max-width: 100%;
+      margin: 0 auto;
+      border: 2px solid #000;
+      padding: 18px;
+      background: #FFF;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #000;
+      box-sizing: border-box;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #shippingLabelPrintArea, #shippingLabelPrintArea * {
+        visibility: visible !important;
+      }
+      #shippingLabelPrintArea {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+      }
+    }
+
     .btn-modal-cancel {
       background: #F4F7F4;
       border: 1px solid rgba(0, 0, 0, 0.15);
@@ -771,7 +832,7 @@
             <thead>
               <tr>
                 <th>Order ID</th>
-                <th>Customer</th>
+                <th>Customer & Delivery Address</th>
                 <th>Amount</th>
                 <th>UTR / Ref Number</th>
                 <th>Age / Status</th>
@@ -889,6 +950,91 @@
 
     </div>
   </main>
+
+  <!-- ==================== SHIPPING LABEL MODAL ==================== -->
+  <div id="shippingLabelModal" class="admin-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="labelModalTitle">
+    <div class="admin-modal-card" style="max-width: 500px;">
+      <div class="admin-modal-header">
+        <h3 id="labelModalTitle"><i class="fa-solid fa-print"></i> Shipping & Dispatch Label</h3>
+        <button type="button" class="admin-modal-close" onclick="closeShippingLabelModal()" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <div class="admin-modal-body" style="background:#F3F4F6; padding:20px;">
+        <!-- Printable Label Area -->
+        <div id="shippingLabelPrintArea">
+          <div class="shipping-label-sheet">
+            <!-- Header: Carrier / Shipper Brand -->
+            <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h2 style="margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: 0.5px; color:#000;">UMANARAYNI AYURVEDA</h2>
+                <div style="font-size: 0.72rem; color: #333;">Ayush Certified Formulation Laboratories</div>
+                <div style="font-size: 0.72rem; color: #333;">Helpline: +91 8641033514 &bull; umanarayni.com</div>
+              </div>
+              <div style="text-align: right;">
+                <span id="labelOrderBadge" style="display: inline-block; background: #000; color: #FFF; font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 4px;">
+                  PREPAID
+                </span>
+                <div id="labelOrderDate" style="font-size: 0.7rem; margin-top: 3px; font-weight: 600;"></div>
+              </div>
+            </div>
+
+            <!-- Order ID & Routing -->
+            <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Order ID</span>
+                <div id="labelOrderId" style="font-family: monospace; font-size: 1.15rem; font-weight: 800;">#0000</div>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Service Type</span>
+                <div style="font-size: 0.88rem; font-weight: 700;">SURFACE EXPRESS</div>
+              </div>
+            </div>
+
+            <!-- Deliver To (Consignee) -->
+            <div style="border: 2px solid #000; padding: 12px; margin-bottom: 12px; background: #FAFAFA;">
+              <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; margin-bottom: 4px; color: #111;">
+                SHIP TO (CONSIGNEE):
+              </div>
+              <div id="labelCustomerName" style="font-size: 1.05rem; font-weight: 800; margin-bottom: 2px; color: #000;">
+                Customer Name
+              </div>
+              <div id="labelCustomerPhone" style="font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; color: #000;">
+                Phone: +91 9876543210
+              </div>
+              <div id="labelFullAddress" style="font-size: 0.84rem; line-height: 1.4; color: #111;">
+                Full Shipping Address
+              </div>
+              <div style="margin-top: 8px; font-size: 0.95rem; font-weight: 800; color: #000;">
+                PIN CODE: <span id="labelPincode" style="background: #000; color: #FFF; padding: 2px 8px; border-radius: 3px; font-family: monospace;">000000</span>
+              </div>
+            </div>
+
+            <!-- Shipper Origin -->
+            <div style="border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 10px; font-size: 0.72rem; line-height: 1.35; color: #333;">
+              <strong>Return to:</strong> UMANARAYNI AYURVEDA DISPATCH HUB, Sector 62, Noida, Uttar Pradesh - 201301.<br>
+              WhatsApp Support: +91 8641033514 | support@umanarayni.com
+            </div>
+
+            <!-- Items & Compliments -->
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; font-weight: 700;">
+              <div>Order Value: <span id="labelOrderAmount">₹0</span></div>
+              <div>Free Neem Wood Comb Included 🌿</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 18px;">
+          <button type="button" onclick="closeShippingLabelModal()" style="padding: 9px 16px; border: 1px solid #CBD5E1; background: #FFF; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            Close
+          </button>
+          <button type="button" onclick="window.print()" style="padding: 9px 20px; background: #1B4332; color: #FFF; border: none; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-print"></i> Print Shipping Label
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ==================== EDIT PRODUCT MODAL ==================== -->
   <div id="editProductModal" class="admin-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
@@ -1621,6 +1767,8 @@
     });
 
     // 6b. UPI / UTR Reconciliation Functions
+    window.reconcileOrdersCache = {};
+
     async function loadPendingUtrOrders() {
       const tbody = document.getElementById('reconcileTableBody');
       const badge = document.getElementById('reconcileCountBadge');
@@ -1647,16 +1795,38 @@
           return;
         }
 
+        window.reconcileOrdersCache = {};
         tbody.innerHTML = orders.map(o => {
+          window.reconcileOrdersCache[o.id] = o;
           const ageText = o.ageMinutes !== undefined
             ? (o.ageMinutes < 60 ? `${o.ageMinutes}m ago` : `${Math.floor(o.ageMinutes / 60)}h ${o.ageMinutes % 60}m ago`)
             : 'Pending';
+
+          const addr = o.shipping_address_json || {};
+          const addressLine1 = addr.addressLine1 || o.shippingAddress || 'Address details in notes';
+          const cityStatePin = (addr.city && addr.state) ? `${addr.city}, ${addr.state} - ${addr.pincode}` : (o.city ? `${o.city}, ${o.state || ''} - ${o.pincode || ''}` : '');
+
           return `
             <tr id="reconcile-row-${o.id}">
               <td><strong>#${escapeHtml(String(o.id))}</strong></td>
               <td>
-                <div style="font-weight:600; color:#1B4332;">${escapeHtml(o.customerName || 'Customer')}</div>
-                <div style="font-size:0.8rem; color:#666;">${escapeHtml(o.customerEmail || o.customerPhone || '')}</div>
+                <div style="font-weight:700; color:#1B4332; font-size:0.95rem;">${escapeHtml(o.customerName || 'Customer')}</div>
+                <div style="font-size:0.8rem; color:#4B5563; margin-bottom:4px;">
+                  <i class="fa-solid fa-phone" style="font-size:0.75rem;"></i> +91 ${escapeHtml(o.customerPhone || '')} &bull; ${escapeHtml(o.customerEmail || '')}
+                </div>
+                <div style="font-size:0.82rem; color:#1F2937; background:#F8FAF8; border:1px solid #E2E8F0; padding:6px 10px; border-radius:6px; margin:4px 0; line-height:1.4;">
+                  <i class="fa-solid fa-location-dot" style="color:#2D6A4F; font-size:0.75rem;"></i>
+                  <span>${escapeHtml(addressLine1)}${addr.addressLine2 ? ', ' + escapeHtml(addr.addressLine2) : ''}${addr.landmark ? ' (Near ' + escapeHtml(addr.landmark) + ')' : ''}</span><br>
+                  <strong>${escapeHtml(cityStatePin || o.shippingAddress || '')}</strong>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:6px;">
+                  <button type="button" class="btn-copy-addr" id="copy-btn-${o.id}" onclick="copyShippingAddress(${o.id})">
+                    <i class="fa-regular fa-copy"></i> Copy Address
+                  </button>
+                  <button type="button" class="btn-print-label" onclick="openShippingLabelModal(${o.id})">
+                    <i class="fa-solid fa-print"></i> Shipping Label
+                  </button>
+                </div>
               </td>
               <td><span class="price-tag">₹${escapeHtml(String(o.total || 0))}</span></td>
               <td><code style="background:#F3F4F6; padding:3px 8px; border-radius:4px; font-weight:700; color:#1F2937;">${escapeHtml(o.transactionId || 'None')}</code></td>
@@ -1676,6 +1846,68 @@
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#DC2626;">Error fetching pending reconciliation orders.</td></tr>`;
       }
     }
+
+    window.copyShippingAddress = function(orderId) {
+      const o = window.reconcileOrdersCache[orderId];
+      if (!o) return;
+      const addr = o.shipping_address_json || {};
+      const name = addr.fullName || o.customerName || 'Customer';
+      const phone = addr.phone || o.customerPhone || '';
+      const line1 = addr.addressLine1 || o.shippingAddress || '';
+      const line2 = addr.addressLine2 ? `\nArea/Colony: ${addr.addressLine2}` : '';
+      const landmark = addr.landmark ? `\nLandmark: Near ${addr.landmark}` : '';
+      const city = addr.city || o.city || '';
+      const state = addr.state || o.state || '';
+      const pin = addr.pincode || o.pincode || '';
+
+      const fullText = `Name: ${name}\nMobile: +91 ${phone}\nAddress: ${line1}${line2}${landmark}\nCity/State: ${city}, ${state} - ${pin}`;
+      navigator.clipboard.writeText(fullText).then(() => {
+        const btn = document.getElementById(`copy-btn-${orderId}`);
+        if (btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
+          btn.style.background = '#DCFCE7';
+          btn.style.color = '#15803D';
+          setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.style.background = '';
+            btn.style.color = '';
+          }, 2000);
+        }
+      }).catch(() => {
+        prompt('Copy address text below:', fullText);
+      });
+    };
+
+    window.openShippingLabelModal = function(orderId) {
+      const o = window.reconcileOrdersCache[orderId];
+      if (!o) return;
+      const addr = o.shipping_address_json || {};
+      const name = addr.fullName || o.customerName || 'Customer';
+      const phone = addr.phone || o.customerPhone || '';
+      const line1 = addr.addressLine1 || o.shippingAddress || '';
+      const line2 = addr.addressLine2 ? `, ${addr.addressLine2}` : '';
+      const landmark = addr.landmark ? ` (Near ${addr.landmark})` : '';
+      const city = addr.city || o.city || '';
+      const state = addr.state || o.state || '';
+      const pin = addr.pincode || o.pincode || '000000';
+
+      document.getElementById('labelOrderId').textContent = `#${o.id}`;
+      document.getElementById('labelOrderDate').textContent = new Date(o.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      document.getElementById('labelOrderAmount').textContent = `₹${o.total || 0}`;
+      document.getElementById('labelCustomerName').textContent = name;
+      document.getElementById('labelCustomerPhone').textContent = `Phone: +91 ${phone}`;
+      document.getElementById('labelFullAddress').textContent = `${line1}${line2}${landmark}, ${city}, ${state}`;
+      document.getElementById('labelPincode').textContent = pin;
+
+      const modal = document.getElementById('shippingLabelModal');
+      if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeShippingLabelModal = function() {
+      const modal = document.getElementById('shippingLabelModal');
+      if (modal) modal.style.display = 'none';
+    };
 
     window.reconcileUtrOrder = async function(orderId, action) {
       let reason = '';

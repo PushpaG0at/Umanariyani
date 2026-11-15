@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
+const crypto = require('node:crypto');
 const { verifyOtpHash } = require('./services/otpSecurityService');
 
 // Initialize the MySQL Connection Pool
@@ -76,6 +77,10 @@ async function ensureUserOtpColumns() {
       await pool.query('ALTER TABLE users ADD COLUMN otp_last_sent_at DATETIME NULL AFTER otp_attempts');
       console.log(' [DB] Added otp_last_sent_at column to users table.');
     }
+    if (!colNames.includes('password_changed_at')) {
+      await pool.query('ALTER TABLE users ADD COLUMN password_changed_at DATETIME NULL AFTER password');
+      console.log(' [DB] Added password_changed_at column to users table.');
+    }
 
     // Allow email to be NULL in case user signs up exclusively via phone number
     const emailCol = cols.find(c => c.Field === 'email');
@@ -137,8 +142,56 @@ async function ensureOrderColumns() {
       await pool.query('ALTER TABLE orders ADD COLUMN paymentProcessedAt DATETIME NULL AFTER reconciledBy');
       console.log(' [DB] Added paymentProcessedAt column to orders table.');
     }
+    if (!colNames.includes('shipping_address_json')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN shipping_address_json JSON NULL AFTER shippingAddress');
+      console.log(' [DB] Added shipping_address_json column to orders table.');
+    }
+    if (!colNames.includes('city')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN city VARCHAR(100) NULL AFTER shipping_address_json');
+      console.log(' [DB] Added city column to orders table.');
+    }
+    if (!colNames.includes('state')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN state VARCHAR(100) NULL AFTER city');
+      console.log(' [DB] Added state column to orders table.');
+    }
+    if (!colNames.includes('pincode')) {
+      await pool.query('ALTER TABLE orders ADD COLUMN pincode VARCHAR(10) NULL AFTER state');
+      console.log(' [DB] Added pincode column to orders table.');
+    }
   } catch (err) {
     console.warn('⚠️  [DB] Could not verify/alter orders schema:', err.message);
+  }
+}
+
+/**
+ * Ensures addresses table exists for logged-in user saved delivery addresses
+ */
+async function ensureAddressTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS addresses (
+        id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        label VARCHAR(50) DEFAULT 'Home',
+        name VARCHAR(120) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        email VARCHAR(160) NOT NULL,
+        address_line1 VARCHAR(255) NOT NULL,
+        address_line2 VARCHAR(255) NULL,
+        landmark VARCHAR(255) NULL,
+        city VARCHAR(100) NOT NULL,
+        state VARCHAR(100) NOT NULL,
+        pincode VARCHAR(10) NOT NULL,
+        is_default BOOLEAN DEFAULT FALSE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_address_user (user_id),
+        INDEX idx_address_user_default (user_id, is_default),
+        CONSTRAINT fk_address_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+  } catch (err) {
+    console.warn('⚠️  [DB] Could not ensure addresses table:', err.message);
   }
 }
 
@@ -228,6 +281,37 @@ async function ensureAdminAuditLogTable() {
 }
 
 /**
+ * Ensures password_resets table exists for secure, single-use, timed password recovery
+ */
+async function ensurePasswordResetsTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS password_resets (
+        id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        identifier VARCHAR(255) NOT NULL,
+        channel ENUM('email', 'sms') NOT NULL,
+        otp_hash VARCHAR(255) NULL,
+        otp_expires_at DATETIME NULL,
+        otp_attempts INT DEFAULT 0,
+        reset_token_hash VARCHAR(255) NULL,
+        token_expires_at DATETIME NULL,
+        is_used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_pwd_resets_user (user_id),
+        INDEX idx_pwd_resets_ident (identifier),
+        INDEX idx_pwd_resets_token (reset_token_hash),
+        INDEX idx_pwd_resets_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✅ [DB] Verified/created password_resets table.');
+  } catch (err) {
+    console.warn('⚠️  [DB] Could not ensure password_resets table:', err.message);
+  }
+}
+
+/**
  * Records an immutable audit log entry for administrative actions
  */
 async function recordAdminAuditLog({ adminId, adminEmail, action, resourceType, resourceId, details, req }) {
@@ -263,6 +347,8 @@ async function testConnection() {
     await ensureStockColumns();
     await ensurePromoCodeTable();
     await ensureAdminAuditLogTable();
+    await ensureAddressTable();
+    await ensurePasswordResetsTable();
     return true;
   } catch (error) {
     const detail = error.code ? `${error.code}${error.message ? `: ${error.message}` : ''}` : error.message || 'Connection error';
@@ -500,8 +586,357 @@ async function recordQrPayment(orderData) {
   }
 }
 
+// ==================== SAVED ADDRESSES MANAGEMENT ====================
+
+/**
+ * Retrieves all saved addresses for a given user, with default address first
+ */
+async function getUserAddresses(userId) {
+  if (!userId) return [];
+  const [rows] = await pool.query(
+    'SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC',
+    [userId]
+  );
+  return rows.map(r => ({
+    ...r,
+    is_default: Boolean(r.is_default)
+  }));
+}
+
+/**
+ * Gets user's default delivery address
+ */
+async function getUserDefaultAddress(userId) {
+  if (!userId) return null;
+  const [rows] = await pool.query(
+    'SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, created_at DESC LIMIT 1',
+    [userId]
+  );
+  if (!rows[0]) return null;
+  return {
+    ...rows[0],
+    is_default: Boolean(rows[0].is_default)
+  };
+}
+
+/**
+ * Adds a new address for a user. If marked default or first address, sets as default.
+ */
+async function addUserAddress(userId, addressData) {
+  if (!userId) throw new Error('User ID is required to save address');
+  const addressId = `addr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const [existing] = await pool.query(
+    'SELECT COUNT(*) as count FROM addresses WHERE user_id = ?',
+    [userId]
+  );
+  const isFirst = Number(existing[0].count) === 0;
+  const isDefault = isFirst || Boolean(addressData.is_default || addressData.isDefault);
+
+  if (isDefault) {
+    await pool.query('UPDATE addresses SET is_default = FALSE WHERE user_id = ?', [userId]);
+  }
+
+  await pool.query(`
+    INSERT INTO addresses (
+      id, user_id, label, name, phone, email,
+      address_line1, address_line2, landmark, city, state, pincode, is_default
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    addressId,
+    userId,
+    addressData.label || 'Home',
+    addressData.name || addressData.fullName,
+    addressData.phone || addressData.mobile,
+    addressData.email,
+    addressData.address_line1 || addressData.addressLine1,
+    addressData.address_line2 || addressData.addressLine2 || null,
+    addressData.landmark || null,
+    addressData.city,
+    addressData.state,
+    addressData.pincode,
+    isDefault
+  ]);
+
+  return {
+    id: addressId,
+    user_id: userId,
+    label: addressData.label || 'Home',
+    name: addressData.name || addressData.fullName,
+    phone: addressData.phone || addressData.mobile,
+    email: addressData.email,
+    address_line1: addressData.address_line1 || addressData.addressLine1,
+    address_line2: addressData.address_line2 || addressData.addressLine2 || null,
+    landmark: addressData.landmark || null,
+    city: addressData.city,
+    state: addressData.state,
+    pincode: addressData.pincode,
+    is_default: isDefault
+  };
+}
+
+/**
+ * Updates an existing user address.
+ */
+async function updateUserAddress(userId, addressId, addressData) {
+  if (!userId || !addressId) throw new Error('User ID and Address ID are required');
+
+  const [existing] = await pool.query(
+    'SELECT * FROM addresses WHERE id = ? AND user_id = ?',
+    [addressId, userId]
+  );
+  if (existing.length === 0) {
+    return null;
+  }
+
+  const isDefault = Boolean(addressData.is_default || addressData.isDefault);
+  if (isDefault) {
+    await pool.query('UPDATE addresses SET is_default = FALSE WHERE user_id = ?', [userId]);
+  }
+
+  await pool.query(`
+    UPDATE addresses SET
+      label = ?,
+      name = ?,
+      phone = ?,
+      email = ?,
+      address_line1 = ?,
+      address_line2 = ?,
+      landmark = ?,
+      city = ?,
+      state = ?,
+      pincode = ?,
+      is_default = ?,
+      updated_at = NOW()
+    WHERE id = ? AND user_id = ?
+  `, [
+    addressData.label !== undefined ? addressData.label : existing[0].label,
+    addressData.name || addressData.fullName || existing[0].name,
+    addressData.phone || addressData.mobile || existing[0].phone,
+    addressData.email !== undefined ? addressData.email : existing[0].email,
+    addressData.address_line1 || addressData.addressLine1 || existing[0].address_line1,
+    addressData.address_line2 !== undefined ? addressData.address_line2 : existing[0].address_line2,
+    addressData.landmark !== undefined ? addressData.landmark : existing[0].landmark,
+    addressData.city || existing[0].city,
+    addressData.state || existing[0].state,
+    addressData.pincode || existing[0].pincode,
+    isDefault ? true : existing[0].is_default,
+    addressId,
+    userId
+  ]);
+
+  const [updated] = await pool.query('SELECT * FROM addresses WHERE id = ?', [addressId]);
+  return {
+    ...updated[0],
+    is_default: Boolean(updated[0].is_default)
+  };
+}
+
+/**
+ * Deletes a user address. If the deleted address was default, marks the most recent remaining as default.
+ */
+async function deleteUserAddress(userId, addressId) {
+  if (!userId || !addressId) return false;
+
+  const [target] = await pool.query(
+    'SELECT is_default FROM addresses WHERE id = ? AND user_id = ?',
+    [addressId, userId]
+  );
+  if (target.length === 0) return false;
+
+  const wasDefault = Boolean(target[0].is_default);
+  await pool.query('DELETE FROM addresses WHERE id = ? AND user_id = ?', [addressId, userId]);
+
+  if (wasDefault) {
+    await pool.query(`
+      UPDATE addresses SET is_default = TRUE 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC LIMIT 1
+    `, [userId]);
+  }
+
+  return true;
+}
+
+/**
+ * Sets a specific address as default for a user
+ */
+async function setDefaultUserAddress(userId, addressId) {
+  if (!userId || !addressId) return false;
+  await pool.query('UPDATE addresses SET is_default = FALSE WHERE user_id = ?', [userId]);
+  const [res] = await pool.query(
+    'UPDATE addresses SET is_default = TRUE WHERE id = ? AND user_id = ?',
+    [addressId, userId]
+  );
+  return res.affectedRows > 0;
+}
+
+// ==================== SECURE FORGOT PASSWORD & RECOVERY ====================
+
+/**
+ * Creates a new password reset request record with a hashed 6-digit OTP.
+ * Invalidates any existing pending reset requests for this user.
+ */
+async function createPasswordResetRequest({ userId, identifier, channel, otpHash, otpExpiresAt }) {
+  if (!userId || !identifier || !otpHash) {
+    throw new Error('userId, identifier, and otpHash are required');
+  }
+
+  // Invalidate any previous unconsumed reset requests for this user
+  await pool.query(
+    'UPDATE password_resets SET is_used = TRUE WHERE user_id = ? AND is_used = FALSE',
+    [userId]
+  );
+
+  const id = `pr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  await pool.query(`
+    INSERT INTO password_resets (
+      id, user_id, identifier, channel, otp_hash, otp_expires_at, otp_attempts, is_used
+    ) VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE), 0, FALSE)
+  `, [
+    id,
+    userId,
+    identifier.trim().toLowerCase(),
+    channel === 'sms' ? 'sms' : 'email',
+    otpHash
+  ]);
+
+  return id;
+}
+
+/**
+ * Retrieves the latest active (unconsumed, unexpired) password reset record by identifier.
+ */
+async function getActivePasswordResetByOtp(identifier) {
+  if (!identifier) return null;
+  const clean = identifier.trim().toLowerCase();
+  const digitsOnly = clean.replace(/[^0-9+]/g, '');
+
+  const [rows] = await pool.query(`
+    SELECT * FROM password_resets 
+    WHERE (LOWER(identifier) = LOWER(?) OR identifier = ?) 
+      AND is_used = FALSE 
+      AND otp_expires_at > NOW() 
+      AND otp_hash IS NOT NULL
+    ORDER BY created_at DESC 
+    LIMIT 1
+  `, [clean, digitsOnly]);
+
+  return rows[0] || null;
+}
+
+/**
+ * Increments failed OTP verification attempts on a password reset record.
+ * Returns the new attempt count.
+ */
+async function incrementResetOtpAttempts(resetId) {
+  if (!resetId) return 0;
+  await pool.query(
+    'UPDATE password_resets SET otp_attempts = otp_attempts + 1 WHERE id = ?',
+    [resetId]
+  );
+  const [rows] = await pool.query(
+    'SELECT otp_attempts FROM password_resets WHERE id = ?',
+    [resetId]
+  );
+  return rows[0] ? Number(rows[0].otp_attempts) : 0;
+}
+
+/**
+ * Invalidates a password reset record immediately.
+ */
+async function invalidatePasswordReset(resetId) {
+  if (!resetId) return;
+  await pool.query(
+    'UPDATE password_resets SET is_used = TRUE, otp_hash = NULL, reset_token_hash = NULL WHERE id = ?',
+    [resetId]
+  );
+}
+
+/**
+ * Stores a single-use hashed reset token after OTP is successfully verified.
+ * Clears the OTP hash and sets token expiration (10 minutes).
+ */
+async function storePasswordResetToken(resetId, tokenHash, tokenExpiresAt) {
+  if (!resetId || !tokenHash) return false;
+  const [res] = await pool.query(`
+    UPDATE password_resets SET
+      reset_token_hash = ?,
+      token_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE),
+      otp_hash = NULL,
+      updated_at = NOW()
+    WHERE id = ? AND is_used = FALSE
+  `, [tokenHash, resetId]);
+  return res.affectedRows > 0;
+}
+
+/**
+ * Retrieves an active password reset record by its hashed reset token.
+ */
+async function getActivePasswordResetByToken(tokenHash) {
+  if (!tokenHash) return null;
+  const [rows] = await pool.query(`
+    SELECT * FROM password_resets 
+    WHERE reset_token_hash = ? 
+      AND is_used = FALSE 
+      AND token_expires_at > NOW() 
+    LIMIT 1
+  `, [tokenHash]);
+  return rows[0] || null;
+}
+
+/**
+ * Completes a password reset:
+ * Updates the user's password, sets password_changed_at = NOW(),
+ * clears active OTPs on users, and marks all reset records for that user as consumed.
+ */
+async function completePasswordReset(userIdOrObj, maybeNewHashedPassword) {
+  let userId, newHashedPassword;
+  if (typeof userIdOrObj === 'object' && userIdOrObj !== null) {
+    userId = userIdOrObj.userId;
+    newHashedPassword = userIdOrObj.newHashedPassword;
+  } else {
+    userId = userIdOrObj;
+    newHashedPassword = maybeNewHashedPassword;
+  }
+  if (!userId || !newHashedPassword) return false;
+
+  await pool.query(`
+    UPDATE users SET
+      password = ?,
+      password_changed_at = NOW(),
+      otp_code = NULL,
+      otp_expiry = NULL,
+      otp_attempts = 0
+    WHERE id = ?
+  `, [newHashedPassword, userId]);
+
+  await pool.query(
+    'UPDATE password_resets SET is_used = TRUE, reset_token_hash = NULL WHERE user_id = ?',
+    [userId]
+  );
+
+  return true;
+}
+
+/**
+ * Cleans up expired password reset records older than 24 hours.
+ */
+async function cleanupExpiredPasswordResets() {
+  try {
+    const [res] = await pool.query(
+      'DELETE FROM password_resets WHERE created_at < NOW() - INTERVAL 24 HOUR'
+    );
+    return res.affectedRows || 0;
+  } catch (err) {
+    console.warn('[DB Cleanup Error] Could not purge expired password resets:', err.message);
+    return 0;
+  }
+}
+
 module.exports = {
   pool,
+  db: pool,
   query: (sql, params) => pool.query(sql, params),
   execute: (sql, params) => pool.execute(sql, params),
   testConnection,
@@ -510,6 +945,8 @@ module.exports = {
   ensureStockColumns,
   ensurePromoCodeTable,
   ensureAdminAuditLogTable,
+  ensureAddressTable,
+  ensurePasswordResetsTable,
   recordAdminAuditLog,
   findUserByIdentifier,
   findOrderByTransactionId,
@@ -518,4 +955,18 @@ module.exports = {
   verifyUserOtp,
   clearUserOtp,
   getAdminEmails,
+  getUserAddresses,
+  getUserDefaultAddress,
+  addUserAddress,
+  updateUserAddress,
+  deleteUserAddress,
+  setDefaultUserAddress,
+  createPasswordResetRequest,
+  getActivePasswordResetByOtp,
+  incrementResetOtpAttempts,
+  invalidatePasswordReset,
+  storePasswordResetToken,
+  getActivePasswordResetByToken,
+  completePasswordReset,
+  cleanupExpiredPasswordResets,
 };
