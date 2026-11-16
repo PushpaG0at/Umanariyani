@@ -63,10 +63,15 @@ function validateStartupEnv() {
     'DB_NAME',
     'OTP_HMAC_SECRET',
     'RESET_TOKEN_SECRET',
+    'HUMAN_VERIFY_SECRET',
     'TURNSTILE_SITE_KEY',
     'TURNSTILE_SECRET_KEY',
     'SMTP_EMAIL',
-    'SMTP_PASS'
+    'SMTP_PASS',
+    'ADMIN_ALERT_EMAIL',
+    'S3_BACKUP_BUCKET',
+    'AWS_REGION',
+    'ALLOWED_ORIGINS'
   ];
 
   const missingProd = requiredProdVars.filter(key => !process.env[key] || !process.env[key].trim());
@@ -82,10 +87,49 @@ function validateStartupEnv() {
     process.exit(1);
   }
 
-  if (!isProduction && missingProd.length > 0) {
-    console.warn('\n⚠️  [Config Notice] Running in non-production mode with some missing variables:');
-    missingProd.forEach(k => console.warn(`   - ${k} (using development fallback)`));
-    console.warn('   Ensure these are populated in .env for production deployment.\n');
+  // Cryptographic Secrets Strength Check
+  const secretsToCheck = [
+    'SESSION_SECRET',
+    'OTP_HMAC_SECRET',
+    'RESET_TOKEN_SECRET',
+    'HUMAN_VERIFY_SECRET'
+  ];
+
+  const placeholderRegex = /replace|example|salt|test|2026/i;
+  const weakSecrets = [];
+
+  for (const key of secretsToCheck) {
+    const val = process.env[key];
+    if (val) {
+      if (val.length < 32) {
+        weakSecrets.push(`${key} is too short (${val.length} chars, minimum 32 chars required)`);
+      } else if (placeholderRegex.test(val)) {
+        weakSecrets.push(`${key} contains predictable/placeholder pattern`);
+      }
+    }
+  }
+
+  if (isProduction && weakSecrets.length > 0) {
+    console.error('\n=============================================================');
+    console.error('❌ FATAL STARTUP CONFIGURATION ERROR: WEAK SECRETS DETECTED');
+    console.error('=============================================================');
+    console.error('Production startup halted. The following secrets do not meet security standards:');
+    weakSecrets.forEach(reason => console.error(`   - ${reason}`));
+    console.error('\nRotate these secrets to random 64-character hex strings:');
+    console.error('  openssl rand -hex 32');
+    console.error('=============================================================\n');
+    process.exit(1);
+  }
+
+  if (!isProduction && (missingProd.length > 0 || weakSecrets.length > 0)) {
+    console.warn('\n⚠️  [Config Notice] Running in non-production mode with development settings:');
+    if (missingProd.length > 0) {
+      console.warn('   Missing optional dev variables: ' + missingProd.join(', '));
+    }
+    if (weakSecrets.length > 0) {
+      console.warn('   Placeholder dev secrets detected: ' + weakSecrets.join(', '));
+    }
+    console.warn('   Ensure strong, unique secrets are set before production deployment.\n');
   }
 }
 validateStartupEnv();
