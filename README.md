@@ -211,6 +211,195 @@ Umanarayni/
 
 ---
 
+## 🛡️ Reliability, Backups & Production Operations
+
+### 1. 💾 Automated Database Backups (Local + S3 Offsite)
+
+The application includes an automated nightly backup routine (`scripts/backup.js`) powered by `node-cron`:
+- **Schedule**: Every night at 02:00 AM server time (configurable via `BACKUP_CRON_SCHEDULE`).
+- **Engine**: Executes `mysqldump` with `--single-transaction` and `--quick` flags to ensure complete transactional consistency for InnoDB tables without locking live customer transactions.
+- **Local Retention**: Backups are written to `backups/backup_umanarayani_<timestamp>.sql`. Files older than 7 days are automatically purged to prevent disk exhaustion.
+- **Offsite Cloud Replication (Amazon S3)**: When `S3_BACKUP_BUCKET` is configured, each backup is immediately streamed to Amazon S3:
+  - **Server-Side Encryption**: Enforced with SSE-S3 (`ServerSideEncryption: 'AES256'`).
+  - **Partitioning**: Organized under `database-backups/YYYY/MM/<filename>.sql`.
+  - **Metadata & Tags**: Tagged with `Environment=production&Retention=30Days&Service=database-backup`.
+
+#### Configuring AWS S3 Lifecycle Retention
+To automatically archive or expire backups in S3 without ongoing storage bloat, configure an S3 Lifecycle Rule via the AWS Management Console or AWS CLI:
+
+```bash
+# Example AWS CLI lifecycle configuration rule
+aws s3api put-bucket-lifecycle-configuration \
+  --bucket your-backup-bucket-name \
+  --lifecycle-configuration '{
+    "Rules": [
+      {
+        "ID": "ArchiveAndExpireDatabaseBackups",
+        "Status": "Enabled",
+        "Filter": { "Prefix": "database-backups/" },
+        "Transitions": [
+          { "Days": 30, "StorageClass": "GLACIER" }
+        ],
+        "Expiration": { "Days": 90 }
+      }
+    ]
+  }'
+```
+
+#### Automated Backup Failure Alerts
+If either the MySQL dump or the S3 cloud replication fails, `services/alertService.js` automatically dispatches a critical email alert to `ADMIN_ALERT_EMAIL` with execution duration, system hostname, and exact error details.
+
+---
+
+### 2. 🔄 Database Restore Runbook & Safe Testing
+
+The platform includes a dedicated restore controller (`scripts/restore-database.js`) to restore database snapshots safely.
+
+#### How to Safely Test a Restore (Without Overwriting Production Data)
+
+Always test backups against a temporary scratch database before executing production recovery:
+
+1. **Create a temporary test database in MySQL:**
+   ```sql
+   CREATE DATABASE IF NOT EXISTS umanarayani_restore_test;
+   ```
+
+2. **List available local backups:**
+   ```bash
+   node scripts/restore-database.js --list-local
+   ```
+
+3. **Restore into the test database:**
+   ```bash
+   # Restore using the latest local backup:
+   node scripts/restore-database.js --latest-local --target-db=umanarayani_restore_test --force
+
+   # OR restore a specific file:
+   node scripts/restore-database.js --file=backups/backup_umanarayani_2026-11-16T15-55-59-413Z.sql --target-db=umanarayani_restore_test --force
+   ```
+
+4. **Restore directly from Amazon S3:**
+   ```bash
+   # List all backups in S3:
+   node scripts/restore-database.js --list-s3
+
+   # Download the latest S3 backup and restore to test database:
+   node scripts/restore-database.js --from-s3 --target-db=umanarayani_restore_test --force
+   ```
+
+5. **Verify restored data integrity:**
+   The restore script automatically runs integrity checks and prints record counts for `products`, `users`, `orders`, `addresses`, and `password_resets`.
+
+6. **Clean up the scratch test database:**
+   ```sql
+   DROP DATABASE IF EXISTS umanarayani_restore_test;
+   ```
+
+> [!CAUTION]
+> Restoring into the primary production database (`DB_NAME`) requires the explicit `--force` flag to prevent accidental data loss.
+
+---
+
+### 3. 📊 Observability, Structured Logging & Health Monitoring
+
+#### Error Monitoring (Sentry)
+- Sentry error tracking is integrated in `services/monitoringService.js` behind the `ENABLE_SENTRY=true` environment flag.
+- When disabled or unconfigured, the application runs with local structured logging and zero external dependencies.
+- When enabled, exceptions are automatically reported to Sentry with sensitive information (passwords, OTPs, session secrets) automatically redacted before transmission.
+
+#### Structured Request Logging & Request IDs
+- Every incoming HTTP request is assigned a unique UUID via `requestIdMiddleware` in `services/logger.js`.
+- If an upstream proxy (AWS ALB, Cloudflare, Nginx) supplies an `X-Request-Id` header, it is automatically preserved and forwarded in the response headers.
+- Access logs are emitted with timestamp, request ID, client IP, method, route, HTTP status, and response latency. Setting `STRUCTURED_LOGS=true` outputs machine-parseable JSON lines for CloudWatch, Datadog, or Elasticsearch.
+
+#### `/health` Uptime & Readiness Endpoint
+- **URL**: `GET /health` (also aliased at `GET /api/health` and `HEAD /health` for lightweight probes).
+- **Behavior**: Executes a live `SELECT 1 AS alive` query against the MySQL connection pool.
+- **Success Response (HTTP 200)**:
+  ```json
+  {
+    "status": "ok",
+    "timestamp": "2026-11-16T16:00:31.365Z",
+    "uptime": 1420.5,
+    "requestId": "9c8071c2-c6dc-42fa-8946-0649aac421c4",
+    "database": {
+      "status": "connected",
+      "latencyMs": 1.2
+    },
+    "system": {
+      "nodeVersion": "v24.19.0",
+      "environment": "production",
+      "memory": {
+        "rssMb": "58.42",
+        "heapUsedMb": "31.15",
+        "heapTotalMb": "42.50"
+      }
+    }
+  }
+  ```
+- **Failure Response (HTTP 503 Service Unavailable)**:
+  If the database connection pool is unavailable, returns `status: "degraded"` with the error description, allowing AWS Route 53 or load balancers to redirect traffic.
+
+---
+
+### 4. 🚀 PM2 Production Management & Log Rotation
+
+A production-grade PM2 ecosystem configuration (`ecosystem.config.js`) manages the server process on AWS EC2:
+
+- **Single Fork Mode**: Guarantees single-process stability for in-memory timers and `node-cron` schedulers.
+- **Auto-Restart**: `autorestart: true` with exponential backoff delay (`exp_backoff_restart_delay: 100`) to prevent CPU thrashing during network or database outages.
+- **Memory Threshold**: Automatically restarts the Node worker gracefully if RSS memory exceeds **500MB** (`max_memory_restart: '500M'`).
+- **Standardized Logs**: Combined and formatted logs saved to `./logs/pm2-out.log` and `./logs/pm2-error.log`.
+
+#### Managing PM2 on AWS EC2
+```bash
+# Start in production mode
+npm run start:prod
+
+# Zero-downtime reload
+npm run reload:prod
+
+# Restart application
+npm run restart:prod
+
+# View live real-time logs
+npm run logs:prod
+
+# Stop service
+npm run stop:prod
+```
+
+#### Setting Up PM2 Log Rotation
+To prevent log files from consuming server disk space indefinitely, install and configure `pm2-logrotate`:
+```bash
+# Install the PM2 logrotate module
+pm2 install pm2-logrotate
+
+# Configure automatic rotation
+pm2 set pm2-logrotate:max_size 10M
+pm2 set pm2-logrotate:retain 14
+pm2 set pm2-logrotate:compress true
+```
+
+---
+
+### 5. 🧪 Continuous Integration (GitHub Actions)
+
+The repository includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`) that validates every commit and pull request to `main`:
+
+1. **Node.js Environment**: Sets up Node.js v24 on Ubuntu with npm dependency caching.
+2. **Ephemeral MySQL 8.0 Service**: Boots an isolated MySQL container for integration tests.
+3. **Strict CSP Audit**: Runs `scripts/audit-final-csp.js` ensuring 0 inline event handlers and 0 inline scripts.
+4. **Idempotent Database Migrations**: Runs `npm run migrate`.
+5. **Database Pool & Schema Tests**: Runs `npm run test:db`.
+6. **Health & Request ID Checks**: Runs `npm run test:health`.
+7. **Security & Recovery Tests**: Runs `scripts/test-forgot-password.js` (33 security assertions).
+8. **Bot Defense Tests**: Runs `scripts/test-turnstile-bypass.js`.
+9. **Address & Checkout Tests**: Runs `scripts/test-address-checkout.js`.
+10. **Storefront API Tests**: Runs `npm run test:api`.
+
+---
+
 ## 🌿 Brand Values & Trust Commitments
 
 - **Classical Integrity**: Guided by principles from classical Ayurvedic texts (*Charaka Samhita*, *Sushruta Samhita*).

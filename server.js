@@ -18,6 +18,8 @@ const twilio = require('twilio');
 const { GoogleGenAI } = require('@google/genai');
 const db = require('./db');
 const { startBackupSchedule } = require('./scripts/backup');
+const { initMonitoring, captureException, sentryRequestHandler, sentryErrorHandler } = require('./services/monitoringService');
+const { requestIdMiddleware, setupMorganLogger, logger } = require('./services/logger');
 const cron = require('node-cron');
 const { ORDER_STATES, canTransition, assertValidTransition } = require('./services/orderStateMachine');
 const { validatePromoCode, recordPromoUsage } = require('./services/promoService');
@@ -88,6 +90,9 @@ function validateStartupEnv() {
 }
 validateStartupEnv();
 
+// Initialize error monitoring (Sentry if ENABLE_SENTRY=true, fallback to structured logger)
+initMonitoring();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
@@ -95,8 +100,61 @@ const isProd = process.env.NODE_ENV === 'production';
 // Enable trust proxy for AWS ALB/ELB, CloudFront, or Nginx reverse proxies
 app.set('trust proxy', process.env.TRUST_PROXY || 1);
 
-// Production structured HTTP request logging (essential for debugging webhooks and payment callbacks)
-app.use(morgan('combined'));
+// Attach unique Request ID to every incoming request & response header
+app.use(requestIdMiddleware);
+
+// Sentry request tracking middleware (no-op if Sentry is disabled)
+app.use(sentryRequestHandler());
+
+// Production structured HTTP request logging with Request IDs
+app.use(setupMorganLogger());
+
+// ==================== HEALTH & MONITORING ENDPOINTS ====================
+// Lightweight health checks for AWS ALB/ELB, Route 53, PM2, and uptime probes
+app.get(['/health', '/api/health'], async (req, res) => {
+  const startTime = Date.now();
+  const uptime = process.uptime();
+  const timestamp = new Date().toISOString();
+  const memory = process.memoryUsage();
+
+  try {
+    // Probe MySQL database connectivity with a live ping query
+    await db.query('SELECT 1 AS alive');
+    const latencyMs = Date.now() - startTime;
+
+    res.status(200).json({
+      status: 'ok',
+      timestamp,
+      uptime: parseFloat(uptime.toFixed(2)),
+      requestId: req.id,
+      database: {
+        status: 'connected',
+        latencyMs
+      },
+      system: {
+        nodeVersion: process.version,
+        environment: process.env.NODE_ENV || 'development',
+        memory: {
+          rssMb: (memory.rss / (1024 * 1024)).toFixed(2),
+          heapUsedMb: (memory.heapUsed / (1024 * 1024)).toFixed(2),
+          heapTotalMb: (memory.heapTotal / (1024 * 1024)).toFixed(2)
+        }
+      }
+    });
+  } catch (err) {
+    captureException(err, { context: 'health_check', requestId: req.id });
+    res.status(503).json({
+      status: 'degraded',
+      timestamp,
+      uptime: parseFloat(uptime.toFixed(2)),
+      requestId: req.id,
+      database: {
+        status: 'disconnected',
+        error: err.message
+      }
+    });
+  }
+});
 
 // Security Keys
 const SESSION_SECRET = process.env.SESSION_SECRET || 'umanarayani_sacred_ayurveda_jwt_secret_2026_salt';
@@ -4498,7 +4556,10 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Global Error Handling Middleware (production-hardened, suppresses stack traces)
+// Sentry error tracking handler (no-op if Sentry is disabled)
+app.use(sentryErrorHandler());
+
+// Global Error Handling Middleware (production-hardened, suppresses stack traces, tracks requestId)
 app.use((err, req, res, next) => {
   if (err && err.message && err.message.startsWith('Not allowed by CORS')) {
     return res.status(403).json({
@@ -4506,13 +4567,22 @@ app.use((err, req, res, next) => {
       message: 'CORS request blocked: Origin not authorized'
     });
   }
-  console.error('[Unhandled Server Error]:', err);
+
+  // Structured error tracking with Request ID
+  captureException(err, {
+    requestId: req.id,
+    route: req.originalUrl || req.url,
+    method: req.method,
+    ip: req.ip
+  });
+
   if (res.headersSent) {
     return next(err);
   }
   res.status(500).json({
     success: false,
-    message: 'Internal Server Error'
+    message: 'Internal Server Error',
+    requestId: req.id
   });
 });
 

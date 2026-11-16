@@ -1,0 +1,89 @@
+name: Umanarayani CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build, Audit & Test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpassword123
+          MYSQL_DATABASE: umanarayani_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    strategy:
+      matrix:
+        node-version: [24.x]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Configure Test Environment (.env)
+        run: |
+          cat << 'EOF' > .env
+          NODE_ENV=test
+          PORT=3000
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_USER=root
+          DB_PASSWORD=testpassword123
+          DB_NAME=umanarayani_test
+          SESSION_SECRET=test_session_secret_for_ci_pipeline_32chars_long
+          ADMIN_SECRET_KEY=test_admin_secret_key_2026
+          OTP_HMAC_SECRET=test_otp_hmac_secret_for_ci_pipeline_32chars
+          RESET_TOKEN_SECRET=test_reset_token_secret_for_ci_pipeline_32chars
+          TURNSTILE_SITE_KEY=1x00000000000000000000AA
+          TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+          SMTP_EMAIL=test@umanarayni.com
+          SMTP_PASS=abcdefghijklmnop
+          ENABLE_SENTRY=false
+          STRUCTURED_LOGS=true
+          EOF
+
+      - name: Step 1 - Content Security Policy (CSP) & Lint Audit
+        run: npm run lint
+
+      - name: Step 2 - Database Idempotent Migrations
+        run: npm run migrate
+
+      - name: Step 3 - Database Pool & Schema Verification
+        run: npm run test:db
+
+      - name: Step 4 - Health Check & Request ID Tracking Tests
+        run: npm run test:health
+
+      - name: Step 5 - Account Recovery & HMAC OTP Security Tests
+        run: node scripts/test-forgot-password.js
+
+      - name: Step 6 - Bot Defense & Turnstile Verification Tests
+        run: node scripts/test-turnstile-bypass.js
+
+      - name: Step 7 - Delivery Address & Checkout Snapshot Tests
+        run: node scripts/test-address-checkout.js
+
+      - name: Step 8 - Storefront API Endpoints Integration Tests
+        run: npm run test:api
