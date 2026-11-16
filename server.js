@@ -158,7 +158,6 @@ app.get(['/health', '/api/health'], async (req, res) => {
 
 // Security Keys
 const SESSION_SECRET = process.env.SESSION_SECRET || 'umanarayani_sacred_ayurveda_jwt_secret_2026_salt';
-const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'umanarayani_admin_secret_key_2026';
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '1x0000000000000000000000000000000AA';
 
 // ==================== MULTER FILE UPLOAD CONFIGURATION ====================
@@ -312,7 +311,6 @@ const corsOptions = {
     'Accept',
     'Origin',
     'x-session-id',
-    'x-admin-key',
     'x-turnstile-token'
   ],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
@@ -1127,14 +1125,7 @@ function requireAdmin(req, res, next) {
     });
   }
 
-  // 2. Legacy ADMIN_SECRET_KEY Header check with audit warning
-  const adminKeyHeader = req.headers['x-admin-key'];
-  if (adminKeyHeader && adminKeyHeader === ADMIN_SECRET_KEY) {
-    console.warn('[Admin Security Warning] x-admin-key header was used. Dedicated TOTP session login is strongly recommended.');
-    return next();
-  }
-
-  // 3. User session authentication
+  // 2. Strict Admin User Session & TOTP Authentication
   if (!req.user) {
     let token = null;
     if (req.cookies && (req.cookies.umanarayni_auth || req.cookies.umanarayani_auth)) {

@@ -1,12 +1,24 @@
 require('dotenv').config();
 const http = require('http');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const db = require('../db');
 
 const PORT = process.env.PORT || 3000;
 const BASE_URL = `http://localhost:${PORT}`;
 
-const ADMIN_KEY = process.env.ADMIN_SECRET_KEY || 'umanarayani_admin_secret_key_2026';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'umanarayani_sacred_ayurveda_jwt_secret_2026_salt';
+const adminToken = jwt.sign(
+  {
+    id: 'usr_admin_test',
+    email: 'admin@umanarayni.com',
+    role: 'admin',
+    isAdmin: true,
+    totpVerified: true
+  },
+  SESSION_SECRET,
+  { expiresIn: '1h' }
+);
 
 function request(method, path, body = null, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
@@ -142,7 +154,7 @@ async function runTests() {
       category: "Hair Care",
       price: 199,
       mrp: 299
-    }, { 'x-admin-key': ADMIN_KEY });
+    }, { 'Authorization': `Bearer ${adminToken}` });
 
     if (createRes.status !== 201) {
       throw new Error(`Create failed with status ${createRes.status}: ${JSON.stringify(createRes.data)}`);
@@ -150,7 +162,7 @@ async function runTests() {
     const createdId = createRes.data.product.id;
 
     // Delete
-    const delRes = await request('DELETE', `/api/products/${createdId}`, null, { 'x-admin-key': ADMIN_KEY });
+    const delRes = await request('DELETE', `/api/products/${createdId}`, null, { 'Authorization': `Bearer ${adminToken}` });
     if (delRes.status !== 200) {
       throw new Error(`Delete failed with status ${delRes.status}`);
     }
