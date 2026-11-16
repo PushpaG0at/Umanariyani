@@ -248,9 +248,7 @@ const rawAllowedOrigins = process.env.ALLOWED_ORIGINS || '';
 
 const productionAllowedOrigins = [
   'https://umanarayni.com',
-  'https://www.umanarayni.com',
-  'https://umanarayani.com',
-  'https://www.umanarayani.com'
+  'https://www.umanarayni.com'
 ];
 
 const developmentAllowedOrigins = [
@@ -262,14 +260,29 @@ const developmentAllowedOrigins = [
   `http://127.0.0.1:${PORT}`
 ];
 
-// In production, strictly restrict to HTTPS production domains; raw-IP and :3000 kept strictly for local dev
-const defaultAllowedOrigins = isProd
-  ? productionAllowedOrigins
-  : [...productionAllowedOrigins, ...developmentAllowedOrigins];
+function resolveAllowedOrigins() {
+  if (isProd) {
+    if (!rawAllowedOrigins || !rawAllowedOrigins.trim()) {
+      console.error('❌ FATAL STARTUP ERROR: In production, ALLOWED_ORIGINS must be explicitly configured.');
+      process.exit(1);
+    }
+    const parsed = rawAllowedOrigins.split(',').map(o => o.trim()).filter(Boolean);
+    for (const origin of parsed) {
+      if (origin.startsWith('http://') || /^\d+\.\d+\.\d+\.\d+/.test(origin.replace(/^https?:\/\//, '')) || origin.includes(':3000')) {
+        console.error(`❌ FATAL STARTUP ERROR: Production ALLOWED_ORIGINS cannot contain insecure http://, port :3000, or raw IP addresses: "${origin}"`);
+        process.exit(1);
+      }
+    }
+    return parsed;
+  }
 
-const allowedOrigins = rawAllowedOrigins
-  ? rawAllowedOrigins.split(',').map(o => o.trim()).filter(Boolean)
-  : defaultAllowedOrigins;
+  // Development mode: Fall back to configured origins or localhost development defaults
+  return rawAllowedOrigins
+    ? rawAllowedOrigins.split(',').map(o => o.trim()).filter(Boolean)
+    : [...productionAllowedOrigins, ...developmentAllowedOrigins];
+}
+
+const allowedOrigins = resolveAllowedOrigins();
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -333,7 +346,7 @@ function csrfOriginProtection(req, res, next) {
     const parsed = new URL(originHeader);
     const host = parsed.hostname;
     const isAllowedHost = isProd
-      ? (host === 'umanarayni.com' || host === 'www.umanarayni.com' || host === 'umanarayani.com' || host === 'www.umanarayani.com' || allowedOrigins.some(o => o.includes(host)))
+      ? (host === 'umanarayni.com' || host === 'www.umanarayni.com' || allowedOrigins.some(o => o.includes(host)))
       : (host === 'localhost' || host === '127.0.0.1' || host === 'umanarayni.com' || /^\d+\.\d+\.\d+\.\d+$/.test(host));
 
     if (!isAllowedHost) {
