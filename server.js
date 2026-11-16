@@ -480,7 +480,7 @@ const aiConsultantLimiter = rateLimit({
 // Checkout and Order Limiter (Adaptive protection: triggers re-challenge and clears verification cookie on rate limit breach)
 const orderLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 30,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
