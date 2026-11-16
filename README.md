@@ -169,8 +169,17 @@ Umanarayni/
 ## 🚀 Quick Start Guide
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18.0.0 or higher recommended)
+- [Node.js](https://nodejs.org/) (v18.0.0 or higher recommended; v24 LTS tested)
 - npm (v9.0.0 or higher)
+- **MySQL Client CLI (`mysql-client`)**: Required on the host OS for `mysqldump` automated backups and CLI database restores:
+  ```bash
+  # Ubuntu / Debian (EC2)
+  sudo apt-get update && sudo apt-get install -y mysql-client
+
+  # Verify installation
+  mysqldump --version
+  mysql --version
+  ```
 
 ### Installation
 
@@ -224,27 +233,79 @@ The application includes an automated nightly backup routine (`scripts/backup.js
   - **Partitioning**: Organized under `database-backups/YYYY/MM/<filename>.sql`.
   - **Metadata & Tags**: Tagged with `Environment=production&Retention=30Days&Service=database-backup`.
 
-#### Configuring AWS S3 Lifecycle Retention
-To automatically archive or expire backups in S3 without ongoing storage bloat, configure an S3 Lifecycle Rule via the AWS Management Console or AWS CLI:
+#### AWS S3 Bucket Setup & Scoped IAM Policy
 
-```bash
-# Example AWS CLI lifecycle configuration rule
-aws s3api put-bucket-lifecycle-configuration \
-  --bucket your-backup-bucket-name \
-  --lifecycle-configuration '{
-    "Rules": [
-      {
-        "ID": "ArchiveAndExpireDatabaseBackups",
-        "Status": "Enabled",
-        "Filter": { "Prefix": "database-backups/" },
-        "Transitions": [
-          { "Days": 30, "StorageClass": "GLACIER" }
-        ],
-        "Expiration": { "Days": 90 }
-      }
-    ]
-  }'
-```
+1. **Bucket Creation with Encryption & Public Access Block**:
+   ```bash
+   # 1. Create private S3 bucket in your deployment region (e.g., ap-south-1)
+   aws s3api create-bucket \
+     --bucket your-backup-bucket-name \
+     --region ap-south-1 \
+     --create-bucket-configuration LocationConstraint=ap-south-1
+
+   # 2. Block all public access
+   aws s3api put-public-access-block \
+     --bucket your-backup-bucket-name \
+     --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+
+   # 3. Enable default SSE-S3 AES-256 encryption
+   aws s3api put-bucket-encryption \
+     --bucket your-backup-bucket-name \
+     --server-side-encryption-configuration '{
+       "Rules": [{
+         "ApplyServerSideEncryptionByDefault": {
+           "SSEAlgorithm": "AES256"
+         }
+       }]
+     }'
+   ```
+
+2. **Scoped IAM Policy JSON (Principle of Least Privilege)**:
+   Attach this policy to the EC2 IAM Instance Profile (or the dedicated backup IAM user credentials in `.env`):
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Sid": "AllowS3BackupListing",
+         "Effect": "Allow",
+         "Action": [
+           "s3:ListBucket"
+         ],
+         "Resource": "arn:aws:s3:::your-backup-bucket-name"
+       },
+       {
+         "Sid": "AllowS3BackupReadWriteAndTagging",
+         "Effect": "Allow",
+         "Action": [
+           "s3:PutObject",
+           "s3:PutObjectTagging",
+           "s3:GetObject"
+         ],
+         "Resource": "arn:aws:s3:::your-backup-bucket-name/database-backups/*"
+       }
+     ]
+   }
+   ```
+
+3. **Configuring S3 Lifecycle Retention (Glacier Archive & 90-Day Expiration)**:
+   ```bash
+   aws s3api put-bucket-lifecycle-configuration \
+     --bucket your-backup-bucket-name \
+     --lifecycle-configuration '{
+       "Rules": [
+         {
+           "ID": "ArchiveAndExpireDatabaseBackups",
+           "Status": "Enabled",
+           "Filter": { "Prefix": "database-backups/" },
+           "Transitions": [
+             { "Days": 30, "StorageClass": "GLACIER" }
+           ],
+           "Expiration": { "Days": 90 }
+         }
+       ]
+     }'
+   ```
 
 #### Automated Backup Failure Alerts
 If either the MySQL dump or the S3 cloud replication fails, `services/alertService.js` automatically dispatches a critical email alert to `ADMIN_ALERT_EMAIL` with execution duration, system hostname, and exact error details.
