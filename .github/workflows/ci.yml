@@ -53,13 +53,15 @@ jobs:
           DB_PASSWORD=testpassword123
           DB_NAME=umanarayani_test
           SESSION_SECRET=test_session_secret_for_ci_pipeline_32chars_long
-          ADMIN_SECRET_KEY=test_admin_secret_key_2026
           OTP_HMAC_SECRET=test_otp_hmac_secret_for_ci_pipeline_32chars
           RESET_TOKEN_SECRET=test_reset_token_secret_for_ci_pipeline_32chars
+          HUMAN_VERIFY_SECRET=test_human_verify_secret_for_ci_pipeline_32ch
+          ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
           TURNSTILE_SITE_KEY=1x00000000000000000000AA
           TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
           SMTP_EMAIL=test@umanarayni.com
           SMTP_PASS=abcdefghijklmnop
+          ADMIN_ALERT_EMAIL=test_alert@umanarayni.com
           ENABLE_SENTRY=false
           STRUCTURED_LOGS=true
           EOF
@@ -85,5 +87,28 @@ jobs:
       - name: Step 7 - Delivery Address & Checkout Snapshot Tests
         run: node scripts/test-address-checkout.js
 
-      - name: Step 8 - Storefront API Endpoints Integration Tests
-        run: npm run test:api
+      - name: Step 8 - Admin Security & TOTP Enforcement Tests
+        run: node scripts/test-admin-security.js
+
+      - name: Step 9 - Start Background Express Server & Run Full API Test Suite
+        run: |
+          node server.js &
+          SERVER_PID=$!
+          echo "Started Express server with PID: $SERVER_PID"
+          
+          # Wait for health check readiness probe (up to 30s)
+          for i in {1..30}; do
+            if curl -s http://127.0.0.1:3000/health | grep -q '"status":"ok"'; then
+              echo "Server is healthy and ready on port 3000!"
+              break
+            fi
+            echo "Waiting for server to become ready ($i/30)..."
+            sleep 1
+          done
+
+          # Execute full integration API tests against live server
+          npm run test:api
+
+          # Gracefully terminate background server
+          kill $SERVER_PID || true
+          echo "Background Express server stopped."
