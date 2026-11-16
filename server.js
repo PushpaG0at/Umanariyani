@@ -750,7 +750,7 @@ async function sendOtpNotification({ identifier, otp, userName }) {
         html: `
           <div style="font-family: 'Georgia', serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #FAFDF7; border: 1px solid #DCE7D6; border-radius: 16px;">
             <div style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #1A3C2A; margin: 0; font-size: 26px; letter-spacing: 1px;">UMANARAYANI</h1>
+              <h1 style="color: #1A3C2A; margin: 0; font-size: 26px; letter-spacing: 1px;">UMANARAYNI</h1>
               <p style="color: #C19A5B; font-size: 11px; letter-spacing: 2px; margin: 4px 0 0 0; text-transform: uppercase;">Pure Nature, Pure Care.</p>
             </div>
             <p style="color: #2D3748; font-size: 15px; margin-bottom: 12px;">${greeting},</p>
@@ -789,7 +789,7 @@ async function sendOtpNotification({ identifier, otp, userName }) {
     if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
       try {
         const message = await twilioClient.messages.create({
-          body: `[Umanarayani] Your Ayurvedic Sanctuary verification code is ${otp}. Valid for 5 minutes. Do not share.`,
+          body: `[Umanarayni] Your Ayurvedic Sanctuary verification code is ${otp}. Valid for 5 minutes. Do not share.`,
           from: process.env.TWILIO_PHONE_NUMBER,
           to: identifier
         });
@@ -843,7 +843,7 @@ async function sendPasswordResetOtpNotification({ identifier, otp, userName }) {
         html: `
           <div style="font-family: 'Georgia', serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #FAFDF7; border: 1px solid #DCE7D6; border-radius: 16px;">
             <div style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #1A3C2A; margin: 0; font-size: 26px; letter-spacing: 1px;">UMANARAYANI</h1>
+              <h1 style="color: #1A3C2A; margin: 0; font-size: 26px; letter-spacing: 1px;">UMANARAYNI</h1>
               <p style="color: #C19A5B; font-size: 11px; letter-spacing: 2px; margin: 4px 0 0 0; text-transform: uppercase;">Pure Nature, Pure Care.</p>
             </div>
             <p style="color: #2D3748; font-size: 15px; margin-bottom: 12px;">${greeting},</p>
@@ -876,7 +876,7 @@ async function sendPasswordResetOtpNotification({ identifier, otp, userName }) {
     if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
       try {
         const message = await twilioClient.messages.create({
-          body: `[Umanarayani] Your password recovery code is ${otp}. Valid for 5 minutes. Do not share. If this wasn't you, call +918641033514.`,
+          body: `[Umanarayni] Your password recovery code is ${otp}. Valid for 5 minutes. Do not share. If this wasn't you, call +918641033514.`,
           from: process.env.TWILIO_PHONE_NUMBER,
           to: identifier
         });
@@ -914,7 +914,7 @@ async function sendPasswordChangedNotification({ user, channel, identifier }) {
           html: `
             <div style="font-family: 'Georgia', serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #FAFDF7; border: 1px solid #DCE7D6; border-radius: 16px;">
               <div style="text-align: center; margin-bottom: 24px;">
-                <h1 style="color: #1A3C2A; margin: 0; font-size: 26px; letter-spacing: 1px;">UMANARAYANI</h1>
+                <h1 style="color: #1A3C2A; margin: 0; font-size: 26px; letter-spacing: 1px;">UMANARAYNI</h1>
                 <p style="color: #C19A5B; font-size: 11px; letter-spacing: 2px; margin: 4px 0 0 0; text-transform: uppercase;">Pure Nature, Pure Care.</p>
               </div>
               <p style="color: #2D3748; font-size: 15px; margin-bottom: 12px;">Namaste ${escapeHtml(userName)},</p>
@@ -2016,7 +2016,7 @@ app.get('/api/users/active', async (req, res) => {
     registeredUsers: stats.registeredUsers,
     totalFormatted: `${stats.totalUsers.toLocaleString('en-IN')}+`,
     timestamp: new Date().toISOString(),
-    message: `${activeCount} Nature Lover${activeCount === 1 ? '' : 's'} active live • ${stats.totalUsers.toLocaleString('en-IN')}+ total patrons using Umanarayani website`
+    message: `${activeCount} Nature Lover${activeCount === 1 ? '' : 's'} active live • ${stats.totalUsers.toLocaleString('en-IN')}+ total patrons using Umanarayni website`
   });
 });
 
@@ -4346,7 +4346,7 @@ ${sanitizedMessage}
     } else if (lower.includes('face') || lower.includes('skin') || lower.includes('tan') || lower.includes('pimple') || lower.includes('glow')) {
       fallbackReply += `🍊 **For Skin Glow, Tanning & Pimples:**\nOur **UMANARAYNI AYURVEDIC ORANGE FACE WASH** (₹279, 150ml) is formulated with natural citrus orange peel bioflavonoids, Neem, and Tulsi. It gently lifts away sun tanning, balances oily sebum, and eliminates acne-causing bacteria without tight dryness.`;
     } else {
-      fallbackReply += `🌿 **Ayurvedic Care Guidance:**\nUmanarayani brings authentic classical botanical care (Pure Nature, Pure Care) free from parabens, sulphates, and mineral oils.\n\n• **Hair Oil:** ₹349 (Brahmi, Bhringraj, Amarbel)\n• **Herbal Shampoo:** ₹329 (Shikakai, Reetha, Amla)\n• **Orange Face Wash:** ₹279 (Orange peel, Neem, Tulsi)`;
+      fallbackReply += `🌿 **Ayurvedic Care Guidance:**\nUmanarayni brings authentic classical botanical care (Pure Nature, Pure Care) free from parabens, sulphates, and mineral oils.\n\n• **Hair Oil:** ₹349 (Brahmi, Bhringraj, Amarbel)\n• **Herbal Shampoo:** ₹329 (Shikakai, Reetha, Amla)\n• **Orange Face Wash:** ₹279 (Orange peel, Neem, Tulsi)`;
     }
 
     fallbackReply += `\n\n💬 **Prefer talking to our Herbal Care Team?**\nYou can chat directly with our Ayurvedic support specialists on WhatsApp at **+91 8641033514**!`;
@@ -4514,7 +4514,7 @@ Analyze the user's attributes:
 Please provide:
 1. Primary Ayurvedic Dosha diagnosis (Vata, Pitta, Kapha, or dual dosha like Pitta-Vata) with a short classical explanation.
 2. Recommended daily routine (morning & night rituals).
-3. The exact matching Umanarayani product regimen (Hair Oil, Herbal Shampoo, Orange Face Wash).
+3. The exact matching Umanarayni product regimen (Hair Oil, Herbal Shampoo, Orange Face Wash).
 4. Reminder that they can discuss custom adjustments with a human expert on WhatsApp at +91 8641033514.
 Keep the response warm, encouraging, beautifully formatted in markdown.`;
 
@@ -4544,7 +4544,7 @@ Keep the response warm, encouraging, beautifully formatted in markdown.`;
     console.error("Gemini Dosha Error:", err.message);
     res.json({
       success: true,
-      diagnosis: `### 🌿 Ayurvedic Constitution: Pitta-Vata\n\nYour profile indicates a combination of warm **Pitta** (inducing scalp heat and sensitive skin) and dry **Vata** (causing strand roughness and dryness).\n\n**Recommended Umanarayani Regimen:**\n1. **Night Champi:** Massage **Umanarayani Ayurvedic Hair Oil** (Brahmi & Jatamansi) twice weekly to pacify Pitta and calm scalp nerves.\n2. **Morning Cleansing:** Wash with **Umanarayani Herbal Shampoo** (Reetha & Shikakai) to protect natural moisture.\n3. **Facial Revival:** Use **Umanarayani Orange Face Wash** with Neem to curb excess oil and blemishes while brightening skin tone.\n\n💬 *Want a 1-on-1 human consultation? WhatsApp our Ayurvedic team on +91 8641033514!*`,
+      diagnosis: `### 🌿 Ayurvedic Constitution: Pitta-Vata\n\nYour profile indicates a combination of warm **Pitta** (inducing scalp heat and sensitive skin) and dry **Vata** (causing strand roughness and dryness).\n\n**Recommended Umanarayni Regimen:**\n1. **Night Champi:** Massage **Umanarayni Ayurvedic Hair Oil** (Brahmi & Jatamansi) twice weekly to pacify Pitta and calm scalp nerves.\n2. **Morning Cleansing:** Wash with **Umanarayni Herbal Shampoo** (Reetha & Shikakai) to protect natural moisture.\n3. **Facial Revival:** Use **Umanarayni Orange Face Wash** with Neem to curb excess oil and blemishes while brightening skin tone.\n\n💬 *Want a 1-on-1 human consultation? WhatsApp our Ayurvedic team on +91 8641033514!*`,
       whatsappNumber: "+918641033514"
     });
   }

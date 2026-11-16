@@ -14,7 +14,7 @@
       "Imparts natural dark luster and shine",
       "Combats oxidative scalp stress"
     ],
-    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL", "UMANARAYANI HERBAL SHAMPOO"]
+    "presentIn": ["UMANARAYNI AYURVEDIC HAIR OIL", "UMANARAYNI HERBAL SHAMPOO"]
   },
   {
     "id": "reetha",
@@ -31,7 +31,7 @@
       "Maintains scalp pH balance and softness",
       "Leaves hair naturally soft and bouncy"
     ],
-    "presentIn": ["UMANARAYANI HERBAL SHAMPOO"]
+    "presentIn": ["UMANARAYNI HERBAL SHAMPOO"]
   },
   {
     "id": "shikakai",
@@ -48,7 +48,7 @@
       "Conditions hair strands and reduces split ends",
       "Detangles knots smoothly"
     ],
-    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL", "UMANARAYANI HERBAL SHAMPOO"]
+    "presentIn": ["UMANARAYNI AYURVEDIC HAIR OIL", "UMANARAYNI HERBAL SHAMPOO"]
   },
   {
     "id": "brahmi",
@@ -65,7 +65,7 @@
       "Strengthens hair fibers from root to tip",
       "Nourishes hair roots during head massage (champi)"
     ],
-    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL", "UMANARAYANI HERBAL SHAMPOO"]
+    "presentIn": ["UMANARAYNI AYURVEDIC HAIR OIL", "UMANARAYNI HERBAL SHAMPOO"]
   },
   {
     "id": "kalonji",
@@ -82,7 +82,7 @@
       "Locks in deep moisture to curb breakage",
       "Enhances scalp defense against pollution"
     ],
-    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL"]
+    "presentIn": ["UMANARAYNI AYURVEDIC HAIR OIL"]
   },
   {
     "id": "jatamansi",
@@ -100,7 +100,7 @@
       "Promotes deep hair conditioning and thickness",
       "Lends an enchanting, soothing natural herbal aroma"
     ],
-    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL"]
+    "presentIn": ["UMANARAYNI AYURVEDIC HAIR OIL"]
   },
   {
     "id": "nagarmotha",
@@ -117,7 +117,7 @@
       "Deeply purifies pores without harsh drying",
       "Supports lustrous, bouncy hair feel"
     ],
-    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL"]
+    "presentIn": ["UMANARAYNI AYURVEDIC HAIR OIL"]
   },
   {
     "id": "amarbel",
@@ -134,6 +134,6 @@
       "Improves hair strand elasticity and resistance",
       "Blends harmoniously with herbal carrier oils"
     ],
-    "presentIn": ["UMANARAYANI AYURVEDIC HAIR OIL"]
+    "presentIn": ["UMANARAYNI AYURVEDIC HAIR OIL"]
   }
 ]

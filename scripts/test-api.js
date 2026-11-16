@@ -308,7 +308,7 @@ async function runTests() {
   await test('POST /api/orders creates order and GET /api/orders retrieves it', async () => {
     const orderRes = await request('POST', '/api/orders', {
       customerName: "Integration Test User",
-      customerEmail: "integration@umanarayani.com",
+      customerEmail: "integration@umanarayni.com",
       customerPhone: "+91 9999999999",
       shippingAddress: "Bengaluru, Karnataka",
       items: [{ id: "ayurvedic-hair-oil", name: "Hair Oil", price: 349, quantity: 1 }],
@@ -479,7 +479,7 @@ async function runTests() {
     const validRes = await request('POST', '/api/payment/verify-qr', {
       transactionId: testUtr,
       customerName: 'Integration Tester',
-      customerEmail: 'tester@umanarayani.com',
+      customerEmail: 'tester@umanarayni.com',
       customerPhone: '9876543210',
       shippingAddress: 'Ayurveda Marg 42, Jaipur',
       items: [{ id: 'ayurvedic-hair-oil', quantity: 2, price: 1.00 }]

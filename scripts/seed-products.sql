@@ -1,17 +1,17 @@
 -- =====================================================================
--- UMANARAYANI AYURVEDIC SANCTUARY — PURE SQL CATALOG SEED SCRIPT
+-- UMANARAYNI AYURVEDIC SANCTUARY — PURE SQL CATALOG SEED SCRIPT
 -- Target Database: umanarayani
 -- Total Formulations: 7
 -- =====================================================================
 
 USE `umanarayani`;
 
--- [Product: ayurvedic-hair-oil - UMANARAYANI AYURVEDIC HAIR OIL]
+-- [Product: ayurvedic-hair-oil - UMANARAYNI AYURVEDIC HAIR OIL]
 INSERT INTO `products` (
   `id`, `name`, `subtitle`, `tagline`, `category`, `categorySlug`, `price`, `mrp`, `discountPercent`, `rating`, `ratingCount`, `badge`, `volume`, `image`, `gallery`, `inStock`, `stockCount`, `asin`, `shortDescription`, `description`, `keyBenefits`, `featuredIngredients`, `ingredientsDetails`, `howToUse`, `usageSteps`, `suitableFor`, `certifications`, `faqs`
 ) VALUES (
     'ayurvedic-hair-oil',
-    'UMANARAYANI AYURVEDIC HAIR OIL',
+    'UMANARAYNI AYURVEDIC HAIR OIL',
     'Traditional Herbal Care for Beautiful Hair',
     'Pure Nature, Pure Care.',
     'Hair Care',
@@ -28,16 +28,16 @@ INSERT INTO `products` (
     1,
     48,
     'B09AYURV01',
-    'Discover the goodness of traditional Indian hair care with Umanarayani Ayurvedic Hair Oil. Inspired by time-honoured herbal ingredients, this hair oil is designed to nourish the scalp, condition the hair, and help maintain soft, smooth, and naturally shiny-looking hair.',
-    'Discover the goodness of traditional Indian hair care with Umanarayani Ayurvedic Hair Oil. Inspired by time-honoured herbal ingredients, this hair oil is designed to nourish the scalp, condition the hair, and help maintain soft, smooth, and naturally shiny-looking hair.\n\nCrafted according to classical Ayurvedic Kshirapak / herbal infusion principles, this oil deeply penetrates the scalp layers to deliver essential botanical nutrients right to the roots without heavy synthetic greasiness. It transforms dull, damaged, and brittle hair into strong, vibrant, and silky locks with consistent ritualistic care.',
+    'Discover the goodness of traditional Indian hair care with Umanarayni Ayurvedic Hair Oil. Inspired by time-honoured herbal ingredients, this hair oil is designed to nourish the scalp, condition the hair, and help maintain soft, smooth, and naturally shiny-looking hair.',
+    'Discover the goodness of traditional Indian hair care with Umanarayni Ayurvedic Hair Oil. Inspired by time-honoured herbal ingredients, this hair oil is designed to nourish the scalp, condition the hair, and help maintain soft, smooth, and naturally shiny-looking hair.\n\nCrafted according to classical Ayurvedic Kshirapak / herbal infusion principles, this oil deeply penetrates the scalp layers to deliver essential botanical nutrients right to the roots without heavy synthetic greasiness. It transforms dull, damaged, and brittle hair into strong, vibrant, and silky locks with consistent ritualistic care.',
     '["Helps nourish and condition the scalp.","Helps improve hair softness and manageability.","Supports smooth, shiny-looking hair.","Helps reduce dryness-related hair breakage.","Makes scalp massage and regular hair care more enjoyable."]',
     '["Brahmi","Nagarmotha","Curry leaves","Hibiscus","Bhringraj","Shikakai","Amla","Amarbel","Methi dana"]',
     '[{"name":"Brahmi","role":"Scalp Calmer & Root Rejuvenator","description":"Cools the crown, reduces stress-induced shedding, and revitalizes follicles."},{"name":"Nagarmotha","role":"Dandruff Defender & Root Strengthener","description":"Deeply cleanses scalp microbiome and anchors hair shafts."},{"name":"Bhringraj","role":"Keshraj (King of Hair)","description":"Legendary Ayurvedic herb renowned for stimulating dormant hair follicles."},{"name":"Amla & Amarbel","role":"Antioxidant & Length Enhancer","description":"Rich in natural Vitamin C; supports length retention and deep natural pigmentation."},{"name":"Shikakai & Methi Dana","role":"Silkiness & Protein Nourishment","description":"Provides natural gloss, detangles knots, and replenishes hair keratin vitality."}]',
     'Apply a suitable amount to the scalp and hair. Massage gently with your fingertips. Leave on for 30–60 minutes, then wash thoroughly with shampoo.',
-    '[{"step":1,"text":"Take 5–10 ml of oil into palms or warm slightly for a relaxing champi.","title":"Dispense"},{"step":2,"text":"Part hair into sections and massage gently into scalp using circular finger motions.","title":"Scalp Massage"},{"step":3,"text":"Leave on for 30–60 minutes (or overnight for intense hydration).","title":"Nourish"},{"step":4,"text":"Wash thoroughly with Umanarayani Herbal Shampoo for radiant results.","title":"Rinse Clean"}]',
+    '[{"step":1,"text":"Take 5–10 ml of oil into palms or warm slightly for a relaxing champi.","title":"Dispense"},{"step":2,"text":"Part hair into sections and massage gently into scalp using circular finger motions.","title":"Scalp Massage"},{"step":3,"text":"Leave on for 30–60 minutes (or overnight for intense hydration).","title":"Nourish"},{"step":4,"text":"Wash thoroughly with Umanarayni Herbal Shampoo for radiant results.","title":"Rinse Clean"}]',
     'People looking to maintain nourished, soft, and manageable hair.',
     '["100% Ayurvedic Formula","Paraben & Mineral Oil Free","Cruelty Free","Traditional Cold Infusion"]',
-    '[{"a":"Yes! While leaving it on for 30–60 minutes gives great results, leaving it overnight provides intense deep-conditioning for dry or stressed scalps.","q":"Can I leave this oil overnight?"},{"a":"Absolutely. Umanarayani Ayurvedic Hair Oil is formulated for all genders and hair textures.","q":"Is this suitable for both men and women?"},{"a":"For best results, use 2 to 3 times a week followed by Umanarayani Herbal Shampoo.","q":"How often should I use it?"}]'
+    '[{"a":"Yes! While leaving it on for 30–60 minutes gives great results, leaving it overnight provides intense deep-conditioning for dry or stressed scalps.","q":"Can I leave this oil overnight?"},{"a":"Absolutely. Umanarayni Ayurvedic Hair Oil is formulated for all genders and hair textures.","q":"Is this suitable for both men and women?"},{"a":"For best results, use 2 to 3 times a week followed by Umanarayni Herbal Shampoo.","q":"How often should I use it?"}]'
 )
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
@@ -61,12 +61,12 @@ ON DUPLICATE KEY UPDATE
   `certifications` = VALUES(`certifications`),
   `faqs` = VALUES(`faqs`);
 
--- [Product: ayurvedic-mehndi - UMANARAYANI NATURAL AYURVEDIC MEHNDI]
+-- [Product: ayurvedic-mehndi - UMANARAYNI NATURAL AYURVEDIC MEHNDI]
 INSERT INTO `products` (
   `id`, `name`, `subtitle`, `tagline`, `category`, `categorySlug`, `price`, `mrp`, `discountPercent`, `rating`, `ratingCount`, `badge`, `volume`, `image`, `gallery`, `inStock`, `stockCount`, `asin`, `shortDescription`, `description`, `keyBenefits`, `featuredIngredients`, `ingredientsDetails`, `howToUse`, `usageSteps`, `suitableFor`, `certifications`, `faqs`
 ) VALUES (
     'ayurvedic-mehndi',
-    'UMANARAYANI NATURAL AYURVEDIC MEHNDI',
+    'UMANARAYNI NATURAL AYURVEDIC MEHNDI',
     '100% Pure Rajasthani Henna Powder for Hair Care & Conditioning',
     'Pure Nature, Pure Care.',
     'Hair Care',
@@ -84,7 +84,7 @@ INSERT INTO `products` (
     50,
     'B09AYURV04',
     'Pure Rajasthani henna (mehndi) leaf powder for natural hair conditioning, root cooling, and vibrant rich copper-brown shine.',
-    'Umanarayani Natural Ayurvedic Mehndi is crafted from 100% pure, chemical-free henna leaves cultivated in the sun-drenched soils of Sojat, Rajasthan. Triple micro-filtered for silkiness, it coats the hair cuticle with intense plant nutrients, relieves scalp heat, controls dandruff, and imparts a deep, healthy botanical shine.',
+    'Umanarayni Natural Ayurvedic Mehndi is crafted from 100% pure, chemical-free henna leaves cultivated in the sun-drenched soils of Sojat, Rajasthan. Triple micro-filtered for silkiness, it coats the hair cuticle with intense plant nutrients, relieves scalp heat, controls dandruff, and imparts a deep, healthy botanical shine.',
     '["100% Pure Rajasthani Henna leaf powder","Deep botanical conditioning & scalp cooling champi","Imparts rich, natural copper-brown botanical shine","Helps control dandruff and soothes scalp itchiness","Zero ammonia, zero PPD, and zero synthetic additives"]',
     '["Pure Mehndi (Henna) Leaf Powder","Brahmi","Amla","Shikakai"]',
     '[{"name":"Pure Mehndi (Lawsonia Inermis)","role":"Natural Color & Conditioning","description":"Triple-sifted pure henna leaves that bond with keratin to strengthen hair shafts."},{"name":"Amla & Brahmi","role":"Nutrient & Root Fortifier","description":"Enhances pigment retention and deeply nourishes scalp roots."}]',
@@ -116,12 +116,12 @@ ON DUPLICATE KEY UPDATE
   `certifications` = VALUES(`certifications`),
   `faqs` = VALUES(`faqs`);
 
--- [Product: ayurvedic-mehndi-kit - UMANARAYANI AYURVEDIC MEHNDI KIT]
+-- [Product: ayurvedic-mehndi-kit - UMANARAYNI AYURVEDIC MEHNDI KIT]
 INSERT INTO `products` (
   `id`, `name`, `subtitle`, `tagline`, `category`, `categorySlug`, `price`, `mrp`, `discountPercent`, `rating`, `ratingCount`, `badge`, `volume`, `image`, `gallery`, `inStock`, `stockCount`, `asin`, `shortDescription`, `description`, `keyBenefits`, `featuredIngredients`, `ingredientsDetails`, `howToUse`, `usageSteps`, `suitableFor`, `certifications`, `faqs`
 ) VALUES (
     'ayurvedic-mehndi-kit',
-    'UMANARAYANI AYURVEDIC MEHNDI KIT',
+    'UMANARAYNI AYURVEDIC MEHNDI KIT',
     'Complete Herbal Hair Color & Conditioning Ritual Box',
     'Pure Nature, Pure Care.',
     'Hair Care',
@@ -139,12 +139,12 @@ INSERT INTO `products` (
     40,
     'B09AYURV05',
     'Complete Ayurvedic hair ritual kit containing 1 pack of Mehndi (500g), 1 pack of Aamla mix powder (250g), and 1 pack of Khair powder (100g) for rich natural brown-black tones and total follicle revival.',
-    'Unlock the timeless secret of classical Ayurvedic hair coloring and restoration. The Umanarayani Ayurvedic Mehndi Kit provides 3 harmonized botanical powders: 1 pack of Pure Rajasthani Mehndi (500g) for conditioning and foundational color, 1 pack of Aamla Mix Powder (250g) for follicle strength and deep darkening, and 1 pack of Khair (Acacia catechu) Powder (100g) to anchor rich, elegant dark brown tones. Combined, they deliver radiant color, eliminate grey visibility, and restore scalp health naturally.',
+    'Unlock the timeless secret of classical Ayurvedic hair coloring and restoration. The Umanarayni Ayurvedic Mehndi Kit provides 3 harmonized botanical powders: 1 pack of Pure Rajasthani Mehndi (500g) for conditioning and foundational color, 1 pack of Aamla Mix Powder (250g) for follicle strength and deep darkening, and 1 pack of Khair (Acacia catechu) Powder (100g) to anchor rich, elegant dark brown tones. Combined, they deliver radiant color, eliminate grey visibility, and restore scalp health naturally.',
     '["Complete 3-Pack Box: 1 pac Mehndi (500g), 1 pac Aamla Mix Powder (250g), 1 pac Khair Powder (100g)","Synergistic Ayurvedic combination for richer, deeper natural dark brown tones","Khair (Katha) powder enhances pigment adherence and longevity","Aamla mix strengthens root anchors and promotes thick hair growth","Chemical-free, gentle on sensitive scalps, 100% botanical"]',
     '["Rajasthani Mehndi (500g)","Aamla Mix Botanical Powder (250g)","Khair (Acacia Catechu) Powder (100g)"]',
     '[{"name":"Mehndi Powder (500g)","role":"Base Conditioning & Vibrant Tone","description":"Triple-filtered leaf powder delivering rich natural color and root silkiness."},{"name":"Aamla Mix Powder (250g)","role":"Follicle Strengthening & Darkening","description":"Infused with Vitamin C and tannins to deepen natural undertones and reduce hair fall."},{"name":"Khair Powder (100g)","role":"Rich Dark Brown Pigment Anchor","description":"Classical Katha bark powder that transforms bright orange henna tones into rich natural dark brown."}]',
     'Mix the Mehndi powder, Aamla mix powder, and Khair powder in recommended ratios with warm water. Let sit for 2–3 hours. Apply from root to tip, keep for 2 hours, and rinse with water.',
-    '[{"step":1,"text":"In a bowl, mix Mehndi powder, Aamla mix, and Khair powder according to your desired hair depth.","title":"Combine Powders"},{"step":2,"text":"Add lukewarm water or tea water and stir into a lump-free creamy paste. Rest for 2–3 hours.","title":"Prepare Paste"},{"step":3,"text":"Apply uniformly to clean, dry or damp hair sections using an applicator brush or gloved hands.","title":"Apply to Hair"},{"step":4,"text":"Leave on for 90–120 minutes. Rinse thoroughly with water. Oil hair with Umanarayani Hair Oil that night.","title":"Rinse with Water"}]',
+    '[{"step":1,"text":"In a bowl, mix Mehndi powder, Aamla mix, and Khair powder according to your desired hair depth.","title":"Combine Powders"},{"step":2,"text":"Add lukewarm water or tea water and stir into a lump-free creamy paste. Rest for 2–3 hours.","title":"Prepare Paste"},{"step":3,"text":"Apply uniformly to clean, dry or damp hair sections using an applicator brush or gloved hands.","title":"Apply to Hair"},{"step":4,"text":"Leave on for 90–120 minutes. Rinse thoroughly with water. Oil hair with Umanarayni Hair Oil that night.","title":"Rinse with Water"}]',
     'Anyone seeking complete natural grey coverage, rich dark brown herbal tones, and intense scalp conditioning.',
     '["100% Ayurvedic Botanical Kit","Zero Synthetics or Peroxides","Triple Sifted Purity","GMP Quality Assured"]',
     '[{"a":"Khair (Katha) is derived from Acacia catechu. In Ayurveda, it is celebrated for moderating the bright orange tones of henna into rich, dark chocolate brown shades.","q":"What is the purpose of Khair powder?"},{"a":"With 850g total herbal powders, this kit provides 5 to 8 full-head coloring and conditioning sessions depending on hair length.","q":"How many applications does this kit provide?"}]'
@@ -171,12 +171,12 @@ ON DUPLICATE KEY UPDATE
   `certifications` = VALUES(`certifications`),
   `faqs` = VALUES(`faqs`);
 
--- [Product: ayurvedic-ubtan - UMANARAYANI AYURVEDIC HERBAL UBTAN]
+-- [Product: ayurvedic-ubtan - UMANARAYNI AYURVEDIC HERBAL UBTAN]
 INSERT INTO `products` (
   `id`, `name`, `subtitle`, `tagline`, `category`, `categorySlug`, `price`, `mrp`, `discountPercent`, `rating`, `ratingCount`, `badge`, `volume`, `image`, `gallery`, `inStock`, `stockCount`, `asin`, `shortDescription`, `description`, `keyBenefits`, `featuredIngredients`, `ingredientsDetails`, `howToUse`, `usageSteps`, `suitableFor`, `certifications`, `faqs`
 ) VALUES (
     'ayurvedic-ubtan',
-    'UMANARAYANI AYURVEDIC HERBAL UBTAN',
+    'UMANARAYNI AYURVEDIC HERBAL UBTAN',
     'Traditional De-Tan & Bridal Glow Body & Face Polisher',
     'Pure Nature, Pure Care.',
     'Skin Care',
@@ -194,7 +194,7 @@ INSERT INTO `products` (
     55,
     'B09AYURV06',
     'Traditional Ayurvedic Ubtan body polish and facial mask crafted with wild Kasturi Manjal, sandalwood, gram flour, and dried rose petals to remove tan and unveil glowing skin.',
-    'Rooted in India''s classical Shringara rituals, Umanarayani Ayurvedic Herbal Ubtan is an artisanal blend of stone-ground Kasturi turmeric, aromatic Chandan (sandalwood), nourishing Besan (gram flour), neem, and dried rose petals. It exfoliates dead skin layers, pulls out accumulated sun tanning, tightens open pores, and restores a velvet-soft bridal radiance across the face and entire body.',
+    'Rooted in India''s classical Shringara rituals, Umanarayni Ayurvedic Herbal Ubtan is an artisanal blend of stone-ground Kasturi turmeric, aromatic Chandan (sandalwood), nourishing Besan (gram flour), neem, and dried rose petals. It exfoliates dead skin layers, pulls out accumulated sun tanning, tightens open pores, and restores a velvet-soft bridal radiance across the face and entire body.',
     '["Intensive de-tanning and skin brightening for face and body","Gentle micro-exfoliation removes dead cells and ingrown hairs","Refines rough skin texture and minimizes enlarged pores","100% chemical-free herbal powder suitable for daily body wash","Infused with wild Kasturi Manjal that brightens without yellow staining"]',
     '["Kasturi Haldi (Wild Turmeric)","Chandan (Sandalwood)","Besan (Gram Flour)","Rose Petals","Neem Leaf"]',
     '[{"name":"Kasturi Manjal (Wild Turmeric)","role":"Brightening & Anti-Tan","description":"Aromatic non-staining wild turmeric that corrects pigmentation and uneven skin tone."},{"name":"Chandan (Sandalwood)","role":"Cooling & Blemish Clearing","description":"Soothes skin inflammation, reduces dark spots, and imparts a divine natural fragrance."},{"name":"Besan & Rose Petals","role":"Gentle Cleanser & Texture Refiner","description":"Absorbs excess sebum, gently sloughs dead cells, and leaves skin smooth as silk."}]',
@@ -226,12 +226,12 @@ ON DUPLICATE KEY UPDATE
   `certifications` = VALUES(`certifications`),
   `faqs` = VALUES(`faqs`);
 
--- [Product: herbal-shampoo - UMANARAYANI HERBAL SHAMPOO]
+-- [Product: herbal-shampoo - UMANARAYNI HERBAL SHAMPOO]
 INSERT INTO `products` (
   `id`, `name`, `subtitle`, `tagline`, `category`, `categorySlug`, `price`, `mrp`, `discountPercent`, `rating`, `ratingCount`, `badge`, `volume`, `image`, `gallery`, `inStock`, `stockCount`, `asin`, `shortDescription`, `description`, `keyBenefits`, `featuredIngredients`, `ingredientsDetails`, `howToUse`, `usageSteps`, `suitableFor`, `certifications`, `faqs`
 ) VALUES (
     'herbal-shampoo',
-    'UMANARAYANI HERBAL SHAMPOO',
+    'UMANARAYNI HERBAL SHAMPOO',
     'Nature''s Care for Beautiful, Healthy-Looking Hair',
     'Pure Nature, Pure Care.',
     'Hair Care',
@@ -248,13 +248,13 @@ INSERT INTO `products` (
     1,
     35,
     'B09AYURV02',
-    'Give your hair a refreshing herbal cleansing experience with Umanarayani Herbal Shampoo. Inspired by traditional Indian hair-care practices, our shampoo is designed to cleanse the scalp, remove excess oil and everyday impurities, and leave your hair feeling soft, smooth, and manageable.',
-    'Give your hair a refreshing herbal cleansing experience with Umanarayani Herbal Shampoo. Inspired by traditional Indian hair-care practices, our shampoo is designed to cleanse the scalp, remove excess oil and everyday impurities, and leave your hair feeling soft, smooth, and manageable.\n\nCreated for people who value herbal-inspired personal care, Umanarayani Herbal Shampoo brings together the tradition of botanical hair care and the convenience of a modern hair-care routine.\n\nUmanarayani Herbal Products combines inspiration from traditional Indian botanical care with a commitment to everyday personal care. Our aim is to help customers enjoy a simple, refreshing hair-care routine.',
+    'Give your hair a refreshing herbal cleansing experience with Umanarayni Herbal Shampoo. Inspired by traditional Indian hair-care practices, our shampoo is designed to cleanse the scalp, remove excess oil and everyday impurities, and leave your hair feeling soft, smooth, and manageable.',
+    'Give your hair a refreshing herbal cleansing experience with Umanarayni Herbal Shampoo. Inspired by traditional Indian hair-care practices, our shampoo is designed to cleanse the scalp, remove excess oil and everyday impurities, and leave your hair feeling soft, smooth, and manageable.\n\nCreated for people who value herbal-inspired personal care, Umanarayni Herbal Shampoo brings together the tradition of botanical hair care and the convenience of a modern hair-care routine.\n\nUmanarayni Herbal Products combines inspiration from traditional Indian botanical care with a commitment to everyday personal care. Our aim is to help customers enjoy a simple, refreshing hair-care routine.',
     '["Gentle Cleansing: Helps remove dirt, excess oil, and everyday impurities from the scalp and hair.","Soft & Smooth Hair: Helps improve hair texture and manageability.","Natural-Looking Shine: Helps hair look smooth and shiny.","Hair Breakage Care: Suitable conditioning can help reduce breakage associated with dryness and combing.","Fresh Scalp Feel: Helps leave the scalp feeling clean and refreshed.","Regular Hair Care: Makes a convenient addition to your hair-care routine."]',
     '["Shikakai","Reetha","Amla","Hibiscus","Aloe Vera","Brahmi"]',
     '[{"name":"Shikakai","role":"Natural Gentle Cleanser","description":"Traditionally used in Indian hair cleansing; cleanses without stripping natural oils."},{"name":"Reetha","role":"Rich Natural Saponins","description":"Contains natural saponins that produce a rich, mild botanical lather."},{"name":"Amla","role":"Nutrient & Luster Infusion","description":"A traditional botanical used in hair-care preparations for healthy shine."},{"name":"Hibiscus","role":"Herbal Conditioner","description":"Commonly used in hair-conditioning products for velvet smoothness."},{"name":"Aloe Vera","role":"Moisture & Hydration","description":"Helps condition the hair and support a moisturised scalp feel."},{"name":"Brahmi","role":"Root Fortification","description":"Traditionally used in herbal hair-care formulations to soothe follicles."}]',
     '1. Wet your hair and scalp thoroughly.\n2. Apply an appropriate amount of shampoo.\n3. Massage gently into the scalp using your fingertips.\n4. Rinse thoroughly with clean water.\n5. Repeat if needed.',
-    '[{"step":1,"text":"Wet your hair and scalp thoroughly with lukewarm or cool water.","title":"Wet Thoroughly"},{"step":2,"text":"Apply an appropriate amount of Umanarayani Herbal Shampoo.","title":"Apply Shampoo"},{"step":3,"text":"Massage gently into the scalp using your fingertips to work up botanical lather.","title":"Scalp Massage"},{"step":4,"text":"Rinse thoroughly with clean water. Repeat if needed for heavily oiled hair.","title":"Rinse Clean"}]',
+    '[{"step":1,"text":"Wet your hair and scalp thoroughly with lukewarm or cool water.","title":"Wet Thoroughly"},{"step":2,"text":"Apply an appropriate amount of Umanarayni Herbal Shampoo.","title":"Apply Shampoo"},{"step":3,"text":"Massage gently into the scalp using your fingertips to work up botanical lather.","title":"Scalp Massage"},{"step":4,"text":"Rinse thoroughly with clean water. Repeat if needed for heavily oiled hair.","title":"Rinse Clean"}]',
     'Suitable for customers seeking a regular hair-cleansing routine. Suitability for specific scalp conditions depends on the finished formulation.',
     '["Sulphate & Paraben Free","Natural Herbal Saponins","pH Balanced Scalp Care","Dermatologically Tested"]',
     '[{"a":"Yes! We harness natural Reetha (soapnut) saponins which produce a soft, creamy lather that cleanses without harsh detergent stripping.","q":"Does this shampoo foam well without sulphates?"},{"a":"Yes, its mild botanical formulation is gentle enough for frequent or daily use.","q":"Can I use this daily?"}]'
@@ -281,12 +281,12 @@ ON DUPLICATE KEY UPDATE
   `certifications` = VALUES(`certifications`),
   `faqs` = VALUES(`faqs`);
 
--- [Product: orange-face-wash - UMANARAYANI AYURVEDIC ORANGE FACE WASH]
+-- [Product: orange-face-wash - UMANARAYNI AYURVEDIC ORANGE FACE WASH]
 INSERT INTO `products` (
   `id`, `name`, `subtitle`, `tagline`, `category`, `categorySlug`, `price`, `mrp`, `discountPercent`, `rating`, `ratingCount`, `badge`, `volume`, `image`, `gallery`, `inStock`, `stockCount`, `asin`, `shortDescription`, `description`, `keyBenefits`, `featuredIngredients`, `ingredientsDetails`, `howToUse`, `usageSteps`, `suitableFor`, `certifications`, `faqs`
 ) VALUES (
     'orange-face-wash',
-    'UMANARAYANI AYURVEDIC ORANGE FACE WASH',
+    'UMANARAYNI AYURVEDIC ORANGE FACE WASH',
     'Freshness for Your Skin, Confidence for Your Day',
     'Pure Nature, Pure Care.',
     'Skin Care',
@@ -303,8 +303,8 @@ INSERT INTO `products` (
     1,
     62,
     'B09AYURV03',
-    'Refresh your daily skincare routine with Umanarayani Ayurvedic Orange Face Wash. Inspired by the freshness of orange and botanical skincare, this facial cleanser is designed to remove everyday dirt, excess oil, and impurities, leaving your skin feeling clean and refreshed.',
-    'Refresh your daily skincare routine with Umanarayani Ayurvedic Orange Face Wash. Inspired by the freshness of orange and botanical skincare, this facial cleanser is designed to remove everyday dirt, excess oil, and impurities, leaving your skin feeling clean and refreshed.\n\nFormulated with natural citrus orange extracts, neem, and purifying Ayurvedic herbs, it specifically targets tanning, environmental dullness, and pimple-causing excess sebum. Experience radiant, refreshed skin that feels soft and hydrated throughout the day without tightness.',
+    'Refresh your daily skincare routine with Umanarayni Ayurvedic Orange Face Wash. Inspired by the freshness of orange and botanical skincare, this facial cleanser is designed to remove everyday dirt, excess oil, and impurities, leaving your skin feeling clean and refreshed.',
+    'Refresh your daily skincare routine with Umanarayni Ayurvedic Orange Face Wash. Inspired by the freshness of orange and botanical skincare, this facial cleanser is designed to remove everyday dirt, excess oil, and impurities, leaving your skin feeling clean and refreshed.\n\nFormulated with natural citrus orange extracts, neem, and purifying Ayurvedic herbs, it specifically targets tanning, environmental dullness, and pimple-causing excess sebum. Experience radiant, refreshed skin that feels soft and hydrated throughout the day without tightness.',
     '["Helps remove dirt, sweat, and excess oil.","Leaves skin feeling clean and refreshed.","Helps cleanse oily skin and remove surface impurities.","Supports a fresh, healthy-looking complexion.","Targeted support for tanning and darkness reduction.","Helps with pimples and breakout prevention.","Makes an easy addition to your daily skincare routine."]',
     '["Orange Peel Extract","Neem Leaf Extract","Aloe Vera","Citrus Essential Oil","Haldi (Turmeric)","Tulsi"]',
     '[{"name":"Orange Peel Botanical Extract","role":"Natural Vitamin C & Anti-Tan","description":"High in natural citric antioxidants; clarifies pigmentation, dullness, and sun tan."},{"name":"Neem & Tulsi","role":"Anti-Bacterial Pimple Defense","description":"Purifies skin pores, prevents blemishes, and curbs microbial inflammation."},{"name":"Aloe Vera Gel","role":"Hydrating & Soothing Veil","description":"Retains essential skin moisture so your skin never feels dry or stretched."}]',
@@ -312,7 +312,7 @@ INSERT INTO `products` (
     '[{"step":1,"text":"Wet your face and neck with cool or lukewarm water.","title":"Splash Face"},{"step":2,"text":"Apply a coin-sized amount of face wash onto wet palms and lather.","title":"Dispense & Lather"},{"step":3,"text":"Gently massage in upward circular motions for 30–60 seconds, avoiding eye area.","title":"Massage Gently"},{"step":4,"text":"Rinse thoroughly with clean water, pat dry with a soft towel, and apply moisturiser.","title":"Rinse & Glow"}]',
     'Customers looking for a refreshing daily facial cleanser, targeting tanning, darkness, and pimple removal.',
     '["100% Soap Free","Cruelty Free","Non-Comedogenic","Suitable for Oily, Normal & Combination Skin"]',
-    '[{"a":"No, Umanarayani Orange Face Wash is soap-free and infused with soothing Aloe Vera to maintain your skin''s natural moisture barrier.","q":"Will this face wash dry out my skin?"},{"a":"Yes! The combination of orange peel bioflavonoids and neem leaves actively helps control excess oil and clears acne-causing bacteria.","q":"Does it help with pimples and acne spots?"}]'
+    '[{"a":"No, Umanarayni Orange Face Wash is soap-free and infused with soothing Aloe Vera to maintain your skin''s natural moisture barrier.","q":"Will this face wash dry out my skin?"},{"a":"Yes! The combination of orange peel bioflavonoids and neem leaves actively helps control excess oil and clears acne-causing bacteria.","q":"Does it help with pimples and acne spots?"}]'
 )
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
@@ -336,12 +336,12 @@ ON DUPLICATE KEY UPDATE
   `certifications` = VALUES(`certifications`),
   `faqs` = VALUES(`faqs`);
 
--- [Product: pure-aloe-vera-gel - UMANARAYANI PURE AYURVEDIC ALOE VERA GEL]
+-- [Product: pure-aloe-vera-gel - UMANARAYNI PURE AYURVEDIC ALOE VERA GEL]
 INSERT INTO `products` (
   `id`, `name`, `subtitle`, `tagline`, `category`, `categorySlug`, `price`, `mrp`, `discountPercent`, `rating`, `ratingCount`, `badge`, `volume`, `image`, `gallery`, `inStock`, `stockCount`, `asin`, `shortDescription`, `description`, `keyBenefits`, `featuredIngredients`, `ingredientsDetails`, `howToUse`, `usageSteps`, `suitableFor`, `certifications`, `faqs`
 ) VALUES (
     'pure-aloe-vera-gel',
-    'UMANARAYANI PURE AYURVEDIC ALOE VERA GEL',
+    'UMANARAYNI PURE AYURVEDIC ALOE VERA GEL',
     'Multipurpose Cold-Pressed Soothing Gel for Glowing Skin & Soft Hair',
     'Pure Nature, Pure Care.',
     'Skin Care',
@@ -359,12 +359,12 @@ INSERT INTO `products` (
     65,
     'B09AYURV07',
     'Pure cold-pressed Aloe Vera soothing gel in a generous 500g tub. Calms sun-damaged skin, soothes burns and acne redness, and deeply hydrates frizzy hair shafts.',
-    'Harvested from organically grown Aloe Barbadensis Miller plants, Umanarayani Pure Ayurvedic Aloe Vera Gel is micro-stabilized to preserve live plant enzymes, polysaccharides, and vitamins. Its featherlight, zero-grease texture sinks instantly into parched skin and hair shafts, delivering deep hydration, calming sun irritation, soothing razor bumps, and locking in fresh, dewy radiance.',
+    'Harvested from organically grown Aloe Barbadensis Miller plants, Umanarayni Pure Ayurvedic Aloe Vera Gel is micro-stabilized to preserve live plant enzymes, polysaccharides, and vitamins. Its featherlight, zero-grease texture sinks instantly into parched skin and hair shafts, delivering deep hydration, calming sun irritation, soothing razor bumps, and locking in fresh, dewy radiance.',
     '["Generous 500g family pack of 100% pure cold-pressed Aloe Vera Gel","Delivers instant oil-free cooling hydration for face, body, and scalp","Soothes sunburn, pimple redness, irritation, and post-shaving burns","Works as an intensive leave-in conditioner to tame hair frizz and flyaways","Non-sticky, quick-absorbing formula free from parabens, mineral oil, and artificial green dye"]',
     '["Pure Aloe Barbadensis Leaf Juice","Vitamin E","Rose Floral Water","Cucumber Extract"]',
     '[{"name":"Cold-Pressed Aloe Vera Gel","role":"Deep Hydration & Cell Healing","description":"Contains natural polysaccharides and vitamins that accelerate skin renewal and quench dehydration."},{"name":"Vitamin E & Rose Hydrosol","role":"Antioxidant & Skin Soother","description":"Neutralizes environmental stress, softens fine lines, and tones pores."}]',
     'Apply generously to face, body, or scalp as needed. For hair, apply as a pre-wash mask or lightweight leave-in serum. For face, use as a daily non-comedogenic moisturizer or overnight sleeping pack.',
-    '[{"step":1,"text":"Wash your face with Umanarayani Orange Face Wash or clean your hair.","title":"Cleanse"},{"step":2,"text":"Take a generous amount of cool aloe vera gel onto clean palms.","title":"Scoop Gel"},{"step":3,"text":"Massage over face, neck, body, or hair strands until completely absorbed.","title":"Apply Gently"},{"step":4,"text":"Experience instant cooling relief, zero stickiness, and a dewy matte finish.","title":"Feel the Hydration"}]',
+    '[{"step":1,"text":"Wash your face with Umanarayni Orange Face Wash or clean your hair.","title":"Cleanse"},{"step":2,"text":"Take a generous amount of cool aloe vera gel onto clean palms.","title":"Scoop Gel"},{"step":3,"text":"Massage over face, neck, body, or hair strands until completely absorbed.","title":"Apply Gently"},{"step":4,"text":"Experience instant cooling relief, zero stickiness, and a dewy matte finish.","title":"Feel the Hydration"}]',
     'All skin and hair types, particularly sun-exposed, sensitive, acne-prone, or dehydrated skin.',
     '["99% Pure Organic Aloe","Color Free & Fragrance Free","Non-Comedogenic","Cruelty Free"]',
     '[{"a":"No, real aloe vera gel is naturally clear to translucent. We never add toxic synthetic green food coloring.","q":"Is this aloe vera gel artificially colored green?"},{"a":"Yes! Aloe Vera has natural proteolytic enzymes that help repair dead skin cells on the scalp and condition hair.","q":"Can I apply it on my scalp?"}]'

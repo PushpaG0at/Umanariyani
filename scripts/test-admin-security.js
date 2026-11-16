@@ -46,7 +46,7 @@ function makeRequest(baseUrl, path, method = 'GET', body = null, headers = {}) {
 
 async function runAdminSecurityTests() {
   console.log('=============================================================');
-  console.log('🛡️ UMANARAYANI ADMIN SECURITY & BYPASS REMOVAL TESTS');
+  console.log('🛡️ UMANARAYNI ADMIN SECURITY & BYPASS REMOVAL TESTS');
   console.log('=============================================================\n');
 
   const testServer = await new Promise(resolve => {

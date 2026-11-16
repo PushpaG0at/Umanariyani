@@ -39,7 +39,7 @@ function makeRequest(baseUrl, path, method = 'GET', headers = {}) {
 
 async function runHealthTests() {
   console.log('=============================================================');
-  console.log('🌿 UMANARAYANI HEALTH & MONITORING VERIFICATION SUITE');
+  console.log('🌿 UMANARAYNI HEALTH & MONITORING VERIFICATION SUITE');
   console.log('=============================================================\n');
 
   // Start ephemeral test server

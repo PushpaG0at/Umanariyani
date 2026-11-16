@@ -92,7 +92,7 @@ async function sendBackupAlert(options = {}) {
   try {
     const statusEmoji = success ? '✅' : '🚨';
     const statusText = success ? 'SUCCESSFUL' : 'FAILED';
-    const subject = `${statusEmoji} [Umanarayani Alert] ${operation} ${statusText} on ${serverHost}`;
+    const subject = `${statusEmoji} [Umanarayni Alert] ${operation} ${statusText} on ${serverHost}`;
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
@@ -144,13 +144,13 @@ async function sendBackupAlert(options = {}) {
           `}
         </div>
         <div style="background-color: #f5f5f5; padding: 12px 24px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #eeeeee;">
-          Umanarayani Sacred Ayurveda Automated Reliability & Monitoring System
+          Umanarayni Sacred Ayurveda Automated Reliability & Monitoring System
         </div>
       </div>
     `;
 
     await transporter.sendMail({
-      from: `"Umanarayani Monitoring" <${process.env.SMTP_EMAIL}>`,
+      from: `"Umanarayni Monitoring" <${process.env.SMTP_EMAIL}>`,
       to: adminAlertEmail,
       subject,
       html

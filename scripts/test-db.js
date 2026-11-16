@@ -3,7 +3,7 @@ const db = require('../db');
 
 async function runLiveTest() {
   console.log('==================================================');
-  console.log('🌿 UMANARAYANI MYSQL DATABASE INTEGRITY TEST');
+  console.log('🌿 UMANARAYNI MYSQL DATABASE INTEGRITY TEST');
   console.log('==================================================\n');
 
   try {
@@ -39,7 +39,7 @@ async function runLiveTest() {
     await db.query(`
       INSERT INTO users (id, name, email, password, dosha, hairType)
       VALUES (?, 'Database Tester', ?, 'test_pwd', 'Pitta', 'Normal')
-    `, [testId, `${testId}@umanarayani-test.com`]);
+    `, [testId, `${testId}@umanarayni-test.com`]);
     console.log('   ✅ INSERT successful: Created temporary test user record.');
 
     // Verify Read

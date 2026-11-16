@@ -171,9 +171,9 @@ class RevolvingHerbsOrbit {
       <div class="orbit-ring-inner"></div>
 
       <!-- Center Logo Core -->
-      <div class="orbit-center-core" id="orbitCenterCore" title="Umanarayani Ayurveda">
-        <img src="/images/logo.jpg" alt="Umanarayani Logo" class="core-logo">
-        <span class="core-label">UMANARAYANI</span>
+      <div class="orbit-center-core" id="orbitCenterCore" title="Umanarayni Ayurveda">
+        <img src="/images/logo.jpg" alt="Umanarayni Logo" class="core-logo">
+        <span class="core-label">UMANARAYNI</span>
       </div>
 
       <!-- Revolving Orbit Rotator -->
