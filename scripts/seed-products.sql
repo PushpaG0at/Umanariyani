@@ -146,7 +146,7 @@ INSERT INTO `products` (
     'Mix the Mehndi powder, Aamla mix powder, and Khair powder in recommended ratios with warm water. Let sit for 2–3 hours. Apply from root to tip, keep for 2 hours, and rinse with water.',
     '[{"step":1,"text":"In a bowl, mix Mehndi powder, Aamla mix, and Khair powder according to your desired hair depth.","title":"Combine Powders"},{"step":2,"text":"Add lukewarm water or tea water and stir into a lump-free creamy paste. Rest for 2–3 hours.","title":"Prepare Paste"},{"step":3,"text":"Apply uniformly to clean, dry or damp hair sections using an applicator brush or gloved hands.","title":"Apply to Hair"},{"step":4,"text":"Leave on for 90–120 minutes. Rinse thoroughly with water. Oil hair with Umanarayani Hair Oil that night.","title":"Rinse with Water"}]',
     'Anyone seeking complete natural grey coverage, rich dark brown herbal tones, and intense scalp conditioning.',
-    '["100% Ayurvedic Botanical Kit","Zero Synthetics or Peroxides","Triple Sifted Purity","Ayush Approved"]',
+    '["100% Ayurvedic Botanical Kit","Zero Synthetics or Peroxides","Triple Sifted Purity","GMP Quality Assured"]',
     '[{"a":"Khair (Katha) is derived from Acacia catechu. In Ayurveda, it is celebrated for moderating the bright orange tones of henna into rich, dark chocolate brown shades.","q":"What is the purpose of Khair powder?"},{"a":"With 850g total herbal powders, this kit provides 5 to 8 full-head coloring and conditioning sessions depending on hair length.","q":"How many applications does this kit provide?"}]'
 )
 ON DUPLICATE KEY UPDATE
@@ -201,7 +201,7 @@ INSERT INTO `products` (
     'Take 2–3 tablespoons of Ubtan powder. Mix with rose water (for oily skin) or milk/curd (for dry skin) into a smooth paste. Massage gently over face and body, leave for 10–15 minutes, then wash off with lukewarm water.',
     '[{"step":1,"text":"Take 2 tablespoons for facial mask or 4 tablespoons for full body polish.","title":"Take Powder"},{"step":2,"text":"Blend with rose water, milk, or plain water to make a spreadable paste.","title":"Mix with Liquid"},{"step":3,"text":"Apply over skin in gentle circular motions to promote circulation and remove tan.","title":"Gentle Massage"},{"step":4,"text":"Let dry for 10–15 minutes until semi-dry. Scrub off gently with wet hands and rinse.","title":"Rinse & Radiate"}]',
     'All skin types seeking natural de-tanning, dark spot reduction, and radiant bridal glow.',
-    '["100% Botanical Exfoliant","No Artificial Scents","Soap-Free Body Cleanser","Ayush Certified"]',
+    '["100% Botanical Exfoliant","No Artificial Scents","Soap-Free Body Cleanser","Traditional Ayurvedic Standard"]',
     '[{"a":"No! We use authentic Kasturi Manjal (wild turmeric), which is prized in Ayurveda for brightening without the strong yellow stains of cooking turmeric.","q":"Does this Ubtan leave yellow stains on the skin?"},{"a":"Yes! It is completely soap-free and gentle enough to replace harsh chemical soaps for daily bath rituals.","q":"Can I use it as a daily body wash?"}]'
 )
 ON DUPLICATE KEY UPDATE

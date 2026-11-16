@@ -6,7 +6,11 @@ const htmls = [
   'public/cart.html',
   'public/signin.html',
   'public/admin.html',
-  'public/success.html'
+  'public/success.html',
+  'public/privacy.html',
+  'public/terms.html',
+  'public/shipping.html',
+  'public/refund.html'
 ];
 
 console.log('=== AUDITING ALL HTML FILES FOR STRICT CSP COMPLIANCE ===');
