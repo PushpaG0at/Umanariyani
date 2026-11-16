@@ -110,48 +110,30 @@ app.use(sentryRequestHandler());
 app.use(setupMorganLogger());
 
 // ==================== HEALTH & MONITORING ENDPOINTS ====================
-// Lightweight health checks for AWS ALB/ELB, Route 53, PM2, and uptime probes
-app.get(['/health', '/api/health'], async (req, res) => {
-  const startTime = Date.now();
-  const uptime = process.uptime();
-  const timestamp = new Date().toISOString();
-  const memory = process.memoryUsage();
+// Dedicated rate limiter for health check probes (prevents DoS on health checks)
+const healthLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120, // Allows up to 2 pings/sec from AWS ALB/Route53/uptime monitors
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: 'degraded', database: 'disconnected' }
+});
 
+// Lightweight public health check: Returns strictly minimal status (no system internals or memory metrics)
+app.get(['/health', '/api/health'], healthLimiter, async (req, res) => {
   try {
     // Probe MySQL database connectivity with a live ping query
     await db.query('SELECT 1 AS alive');
-    const latencyMs = Date.now() - startTime;
 
     res.status(200).json({
       status: 'ok',
-      timestamp,
-      uptime: parseFloat(uptime.toFixed(2)),
-      requestId: req.id,
-      database: {
-        status: 'connected',
-        latencyMs
-      },
-      system: {
-        nodeVersion: process.version,
-        environment: process.env.NODE_ENV || 'development',
-        memory: {
-          rssMb: (memory.rss / (1024 * 1024)).toFixed(2),
-          heapUsedMb: (memory.heapUsed / (1024 * 1024)).toFixed(2),
-          heapTotalMb: (memory.heapTotal / (1024 * 1024)).toFixed(2)
-        }
-      }
+      database: 'connected'
     });
   } catch (err) {
     captureException(err, { context: 'health_check', requestId: req.id });
     res.status(503).json({
       status: 'degraded',
-      timestamp,
-      uptime: parseFloat(uptime.toFixed(2)),
-      requestId: req.id,
-      database: {
-        status: 'disconnected',
-        error: err.message
-      }
+      database: 'disconnected'
     });
   }
 });
@@ -3976,7 +3958,46 @@ app.post('/api/payment/verify-qr', orderLimiter, async (req, res) => {
   }
 });
 
-// ==================== 10f. ADMIN RECONCILIATION & ORDER LIFECYCLE APIS ====================
+// ==================== 10f. ADMIN SYSTEM METRICS & RECONCILIATION ====================
+
+/**
+ * Admin-only Internal System Diagnostics & Metrics
+ * Exposes server memory, uptime, latency, and runtime environment strictly to authenticated admins.
+ */
+app.get('/api/admin/system/metrics', authenticateToken(false), requireAdmin, async (req, res) => {
+  const startTime = Date.now();
+  const memory = process.memoryUsage();
+  try {
+    await db.query('SELECT 1 AS alive');
+    const latencyMs = Date.now() - startTime;
+    res.status(200).json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      uptimeSeconds: parseFloat(process.uptime().toFixed(2)),
+      database: {
+        status: 'connected',
+        latencyMs
+      },
+      system: {
+        nodeVersion: process.version,
+        environment: process.env.NODE_ENV || 'development',
+        memory: {
+          rssMb: parseFloat((memory.rss / (1024 * 1024)).toFixed(2)),
+          heapUsedMb: parseFloat((memory.heapUsed / (1024 * 1024)).toFixed(2)),
+          heapTotalMb: parseFloat((memory.heapTotal / (1024 * 1024)).toFixed(2))
+        }
+      }
+    });
+  } catch (err) {
+    res.status(503).json({
+      success: false,
+      database: {
+        status: 'disconnected',
+        error: err.message
+      }
+    });
+  }
+});
 
 /**
  * Lists pending manual UPI/UTR orders awaiting verification
