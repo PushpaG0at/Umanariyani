@@ -1056,7 +1056,7 @@ async function sendOrderConfirmationEmail({ orderId, customerName, customerEmail
 
             <div style="text-align: center; margin-top: 24px; font-size: 12px; color: #718096;">
               <p style="margin: 4px 0;">Need help with your dispatch? WhatsApp our Vaidyas at <strong>+91 8641033514</strong></p>
-              <p style="margin: 4px 0;">100% Pure Botanical Formulations &bull; GMP Quality Assured &bull; Handcrafted in India</p>
+              <p style="margin: 4px 0;">100% Pure Botanical Formulations &bull; Classical Herbal Purity &bull; Handcrafted in India</p>
             </div>
           </div>
         </div>

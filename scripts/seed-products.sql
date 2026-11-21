@@ -146,7 +146,7 @@ INSERT INTO `products` (
     'Mix the Mehndi powder, Aamla mix powder, and Khair powder in recommended ratios with warm water. Let sit for 2–3 hours. Apply from root to tip, keep for 2 hours, and rinse with water.',
     '[{"step":1,"text":"In a bowl, mix Mehndi powder, Aamla mix, and Khair powder according to your desired hair depth.","title":"Combine Powders"},{"step":2,"text":"Add lukewarm water or tea water and stir into a lump-free creamy paste. Rest for 2–3 hours.","title":"Prepare Paste"},{"step":3,"text":"Apply uniformly to clean, dry or damp hair sections using an applicator brush or gloved hands.","title":"Apply to Hair"},{"step":4,"text":"Leave on for 90–120 minutes. Rinse thoroughly with water. Oil hair with Umanarayni Hair Oil that night.","title":"Rinse with Water"}]',
     'Anyone seeking complete natural grey coverage, rich dark brown herbal tones, and intense scalp conditioning.',
-    '["100% Ayurvedic Botanical Kit","Zero Synthetics or Peroxides","Triple Sifted Purity","GMP Quality Assured"]',
+    '["100% Ayurvedic Botanical Kit","Zero Synthetics or Peroxides","Triple Sifted Purity","Classical Ayurvedic Quality"]',
     '[{"a":"Khair (Katha) is derived from Acacia catechu. In Ayurveda, it is celebrated for moderating the bright orange tones of henna into rich, dark chocolate brown shades.","q":"What is the purpose of Khair powder?"},{"a":"With 850g total herbal powders, this kit provides 5 to 8 full-head coloring and conditioning sessions depending on hair length.","q":"How many applications does this kit provide?"}]'
 )
 ON DUPLICATE KEY UPDATE
