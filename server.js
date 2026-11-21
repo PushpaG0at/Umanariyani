@@ -87,7 +87,7 @@ function validateStartupEnv() {
     process.exit(1);
   }
 
-  // Cryptographic Secrets Strength Check
+  // Cryptographic Secrets Strength Check (applied strictly to generated secrets)
   const secretsToCheck = [
     'SESSION_SECRET',
     'OTP_HMAC_SECRET',
@@ -95,14 +95,15 @@ function validateStartupEnv() {
     'HUMAN_VERIFY_SECRET'
   ];
 
-  const placeholderRegex = /replace|example|salt|test|2026/i;
+  // Whole-word match so random hex secrets containing substrings like "2026" or "salt" are never falsely rejected
+  const placeholderRegex = /\b(example|replace|changeme|placeholder|secret|your_secret)\b/i;
   const weakSecrets = [];
 
   for (const key of secretsToCheck) {
     const val = process.env[key];
     if (val) {
       if (val.length < 32) {
-        weakSecrets.push(`${key} is too short (${val.length} chars, minimum 32 chars required)`);
+        weakSecrets.push(`${key} is too short (minimum 32 characters required)`);
       } else if (placeholderRegex.test(val)) {
         weakSecrets.push(`${key} contains predictable/placeholder pattern`);
       }
