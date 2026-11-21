@@ -62,6 +62,14 @@ async function runTests() {
   let passed = 0;
   let failed = 0;
 
+  // 0. Ensure catalog is seeded before running tests
+  const [productCountRows] = await db.query('SELECT COUNT(*) AS c FROM products');
+  if (productCountRows[0].c < 7) {
+    console.log('📦 Products table unseeded or incomplete. Seeding catalog for test suite...');
+    const { seedData } = require('./seed-initial-data');
+    await seedData();
+  }
+
   async function test(name, fn) {
     try {
       await fn();
@@ -363,15 +371,20 @@ async function runTests() {
   });
 
   await test('Admin user (ADMIN_EMAIL) receives role: admin and redirectUrl: /admin.html on OTP verification', async () => {
-    const adminEmails = (process.env.ADMIN_EMAIL || 'raoa6526@gmail.com,singhpushpendra95734@gmail.com').split(',').map(e => e.trim().toLowerCase());
-    const adminEmail = adminEmails[0]; // raoa6526@gmail.com
-    const pushpendraAdminEmail = adminEmails[1] || 'singhpushpendra95734@gmail.com';
+    const adminEmails = (process.env.ADMIN_EMAIL || process.env.ADMIN_EMAILS || 'admin@umanarayni.com,raoa6526@gmail.com,singhpushpendra95734@gmail.com')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+    const adminEmail = adminEmails[0]; // primary admin
+    const pushpendraAdminEmail = adminEmails.find(e => e.includes('pushpendra')) || (adminEmails[1] || 'singhpushpendra95734@gmail.com');
+
+    // 1. Ensure primary admin exists in DB
     const existingAdmin = await db.findUserByIdentifier(adminEmail);
     if (!existingAdmin) {
       const hashPass = await bcrypt.hash('admin_secure_pass', 10);
       await db.query(`
         INSERT INTO users (id, name, email, password, role, is_verified, joinedDate)
-        VALUES ('usr_admin_test', 'Rao Admin', ?, ?, 'admin', TRUE, NOW())
+        VALUES ('usr_admin_test', 'Primary Admin', ?, ?, 'admin', TRUE, NOW())
       `, [adminEmail, hashPass]);
     } else {
       await db.query(`UPDATE users SET role = 'admin' WHERE id = ?`, [existingAdmin.id]);
@@ -402,10 +415,35 @@ async function runTests() {
       throw new Error(`Expected authenticated admin GET /admin to return 200 OK, got: ${adminPageRes.status}`);
     }
 
-    // Verify singhpushpendra95734@gmail.com also has role: admin
+    // 2. Ensure secondary admin email (singhpushpendra95734@gmail.com) exists and verifies role: admin on OTP verification
+    const existingPAdmin = await db.findUserByIdentifier(pushpendraAdminEmail);
+    if (!existingPAdmin) {
+      const pHashPass = await bcrypt.hash('admin_secure_pass', 10);
+      await db.query(`
+        INSERT INTO users (id, name, email, password, role, is_verified, joinedDate)
+        VALUES ('usr_admin_pushpendra', 'Pushpendra Admin', ?, ?, 'user', TRUE, NOW())
+      `, [pushpendraAdminEmail, pHashPass]);
+    }
+
+    const pTestOtp = '849202';
+    const pHashedOtp = await bcrypt.hash(pTestOtp, 10);
+    await db.saveUserOtp(pushpendraAdminEmail, pHashedOtp, new Date(Date.now() + 5 * 60 * 1000));
+
+    const pRes = await request('POST', '/api/verify-otp', {
+      identifier: pushpendraAdminEmail,
+      otp: pTestOtp
+    });
+
+    if (pRes.status !== 200 || !pRes.data.success) {
+      throw new Error(`Secondary admin OTP verification failed: ${JSON.stringify(pRes.data)}`);
+    }
+    if (pRes.data.role !== 'admin' || pRes.data.redirectUrl !== '/admin.html') {
+      throw new Error(`Expected ${pushpendraAdminEmail} to receive role 'admin' and redirectUrl '/admin.html', got: ${JSON.stringify(pRes.data)}`);
+    }
+
     const pUser = await db.findUserByIdentifier(pushpendraAdminEmail);
     if (!pUser || pUser.role !== 'admin') {
-      throw new Error(`Expected singhpushpendra95734@gmail.com to have role 'admin', got: ${pUser ? pUser.role : 'not found'}`);
+      throw new Error(`Expected ${pushpendraAdminEmail} to have role 'admin' in database, got: ${pUser ? pUser.role : 'not found'}`);
     }
   });
 

@@ -62,6 +62,8 @@ jobs:
           SMTP_EMAIL=test@umanarayni.com
           SMTP_PASS=abcdefghijklmnop
           ADMIN_ALERT_EMAIL=test_alert@umanarayni.com
+          ADMIN_EMAIL=admin@umanarayni.com,raoa6526@gmail.com,singhpushpendra95734@gmail.com
+          ADMIN_EMAILS=admin@umanarayni.com,raoa6526@gmail.com,singhpushpendra95734@gmail.com
           ENABLE_SENTRY=false
           STRUCTURED_LOGS=true
           EOF
@@ -71,6 +73,9 @@ jobs:
 
       - name: Step 2 - Database Idempotent Migrations
         run: npm run migrate
+
+      - name: Step 2b - Database Initial Catalog Seeding
+        run: npm run seed
 
       - name: Step 3 - Database Pool & Schema Verification
         run: npm run test:db

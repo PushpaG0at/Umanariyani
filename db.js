@@ -26,7 +26,7 @@ const pool = mysql.createPool({
  * Returns array of normalized designated admin email addresses
  */
 function getAdminEmails() {
-  const envVal = process.env.ADMIN_EMAIL || 'raoa6526@gmail.com,singhpushpendra95734@gmail.com';
+  const envVal = process.env.ADMIN_EMAIL || process.env.ADMIN_EMAILS || 'admin@umanarayni.com,raoa6526@gmail.com,singhpushpendra95734@gmail.com';
   return envVal.split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 }
 

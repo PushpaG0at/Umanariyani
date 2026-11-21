@@ -44,7 +44,7 @@ async function cleanupTestData() {
 
   try {
     // 2. Identify protected admin emails
-    const adminEmailsRaw = process.env.ADMIN_EMAIL || 'admin@umanarayni.com,raoa6526@gmail.com,singhpushpendra95734@gmail.com';
+    const adminEmailsRaw = process.env.ADMIN_EMAIL || process.env.ADMIN_EMAILS || 'admin@umanarayni.com,raoa6526@gmail.com,singhpushpendra95734@gmail.com';
     const protectedEmails = adminEmailsRaw
       .split(',')
       .map(e => e.trim().toLowerCase())
