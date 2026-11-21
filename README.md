@@ -239,18 +239,18 @@ The application includes an automated nightly backup routine (`scripts/backup.js
    ```bash
    # 1. Create private S3 bucket in your deployment region (e.g., ap-south-1)
    aws s3api create-bucket \
-     --bucket your-backup-bucket-name \
+     --bucket umanarayani-prod-backups-2026 \
      --region ap-south-1 \
      --create-bucket-configuration LocationConstraint=ap-south-1
 
    # 2. Block all public access
    aws s3api put-public-access-block \
-     --bucket your-backup-bucket-name \
+     --bucket umanarayani-prod-backups-2026 \
      --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
 
    # 3. Enable default SSE-S3 AES-256 encryption
    aws s3api put-bucket-encryption \
-     --bucket your-backup-bucket-name \
+     --bucket umanarayani-prod-backups-2026 \
      --server-side-encryption-configuration '{
        "Rules": [{
          "ApplyServerSideEncryptionByDefault": {
@@ -272,7 +272,7 @@ The application includes an automated nightly backup routine (`scripts/backup.js
          "Action": [
            "s3:ListBucket"
          ],
-         "Resource": "arn:aws:s3:::your-backup-bucket-name"
+         "Resource": "arn:aws:s3:::umanarayani-prod-backups-2026"
        },
        {
          "Sid": "AllowS3BackupReadWriteAndTagging",
@@ -282,7 +282,7 @@ The application includes an automated nightly backup routine (`scripts/backup.js
            "s3:PutObjectTagging",
            "s3:GetObject"
          ],
-         "Resource": "arn:aws:s3:::your-backup-bucket-name/database-backups/*"
+         "Resource": "arn:aws:s3:::umanarayani-prod-backups-2026/database-backups/*"
        }
      ]
    }
@@ -291,7 +291,7 @@ The application includes an automated nightly backup routine (`scripts/backup.js
 3. **Configuring S3 Lifecycle Retention (Glacier Archive & 90-Day Expiration)**:
    ```bash
    aws s3api put-bucket-lifecycle-configuration \
-     --bucket your-backup-bucket-name \
+     --bucket umanarayani-prod-backups-2026 \
      --lifecycle-configuration '{
        "Rules": [
          {
@@ -458,6 +458,119 @@ The repository includes a GitHub Actions CI pipeline (`.github/workflows/ci.yml`
 8. **Bot Defense Tests**: Runs `scripts/test-turnstile-bypass.js`.
 9. **Address & Checkout Tests**: Runs `scripts/test-address-checkout.js`.
 10. **Storefront API Tests**: Runs `npm run test:api`.
+
+---
+
+### 6. 🚀 Production Deployment & Rollback Runbook (AWS EC2)
+
+#### Production Target Parameters
+| Parameter | Production Target Value |
+| :--- | :--- |
+| **Project Directory** | `/home/ubuntu/Umanariyani` |
+| **PM2 Application Name** | `umanarayani` |
+| **Database Name** | `umanarayani` |
+| **Amazon S3 Backup Bucket** | `umanarayani-prod-backups-2026` |
+| **AWS Deployment Region** | `ap-south-1` (Asia Pacific - Mumbai) |
+
+#### Step-by-Step Production Deployment Sequence
+
+1. **Navigate to Project Directory**:
+   ```bash
+   cd /home/ubuntu/Umanariyani
+   ```
+
+2. **Pre-Deployment Environment Validation**:
+   Verify that all required production environment variables and strong secrets are set:
+   ```bash
+   npm run check:env
+   ```
+
+3. **Record Current Commit Hash (Deployment Anchor)**:
+   Save the current stable commit hash for immediate reference if a rollback is needed:
+   ```bash
+   PRE_DEPLOY_COMMIT=$(git rev-parse HEAD)
+   echo "Current stable commit: $PRE_DEPLOY_COMMIT"
+   ```
+
+4. **Execute Pre-Deployment Database Backup**:
+   Generate a full transactional dump and upload to S3 before modifying code or schema:
+   ```bash
+   npm run backup
+   ```
+   *Note the generated backup filename from output (e.g., `backup_umanarayani_2026-11-21T...sql`).*
+
+5. **Pull Latest Production Release**:
+   ```bash
+   git pull origin main
+   ```
+
+6. **Install Production Dependencies**:
+   ```bash
+   npm ci --omit=dev
+   ```
+
+7. **Execute Idempotent Schema Migrations**:
+   ```bash
+   npm run migrate
+   ```
+
+8. **Reload PM2 Application**:
+   ```bash
+   npm run reload:prod
+   # OR
+   pm2 reload ecosystem.config.js --env production
+   ```
+
+9. **Verify System Health**:
+   Confirm that the internal health check returns HTTP 200 with database connected:
+   ```bash
+   curl -f http://127.0.0.1:3000/health
+   # Expected response: {"status":"ok","database":"connected"}
+   ```
+
+---
+
+#### Emergency Rollback Procedure (Zero-Guesswork Recovery)
+
+If any issue arises post-deployment (syntax error, failed migration, crash loop):
+
+1. **Stop the Running Process Immediately**:
+   ```bash
+   pm2 stop umanarayani
+   ```
+
+2. **Hard Reset Repository to Recorded Pre-Deployment Commit**:
+   ```bash
+   git reset --hard $PRE_DEPLOY_COMMIT
+   git clean -fd
+   ```
+   *(Replace `$PRE_DEPLOY_COMMIT` with the recorded git commit hash).*
+
+3. **Restore Database from Exact Pre-Deployment Dump**:
+   Restore the exact snapshot taken in Step 4:
+   ```bash
+   # Using automated restore tool:
+   node scripts/restore-database.js --file=backups/<exact_backup_filename>.sql --target-db=umanarayani --force
+
+   # OR directly via MySQL client CLI:
+   mysql -u umanarayani -p umanarayani < backups/<exact_backup_filename>.sql
+   ```
+
+4. **Reinstall Stable Dependencies**:
+   ```bash
+   npm ci --omit=dev
+   ```
+
+5. **Restart PM2 Service**:
+   ```bash
+   npm run start:prod
+   ```
+
+6. **Confirm System Health**:
+   ```bash
+   curl -f http://127.0.0.1:3000/health
+   pm2 logs umanarayani --lines 50
+   ```
 
 ---
 
