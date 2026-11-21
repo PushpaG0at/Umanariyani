@@ -15,6 +15,7 @@
     "restore": "node scripts/restore-database.js",
     "cleanup:test-data": "node scripts/cleanup-test-data.js",
     "check:env": "node scripts/check-env.js",
+    "sync:db-products": "node scripts/harmonize-db-products.js",
     "migrate": "node scripts/migrate-schema.js",
     "seed": "node scripts/seed-initial-data.js",
     "lint": "node scripts/audit-final-csp.js",
