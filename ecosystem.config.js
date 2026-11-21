@@ -1,8 +1,11 @@
+const path = require('path');
+
 module.exports = {
   apps: [
     {
-      name: 'umanarayani-api',
-      script: './server.js',
+      name: 'umanarayani',
+      cwd: __dirname,
+      script: path.join(__dirname, 'server.js'),
       instances: 1, // Fork mode ensures single-process reliability for node-cron schedulers
       exec_mode: 'fork',
 

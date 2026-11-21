@@ -417,7 +417,7 @@ A production-grade PM2 ecosystem configuration (`ecosystem.config.js`) manages t
 # Start in production mode
 npm run start:prod
 
-# Zero-downtime reload
+# Graceful reload (brief restart in single-process fork mode)
 npm run reload:prod
 
 # Restart application
